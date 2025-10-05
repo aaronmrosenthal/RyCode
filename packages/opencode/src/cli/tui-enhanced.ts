@@ -534,7 +534,6 @@ export namespace EnhancedTUI {
       isLast?: boolean
     } = {}
   ): string {
-    const indent = options.indent || 0
     const level = options.level || 0
     const prefix = options.prefix || ""
     const lines: string[] = []

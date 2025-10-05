@@ -290,7 +290,6 @@ export namespace InstallerMessages {
    * Progress indicator
    */
   export function progress(step: number, total: number, message: string) {
-    const percentage = Math.round((step / total) * 100)
     UI.println()
     UI.println(
       EnhancedTUI.progressBar(step, total, {
