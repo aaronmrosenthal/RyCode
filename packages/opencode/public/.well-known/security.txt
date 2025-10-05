@@ -1,0 +1,36 @@
+Contact: https://github.com/aaronmrosenthal/RyCode/security/advisories/new
+Expires: 2026-12-31T23:59:59.000Z
+Preferred-Languages: en
+Canonical: https://rycode.com/.well-known/security.txt
+Policy: https://github.com/aaronmrosenthal/RyCode/blob/main/SECURITY.md
+
+# Security Vulnerability Disclosure
+
+We take security seriously and appreciate responsible disclosure.
+
+## Reporting
+
+Please report security vulnerabilities through GitHub Security Advisories:
+https://github.com/aaronmrosenthal/RyCode/security/advisories/new
+
+## Response Time
+
+- Initial response: Within 24 hours
+- Status update: Within 72 hours
+- Resolution target: 30 days for high-severity issues
+
+## What to Include
+
+1. Description of the vulnerability
+2. Steps to reproduce
+3. Potential impact
+4. Suggested fix (if available)
+
+## Safe Harbor
+
+We will not pursue legal action against security researchers who:
+- Make good faith efforts to avoid privacy violations and data destruction
+- Report vulnerabilities promptly
+- Do not exploit vulnerabilities beyond what is necessary for demonstration
+
+Thank you for helping keep RyCode secure!

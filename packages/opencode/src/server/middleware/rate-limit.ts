@@ -3,6 +3,8 @@ import { NamedError } from "../../util/error"
 import z from "zod/v4"
 import { Log } from "../../util/log"
 import { Config } from "../../config/config"
+import { AuthMiddleware } from "./auth"
+import { SecurityMonitor } from "./security-monitor"
 
 export namespace RateLimitMiddleware {
   const log = Log.create({ service: "rate-limit.middleware" })
@@ -110,7 +112,7 @@ export namespace RateLimitMiddleware {
         return sessionID ? `session:${sessionID}` : getIP(c)
       }
       case "api_key": {
-        const apiKey = c.req.header("X-OpenCode-API-Key") || c.req.query("api_key")
+        const apiKey = c.req.header(AuthMiddleware.HEADER_NAME)
         return apiKey ? `key:${apiKey}` : getIP(c)
       }
       case "ip":
@@ -170,6 +172,14 @@ export namespace RateLimitMiddleware {
 
     if (bucket.tokens < 1) {
       const retryAfter = Math.ceil((1 - bucket.tokens) / (limit / windowMs))
+
+      SecurityMonitor.track(c, "rate_limit", {
+        limit,
+        tokens: bucket.tokens,
+        retryAfter,
+        clientKey,
+      })
+
       log.warn("rate limit exceeded", {
         clientKey,
         path: c.req.path,

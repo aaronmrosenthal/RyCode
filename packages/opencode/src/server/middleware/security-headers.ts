@@ -2,6 +2,8 @@ import type { Context } from "hono"
 import { Log } from "../../util/log"
 import { NamedError } from "../../util/error"
 import z from "zod/v4"
+import crypto from "crypto"
+import { SecurityMonitor } from "./security-monitor"
 
 export namespace SecurityHeadersMiddleware {
   const log = Log.create({ service: "security-headers.middleware" })
@@ -15,6 +17,13 @@ export namespace SecurityHeadersMiddleware {
     }),
   )
 
+  /**
+   * Generate cryptographically secure CSP nonce
+   */
+  function generateNonce(): string {
+    return crypto.randomBytes(16).toString("base64")
+  }
+
   interface Options {
     /**
      * Maximum request body size in bytes
@@ -23,6 +32,7 @@ export namespace SecurityHeadersMiddleware {
     maxBodySize?: number
     /**
      * Content Security Policy directives
+     * Use {nonce} placeholder for nonce-based CSP
      * @default "default-src 'self'"
      */
     csp?: string
@@ -31,11 +41,16 @@ export namespace SecurityHeadersMiddleware {
      * @default true
      */
     enabled?: boolean
+    /**
+     * Use nonces for CSP (more secure than unsafe-inline)
+     * @default true
+     */
+    useNonces?: boolean
   }
 
   export async function middleware(c: Context, next: () => Promise<void>, options: Options = {}) {
     const maxBodySize = options.maxBodySize ?? 10 * 1024 * 1024 // 10MB
-    const csp = options.csp ?? "default-src 'self'"
+    const useNonces = options.useNonces ?? true
     const enabled = options.enabled ?? true
 
     if (!enabled) {
@@ -47,6 +62,11 @@ export namespace SecurityHeadersMiddleware {
     if (contentLength) {
       const size = parseInt(contentLength, 10)
       if (size > maxBodySize) {
+        SecurityMonitor.track(c, "request_too_large", {
+          size,
+          maxSize: maxBodySize,
+        })
+
         log.warn("request too large", {
           path: c.req.path,
           size,
@@ -58,6 +78,15 @@ export namespace SecurityHeadersMiddleware {
           maxSize: maxBodySize,
         })
       }
+    }
+
+    // Generate nonce for CSP if enabled
+    let csp = options.csp ?? "default-src 'self'"
+    if (useNonces) {
+      const nonce = generateNonce()
+      c.set("csp-nonce", nonce)
+      // Replace {nonce} placeholder with actual nonce
+      csp = csp.replace(/\{nonce\}/g, `'nonce-${nonce}'`)
     }
 
     // Set security headers
@@ -84,11 +113,12 @@ export namespace SecurityHeadersMiddleware {
   }
 
   /**
-   * Relaxed CSP for web UI endpoints
+   * Relaxed CSP for web UI endpoints with nonce-based inline script/style support
    */
   export async function webMiddleware(c: Context, next: () => Promise<void>) {
     return middleware(c, next, {
-      csp: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:;",
+      csp: "default-src 'self'; script-src 'self' {nonce}; style-src 'self' {nonce}; img-src 'self' data: https:;",
+      useNonces: true,
     })
   }
 }

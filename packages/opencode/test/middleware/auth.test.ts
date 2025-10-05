@@ -92,7 +92,7 @@ describe("AuthMiddleware", () => {
     Config.get = originalGet
   })
 
-  test("allows requests with valid API key in query parameter", async () => {
+  test("REJECTS API key in query parameter (security fix)", async () => {
     const originalGet = Config.get
     Config.get = async () =>
       ({
@@ -112,10 +112,13 @@ describe("AuthMiddleware", () => {
       .use(async (c, next) => AuthMiddleware.middleware(c, next))
       .get("/test", (c) => c.json({ success: true }))
 
+    // Query parameter should now be REJECTED for security
     const res = await app.request("/test?api_key=test-key-45678901234567890123456789")
 
-    expect(res.status).toBe(200)
-    expect(await res.json()).toEqual({ success: true })
+    expect(res.status).toBe(401)
+    const body = await res.json()
+    expect(body.data.message).toContain("Missing API key")
+    expect(body.data.message).toContain("query parameters not supported")
 
     Config.get = originalGet
   })

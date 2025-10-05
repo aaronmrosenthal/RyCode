@@ -8,7 +8,8 @@
     "typecheck": "tsc --noEmit",
     "test": "bun test",
     "build": "./script/build.ts",
-    "dev": "bun run ./src/index.ts"
+    "dev": "bun run ./src/index.ts",
+    "generate-api-key": "bun run ./src/cli/generate-api-key.ts"
   },
   "bin": {
     "opencode": "./bin/opencode"

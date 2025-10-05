@@ -1,0 +1,138 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+  schedule:
+    - cron: '0 0 * * 0' # Weekly on Sunday
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  dependency-audit:
+    name: Dependency Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+      
+      - name: Install dependencies
+        run: bun install
+      
+      - name: Audit dependencies for vulnerabilities
+        run: |
+          echo "Checking for vulnerable dependencies..."
+          bun pm audit || echo "::warning::Vulnerabilities found in dependencies"
+      
+      - name: Check for outdated dependencies
+        run: |
+          echo "Checking for outdated dependencies..."
+          bun outdated || true
+
+  static-analysis:
+    name: Static Security Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run Semgrep
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/typescript
+            p/owasp-top-ten
+            p/nodejs
+        env:
+          SEMGREP_RULES: >-
+            r/typescript.lang.security
+            r/javascript.lang.security
+
+  secret-scan:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Full history for better detection
+      
+      - name: TruffleHog Secret Scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --debug --only-verified
+
+  security-test:
+    name: Security Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+      
+      - name: Install dependencies
+        run: bun install
+      
+      - name: Run security-specific tests
+        run: |
+          echo "Running auth middleware tests..."
+          bun test test/middleware/auth.test.ts
+          
+          echo "Running security headers tests..."
+          bun test test/middleware/security-headers.test.ts
+          
+          echo "Running rate limit tests..."
+          bun test test/middleware/rate-limit.test.ts
+          
+          echo "Running file security tests..."
+          bun test test/file/security.test.ts
+
+  license-compliance:
+    name: License Compliance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+      
+      - name: Install dependencies
+        run: bun install
+      
+      - name: Check licenses
+        run: |
+          bun add -D license-checker
+          bunx license-checker \
+            --production \
+            --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD;Unlicense' \
+            --summary
+
+  codeql:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          queries: security-and-quality
+      
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript-typescript"

@@ -70,6 +70,45 @@ const ERRORS = {
       },
     },
   },
+  403: {
+    description: "Forbidden",
+    content: {
+      "application/json": {
+        schema: resolver(
+          z
+            .object({
+              data: z.object({
+                message: z.string(),
+                requestedPath: z.string().optional(),
+              }),
+            })
+            .meta({
+              ref: "ForbiddenError",
+            }),
+        ),
+      },
+    },
+  },
+  413: {
+    description: "Request too large",
+    content: {
+      "application/json": {
+        schema: resolver(
+          z
+            .object({
+              data: z.object({
+                message: z.string(),
+                size: z.number(),
+                maxSize: z.number(),
+              }),
+            })
+            .meta({
+              ref: "RequestTooLargeError",
+            }),
+        ),
+      },
+    },
+  },
   429: {
     description: "Rate limit exceeded",
     content: {
