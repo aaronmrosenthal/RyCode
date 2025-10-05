@@ -8,8 +8,8 @@
 ```
 
 <p align="center">
-  <strong>The AI-Generated IDE</strong><br>
-  Built with <a href="https://toolkit-cli.com">toolkit-cli</a> - Where LLMs Collaborate, Not Compete
+  <strong>OpenCode, AI-Optimized</strong><br>
+  What happens when you run <a href="https://toolkit-cli.com">toolkit-cli</a> on OpenCode
 </p>
 
 <p align="center">
@@ -19,34 +19,67 @@
 
 ---
 
+## 🤖 The AI Optimization Demo
+
+```bash
+$ toolkit-cli optimize opencode/
+
+→ Claude analyzing architecture patterns...
+→ Gemini reviewing performance bottlenecks...
+→ Codex refactoring critical paths...
+→ Qwen optimizing bundle size...
+
+✓ Generated RyCode - Multi-agent optimized IDE
+```
+
+---
+
 [![RyCode Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://github.com/aaronmrosenthal/RyCode)
 
 ---
 
 ## About RyCode
 
-RyCode is a next-generation AI coding agent that leverages **multi-agent collaboration** through [toolkit-cli](https://toolkit-cli.com). Unlike traditional single-model approaches, RyCode harnesses the collective intelligence of multiple LLMs (Claude, Gemini, Codex, Qwen) working together to deliver superior development experiences.
+**RyCode is OpenCode enhanced by toolkit-cli's multi-agent AI collaboration.**
 
-### Powered by toolkit-cli
+This project demonstrates what happens when you run toolkit-cli's optimization commands on an existing codebase. Instead of a single AI making changes, **Claude, Gemini, Codex, and Qwen collaborate** - each bringing specialized expertise to create a superior result.
 
-This project showcases the power of toolkit-cli's innovative approach:
+### The Before → After Story
 
-- **26 AI-Powered Slash Commands** - Streamlined workflows for every development task
-- **Multi-Agent Architecture** - Different AI models collaborate on complex problems
-- **Spec-Context Preservation** - Maintains project intent across all changes
-- **Provider-Agnostic** - Not locked into any single AI vendor
-- **Terminal-First** - Built by developers, for developers
+**Before: OpenCode**
+A great terminal-based AI coding agent, but optimized by a single perspective.
 
-### Why Multi-Agent?
+**After: RyCode**
+The same codebase, enhanced by running toolkit-cli's multi-agent commands:
 
-RyCode demonstrates that multiple specialized AI models working together outperform any single model alone. Each agent brings unique strengths:
+```bash
+/fix      # Claude identifies and fixes architectural issues
+/improve  # Gemini suggests performance optimizations
+/security # Qwen hardens security vulnerabilities
+/optimize # Codex refactors for efficiency
+```
 
-- **Claude** - Deep reasoning and code analysis
-- **Gemini** - Fast iteration and broad knowledge
-- **Codex** - Precise code generation
-- **Qwen** - Efficient problem-solving
+### What toolkit-cli Commands Were Run
 
-Together, they create an IDE that thinks, adapts, and evolves with your codebase.
+RyCode showcases these toolkit-cli capabilities:
+
+- **`/fix`** - Multi-agent bug detection and resolution
+- **`/improve`** - Collaborative code quality enhancement
+- **`/security`** - AI-powered security hardening
+- **`/optimize`** - Performance and bundle size optimization
+- **`/peer-review`** - Multi-perspective code review
+- **`/test`** - Comprehensive testing strategy
+
+### Why Multi-Agent Optimization Works
+
+Instead of one AI making all decisions, toolkit-cli orchestrates specialists:
+
+- **Claude** → Deep reasoning and architecture analysis
+- **Gemini** → Fast iteration and performance insights
+- **Codex** → Precise code generation and refactoring
+- **Qwen** → Efficient optimization and security
+
+**Result:** Better code than any single AI could produce alone.
 
 ---
 
@@ -105,35 +138,43 @@ $ bun dev
 
 ### FAQ
 
-#### What makes RyCode different?
+#### What is RyCode?
 
-RyCode is built with **multi-agent AI collaboration** at its core:
+RyCode is **OpenCode optimized by toolkit-cli's multi-agent AI collaboration**. It's a living demonstration of what happens when you run toolkit's `/fix`, `/improve`, `/security`, and `/optimize` commands on a real codebase.
 
-- **Powered by toolkit-cli** - Leverages 26 AI slash commands and multi-model orchestration
-- **Multiple LLMs working together** - Claude, Gemini, Codex, and Qwen collaborate on your code
-- **Provider-agnostic** - Not locked to any single AI vendor
-- **Terminal-first** - Built for developers who live in the terminal
-- **Spec-context preservation** - Maintains project intent across all AI-generated changes
-- **Client/server architecture** - Run locally, control remotely
+#### How was RyCode created?
 
-#### How does multi-agent collaboration work?
+```bash
+# Started with OpenCode
+git clone https://github.com/sst/opencode
 
-Different AI models excel at different tasks. RyCode uses toolkit-cli to orchestrate specialized agents:
+# Ran toolkit-cli optimization commands
+toolkit-cli /fix opencode/
+toolkit-cli /improve opencode/
+toolkit-cli /security opencode/
+toolkit-cli /optimize opencode/
 
-- Complex reasoning? Claude leads
-- Fast iteration? Gemini steps in
-- Code generation? Codex delivers
-- Efficient solutions? Qwen optimizes
+# Result: RyCode - The AI-optimized version
+```
 
-The result: Better code, faster development, maintained context.
+#### What's different from OpenCode?
 
-#### Is this better than single-model tools?
+- **Multi-agent reviewed** - Every change analyzed by Claude, Gemini, Codex, and Qwen
+- **Collaboratively optimized** - Not just one AI's perspective, but collective intelligence
+- **Systematically enhanced** - Used toolkit's 26 slash commands for comprehensive improvements
+- **Before/After showcase** - Demonstrates the power of multi-agent collaboration
 
-Yes! Multi-agent systems consistently outperform single models because:
-- Each model contributes its unique strengths
-- Models verify and improve each other's outputs
-- Specialized agents handle specialized tasks
-- The collective intelligence exceeds individual capabilities
+#### Why multi-agent over single-AI?
+
+**Single AI:** One perspective, one set of biases, one approach.
+
+**Multi-agent (toolkit-cli):**
+- Claude catches architectural issues
+- Gemini spots performance bottlenecks
+- Codex suggests better patterns
+- Qwen finds security vulnerabilities
+
+**Result:** Code that's been reviewed and optimized from 4 different expert perspectives.
 
 ---
 
