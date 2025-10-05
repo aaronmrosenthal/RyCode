@@ -104,6 +104,92 @@ describe("PluginSecurity", () => {
       const { trusted: v130 } = PluginSecurity.isTrusted("test-plugin", "1.3.0", policy)
       expect(v130).toBe(false)
     })
+
+    test("should match complex version ranges", () => {
+      const policy: PluginSecurity.Policy = {
+        ...PluginSecurity.DEFAULT_POLICY,
+        trustedPlugins: [
+          {
+            name: "test-plugin",
+            versions: [">=1.2.0 <2.0.0"],
+            official: false,
+            capabilities: PluginSecurity.DEFAULT_POLICY.defaultCapabilities,
+          },
+        ],
+      }
+
+      const { trusted: v120 } = PluginSecurity.isTrusted("test-plugin", "1.2.0", policy)
+      expect(v120).toBe(true)
+
+      const { trusted: v199 } = PluginSecurity.isTrusted("test-plugin", "1.9.9", policy)
+      expect(v199).toBe(true)
+
+      const { trusted: v200 } = PluginSecurity.isTrusted("test-plugin", "2.0.0", policy)
+      expect(v200).toBe(false)
+
+      const { trusted: v119 } = PluginSecurity.isTrusted("test-plugin", "1.1.9", policy)
+      expect(v119).toBe(false)
+    })
+
+    test("should reject invalid semver versions", () => {
+      const policy: PluginSecurity.Policy = {
+        ...PluginSecurity.DEFAULT_POLICY,
+        trustedPlugins: [
+          {
+            name: "test-plugin",
+            versions: ["^1.0.0"],
+            official: false,
+            capabilities: PluginSecurity.DEFAULT_POLICY.defaultCapabilities,
+          },
+        ],
+      }
+
+      const { trusted } = PluginSecurity.isTrusted("test-plugin", "invalid-version", policy)
+      expect(trusted).toBe(false)
+    })
+
+    test("should handle pre-release versions", () => {
+      const policy: PluginSecurity.Policy = {
+        ...PluginSecurity.DEFAULT_POLICY,
+        trustedPlugins: [
+          {
+            name: "test-plugin",
+            versions: ["1.0.0-beta.1"],
+            official: false,
+            capabilities: PluginSecurity.DEFAULT_POLICY.defaultCapabilities,
+          },
+        ],
+      }
+
+      const { trusted: exact } = PluginSecurity.isTrusted("test-plugin", "1.0.0-beta.1", policy)
+      expect(exact).toBe(true)
+
+      const { trusted: different } = PluginSecurity.isTrusted("test-plugin", "1.0.0-beta.2", policy)
+      expect(different).toBe(false)
+
+      const { trusted: release } = PluginSecurity.isTrusted("test-plugin", "1.0.0", policy)
+      expect(release).toBe(false)
+    })
+
+    test("should match wildcard pattern", () => {
+      const policy: PluginSecurity.Policy = {
+        ...PluginSecurity.DEFAULT_POLICY,
+        trustedPlugins: [
+          {
+            name: "test-plugin",
+            versions: ["*"],
+            official: false,
+            capabilities: PluginSecurity.DEFAULT_POLICY.defaultCapabilities,
+          },
+        ],
+      }
+
+      const { trusted: v100 } = PluginSecurity.isTrusted("test-plugin", "1.0.0", policy)
+      expect(v100).toBe(true)
+
+      const { trusted: v999 } = PluginSecurity.isTrusted("test-plugin", "99.99.99", policy)
+      expect(v999).toBe(true)
+    })
   })
 
   describe("getCapabilities", () => {

@@ -7,6 +7,7 @@ import z from "zod/v4"
 import { NamedError } from "../util/error"
 import { Log } from "../util/log"
 import crypto from "crypto"
+import semver from "semver"
 
 export namespace PluginSecurity {
   const log = Log.create({ service: "plugin.security" })
@@ -184,20 +185,29 @@ export namespace PluginSecurity {
   }
 
   /**
-   * Simple semver range matching (basic implementation)
+   * Proper semver range matching using semver library
    */
   function matchesVersion(version: string, pattern: string): boolean {
     if (pattern === "*" || pattern === "latest") return true
-    if (pattern.startsWith("^")) {
-      const base = pattern.slice(1)
-      return version.startsWith(base.split(".")[0])
+
+    try {
+      // Validate version is valid semver
+      if (!semver.valid(version)) {
+        log.warn("invalid semver version", { version })
+        return false
+      }
+
+      // Check if pattern is a valid range
+      if (semver.validRange(pattern)) {
+        return semver.satisfies(version, pattern)
+      }
+
+      // Fallback to exact match if not a valid range
+      return version === pattern
+    } catch (error) {
+      log.warn("semver matching error", { version, pattern, error })
+      return false
     }
-    if (pattern.startsWith("~")) {
-      const base = pattern.slice(1)
-      const baseParts = base.split(".")
-      return version.startsWith(`${baseParts[0]}.${baseParts[1]}`)
-    }
-    return version === pattern
   }
 
   /**
