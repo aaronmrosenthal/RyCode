@@ -8,6 +8,8 @@ describe("RateLimitMiddleware", () => {
 
   beforeEach(() => {
     app = new Hono()
+    // Clear rate limit buckets between tests to prevent test pollution
+    RateLimitMiddleware.clearBuckets()
   })
 
   test("allows requests under rate limit", async () => {

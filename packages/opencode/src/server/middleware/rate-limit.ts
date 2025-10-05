@@ -203,4 +203,11 @@ export namespace RateLimitMiddleware {
       keyBy: "session",
     })
   }
+
+  /**
+   * Clear all rate limit buckets (for testing)
+   */
+  export function clearBuckets() {
+    buckets.clear()
+  }
 }

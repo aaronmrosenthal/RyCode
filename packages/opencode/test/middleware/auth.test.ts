@@ -37,7 +37,7 @@ describe("AuthMiddleware", () => {
       ({
         server: {
           require_auth: true,
-          api_keys: ["test-key-123"],
+          api_keys: ["test-key-12345678901234567890123456"],
         },
       }) as any
 
@@ -66,7 +66,7 @@ describe("AuthMiddleware", () => {
       ({
         server: {
           require_auth: true,
-          api_keys: ["test-key-123"],
+          api_keys: ["test-key-12345678901234567890123456"],
         },
       }) as any
 
@@ -82,7 +82,7 @@ describe("AuthMiddleware", () => {
 
     const res = await app.request("/test", {
       headers: {
-        "X-OpenCode-API-Key": "test-key-123",
+        "X-OpenCode-API-Key": "test-key-12345678901234567890123456",
       },
     })
 
@@ -98,7 +98,7 @@ describe("AuthMiddleware", () => {
       ({
         server: {
           require_auth: true,
-          api_keys: ["test-key-456"],
+          api_keys: ["test-key-45678901234567890123456789"],
         },
       }) as any
 
@@ -112,7 +112,7 @@ describe("AuthMiddleware", () => {
       .use(async (c, next) => AuthMiddleware.middleware(c, next))
       .get("/test", (c) => c.json({ success: true }))
 
-    const res = await app.request("/test?api_key=test-key-456")
+    const res = await app.request("/test?api_key=test-key-45678901234567890123456789")
 
     expect(res.status).toBe(200)
     expect(await res.json()).toEqual({ success: true })
@@ -126,7 +126,7 @@ describe("AuthMiddleware", () => {
       ({
         server: {
           require_auth: true,
-          api_keys: ["valid-key"],
+          api_keys: ["valid-key-must-be-at-least-32-characters-long"],
         },
       }) as any
 
@@ -142,7 +142,7 @@ describe("AuthMiddleware", () => {
 
     const res = await app.request("/test", {
       headers: {
-        "X-OpenCode-API-Key": "invalid-key",
+        "X-OpenCode-API-Key": "invalid-key-678901234567890123456789",
       },
     })
 
@@ -159,7 +159,7 @@ describe("AuthMiddleware", () => {
       ({
         server: {
           require_auth: true,
-          api_keys: ["test-key"],
+          api_keys: ["test-key-must-be-at-least-32-chars-long"],
         },
       }) as any
 
@@ -386,7 +386,8 @@ describe("AuthMiddleware", () => {
 
     expect(res.status).toBe(401)
     const body = await res.json()
-    expect(body.data.message).toContain("Invalid API key format")
+    // Empty keys are treated as missing
+    expect(body.data.message).toContain("Missing API key")
 
     Config.get = originalGet
   })
