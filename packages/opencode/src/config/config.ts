@@ -15,6 +15,7 @@ import { Auth } from "../auth"
 import { type ParseError as JsoncParseError, parse as parseJsonc, printParseErrorCode } from "jsonc-parser"
 import { Instance } from "../project/instance"
 import { LSPServer } from "../lsp/server"
+import { PluginSecurity } from "../plugin/security"
 
 export namespace Config {
   const log = Log.create({ service: "config" })
@@ -405,6 +406,7 @@ export namespace Config {
         })
         .optional(),
       plugin: z.string().array().optional(),
+      plugin_security: PluginSecurity.Policy.optional().describe("Plugin security configuration"),
       snapshot: z.boolean().optional(),
       share: z
         .enum(["manual", "auto", "disabled"])
