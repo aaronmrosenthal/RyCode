@@ -54,6 +54,14 @@ export namespace SessionPrompt {
   const log = Log.create({ service: "session.prompt" })
   export const OUTPUT_TOKEN_MAX = 32_000
 
+  export const SessionBusyError = NamedError.create(
+    "SessionBusyError",
+    z.object({
+      sessionID: z.string(),
+      message: z.string(),
+    }),
+  )
+
   export const Event = {
     Idle: Bus.event(
       "session.idle",
@@ -1184,7 +1192,12 @@ export namespace SessionPrompt {
 
   function lock(sessionID: string) {
     log.info("locking", { sessionID })
-    if (state().pending.has(sessionID)) throw new Error("TODO")
+    if (state().pending.has(sessionID)) {
+      throw new SessionBusyError({
+        sessionID,
+        message: `Session ${sessionID} is already processing a request`,
+      })
+    }
     const controller = new AbortController()
     state().pending.set(sessionID, controller)
     return {

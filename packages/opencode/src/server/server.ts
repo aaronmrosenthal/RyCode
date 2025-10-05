@@ -153,12 +153,8 @@ export namespace Server {
         })
       })
       .use(cors())
-      .use(async (c, next) => {
-        return AuthMiddleware.middleware(c, next)
-      })
-      .use(async (c, next) => {
-        return RateLimitMiddleware.middleware(c, next)
-      })
+      .use((c, next) => AuthMiddleware.middleware(c, next))
+      .use((c, next) => RateLimitMiddleware.middleware(c, next))
       .get(
         "/doc",
         openAPIRouteHandler(app, {

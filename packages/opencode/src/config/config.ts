@@ -83,32 +83,26 @@ export namespace Config {
 
     if (!result.username) result.username = os.userInfo().username
 
-    // Handle migration from autoshare to share field
+    // Handle deprecated field migrations
     if (result.autoshare === true && !result.share) {
       result.share = "auto"
-    }
-    if (result.keybinds?.messages_revert && !result.keybinds.messages_undo) {
-      result.keybinds.messages_undo = result.keybinds.messages_revert
     }
 
-    // Handle migration from autoshare to share field
-    if (result.autoshare === true && !result.share) {
-      result.share = "auto"
-    }
-    if (result.keybinds?.messages_revert && !result.keybinds.messages_undo) {
-      result.keybinds.messages_undo = result.keybinds.messages_revert
-    }
-    if (result.keybinds?.switch_mode && !result.keybinds.switch_agent) {
-      result.keybinds.switch_agent = result.keybinds.switch_mode
-    }
-    if (result.keybinds?.switch_mode_reverse && !result.keybinds.switch_agent_reverse) {
-      result.keybinds.switch_agent_reverse = result.keybinds.switch_mode_reverse
-    }
-    if (result.keybinds?.switch_agent && !result.keybinds.agent_cycle) {
-      result.keybinds.agent_cycle = result.keybinds.switch_agent
-    }
-    if (result.keybinds?.switch_agent_reverse && !result.keybinds.agent_cycle_reverse) {
-      result.keybinds.agent_cycle_reverse = result.keybinds.switch_agent_reverse
+    // Handle deprecated keybind migrations
+    if (result.keybinds) {
+      const migrations = [
+        { from: "messages_revert", to: "messages_undo" },
+        { from: "switch_mode", to: "switch_agent" },
+        { from: "switch_mode_reverse", to: "switch_agent_reverse" },
+        { from: "switch_agent", to: "agent_cycle" },
+        { from: "switch_agent_reverse", to: "agent_cycle_reverse" },
+      ]
+
+      for (const { from, to } of migrations) {
+        if (result.keybinds[from] && !result.keybinds[to]) {
+          result.keybinds[to] = result.keybinds[from]
+        }
+      }
     }
 
     return {
