@@ -1,5 +1,3 @@
 {
-  "$schema": "https://github.com/aaronmrosenthal/RyCode/config.json",
-  "name": "RyCode",
-  "description": "The AI-Generated IDE built with toolkit-cli"
+  "$schema": "https://opencode.ai/config.json"
 }
