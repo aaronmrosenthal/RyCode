@@ -99,8 +99,9 @@ export namespace Config {
       ]
 
       for (const { from, to } of migrations) {
-        if (result.keybinds[from] && !result.keybinds[to]) {
-          result.keybinds[to] = result.keybinds[from]
+        const keybinds = result.keybinds as Record<string, string | undefined>
+        if (keybinds[from] && !keybinds[to]) {
+          keybinds[to] = keybinds[from]
         }
       }
     }

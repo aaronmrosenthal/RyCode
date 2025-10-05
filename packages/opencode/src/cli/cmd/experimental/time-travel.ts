@@ -217,7 +217,7 @@ export namespace TimeTravel {
       return branch
     }
 
-    mergeBranch(sourceBranchId: string, targetBranchId: string): boolean {
+    mergeBranch(_sourceBranchId: string, _targetBranchId: string): boolean {
       // TODO: Implement merge logic
       return true
     }

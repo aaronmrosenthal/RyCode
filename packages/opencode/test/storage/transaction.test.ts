@@ -1,14 +1,10 @@
 import { describe, test, expect, beforeEach, afterEach } from "bun:test"
 import { Storage } from "../../src/storage/storage"
-import path from "path"
-import fs from "fs/promises"
 import { TestSetup } from "../setup"
 
 describe("Storage Transactions", () => {
-  let tempDir: string
-
   beforeEach(async () => {
-    tempDir = await TestSetup.createTempDir()
+    await TestSetup.createTempDir()
   })
 
   afterEach(async () => {

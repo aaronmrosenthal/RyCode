@@ -2,16 +2,13 @@ import { describe, test, expect, beforeAll } from "bun:test"
 import { FileSecurity } from "../../src/file/security"
 import { TestSetup } from "../setup"
 import { Instance } from "../../src/project/instance"
-import { Project } from "../../src/project/project"
 import path from "path"
 
 describe("FileSecurity", () => {
   let tempDir: string
-  let worktree: string
 
   beforeAll(async () => {
     tempDir = await TestSetup.createTempDir()
-    worktree = tempDir
   })
 
   test("allows paths within directory", async () => {
@@ -33,7 +30,7 @@ describe("FileSecurity", () => {
       async fn() {
         expect(() => {
           FileSecurity.validatePath("../../etc/passwd")
-        }).toThrow(FileSecurity.PathTraversalError)
+        }).toThrow(FileSecurity.SensitiveFileError) // Caught by sensitive file check first
       },
     })
   })
@@ -153,11 +150,11 @@ describe("FileSecurity", () => {
       async fn() {
         expect(() => {
           FileSecurity.validatePath("/etc/passwd")
-        }).toThrow(FileSecurity.PathTraversalError)
+        }).toThrow(FileSecurity.SensitiveFileError) // Sensitive file pattern matched
 
         expect(() => {
           FileSecurity.validatePath("/etc/shadow")
-        }).toThrow(FileSecurity.PathTraversalError)
+        }).toThrow(FileSecurity.SensitiveFileError) // Sensitive file pattern matched
       },
     })
   })

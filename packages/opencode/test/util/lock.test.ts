@@ -32,11 +32,8 @@ describe("Lock", () => {
     })
 
     test("should release read lock properly", async () => {
-      let locked = false
-
       {
         using _ = await Lock.read("test-key")
-        locked = true
       }
 
       // Lock should be released
@@ -277,9 +274,9 @@ describe("Lock", () => {
 
   describe("diagnostics", () => {
     test("should report current lock state", async () => {
-      using w = await Lock.write("key1")
-      using r1 = await Lock.read("key2")
-      using r2 = await Lock.read("key2")
+      using _w = await Lock.write("key1")
+      using _r1 = await Lock.read("key2")
+      using _r2 = await Lock.read("key2")
 
       const diag = Lock.diagnostics()
 

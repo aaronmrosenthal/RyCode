@@ -76,7 +76,7 @@ export namespace GhostText {
       return stats.accepted / stats.count
     }
 
-    private findPatterns(input: string): Array<{ pattern: string; completion: string }> {
+    private findPatterns(_input: string): Array<{ pattern: string; completion: string }> {
       // Implementation: fuzzy match against known patterns
       return []
     }
@@ -90,7 +90,7 @@ export namespace GhostText {
   /**
    * Render ghost text in terminal
    */
-  export function renderGhost(text: string, position: number): string {
+  export function renderGhost(text: string, _position: number): string {
     return UI.Style.TEXT_DIM + text + UI.Style.RESET
   }
 
