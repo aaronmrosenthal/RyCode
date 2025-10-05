@@ -1,17 +1,23 @@
+```
+██████╗ ██╗   ██╗ ██████╗ ██████╗ ██████╗ ███████╗
+██╔══██╗╚██╗ ██╔╝██╔════╝██╔═══██╗██╔══██╗██╔════╝
+██████╔╝ ╚████╔╝ ██║     ██║   ██║██║  ██║█████╗
+██╔══██╗  ╚██╔╝  ██║     ██║   ██║██║  ██║██╔══╝
+██║  ██║   ██║   ╚██████╗╚██████╔╝██████╔╝███████╗
+╚═╝  ╚═╝   ╚═╝    ╚═════╝ ╚═════╝ ╚═════╝ ╚══════╝
+```
+
 <p align="center">
-  <a href="https://github.com/aaronmrosenthal/RyCode">
-    <picture>
-      <source srcset="packages/console/app/src/asset/logo-ornate-dark.svg" media="(prefers-color-scheme: dark)">
-      <source srcset="packages/console/app/src/asset/logo-ornate-light.svg" media="(prefers-color-scheme: light)">
-      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="RyCode logo">
-    </picture>
-  </a>
+  <strong>The AI-Generated IDE</strong><br>
+  Built with <a href="https://toolkit-cli.com">toolkit-cli</a> - Where LLMs Collaborate, Not Compete
 </p>
-<p align="center"><strong>The AI-Generated IDE</strong></p>
-<p align="center">Built with <a href="https://toolkit-cli.com">toolkit-cli</a> - Where LLMs Collaborate, Not Compete</p>
+
 <p align="center">
   <a href="https://github.com/aaronmrosenthal/RyCode"><img alt="GitHub" src="https://img.shields.io/github/stars/aaronmrosenthal/RyCode?style=flat-square" /></a>
+  <a href="https://github.com/aaronmrosenthal/RyCode"><img alt="License" src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" /></a>
 </p>
+
+---
 
 [![RyCode Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://github.com/aaronmrosenthal/RyCode)
 
