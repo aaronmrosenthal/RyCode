@@ -259,6 +259,8 @@ Step 2/3 [████████████████░░░░░░░�
 - **[Clickable Links Guide](./CLICKABLE_LINKS.md)** - Complete OSC 8 implementation
 - **[TUI Enhancements](./TUI_ENHANCEMENTS.md)** - All 14 components documented
 - **[Installer Experience](./INSTALLER_EXPERIENCE.md)** - Professional onboarding flow
+- **[Plugin Security](./PLUGIN_SECURITY.md)** - Enterprise-grade plugin security
+- **[Plugin Registry](./PLUGIN_REGISTRY.md)** - Verified plugin registry system
 
 ### Component Examples
 

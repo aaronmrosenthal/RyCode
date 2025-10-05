@@ -26,6 +26,14 @@ import {
   PluginCheckCommand,
   PluginVerifyCommand,
 } from "./cli/cmd/plugin"
+import {
+  PluginRegistryAddCommand,
+  PluginRegistryRemoveCommand,
+  PluginRegistryListCommand,
+  PluginRegistrySearchCommand,
+  PluginRegistrySyncCommand,
+  PluginRegistryStatsCommand,
+} from "./cli/cmd/plugin-registry"
 
 const cancel = new AbortController()
 
@@ -93,6 +101,12 @@ const cli = yargs(hideBin(process.argv))
   .command(PluginAuditCommand)
   .command(PluginCheckCommand)
   .command(PluginVerifyCommand)
+  .command(PluginRegistryAddCommand)
+  .command(PluginRegistryRemoveCommand)
+  .command(PluginRegistryListCommand)
+  .command(PluginRegistrySearchCommand)
+  .command(PluginRegistrySyncCommand)
+  .command(PluginRegistryStatsCommand)
   .fail((msg) => {
     if (
       msg.startsWith("Unknown argument") ||

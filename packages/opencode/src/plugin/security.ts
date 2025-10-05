@@ -8,6 +8,7 @@ import { NamedError } from "../util/error"
 import { Log } from "../util/log"
 import crypto from "crypto"
 import semver from "semver"
+import { PluginRegistry } from "./registry"
 
 export namespace PluginSecurity {
   const log = Log.create({ service: "plugin.security" })
@@ -266,6 +267,58 @@ export namespace PluginSecurity {
     } catch (error) {
       log.error("integrity check error", { path: pluginPath, error })
       return false
+    }
+  }
+
+  /**
+   * Verify plugin against registry
+   */
+  export async function verifyWithRegistry(
+    pluginName: string,
+    version: string,
+    pluginPath: string,
+    registryConfig?: PluginRegistry.RegistryConfig
+  ): Promise<{
+    verified: boolean
+    entry: PluginRegistry.RegistryEntry | null
+    hashMatch: boolean
+  }> {
+    try {
+      // Generate hash of the plugin file
+      const actualHash = await generateHash(pluginPath)
+
+      // Look up in registry
+      const { verified, entry } = await PluginRegistry.verify(
+        pluginName,
+        version,
+        actualHash,
+        registryConfig
+      )
+
+      log.info("registry verification", {
+        plugin: pluginName,
+        version,
+        verified,
+        verifiedBy: entry?.verifiedBy,
+      })
+
+      return {
+        verified,
+        entry,
+        hashMatch: verified,
+      }
+    } catch (error) {
+      log.error("registry verification error", {
+        plugin: pluginName,
+        version,
+        error: error instanceof Error ? error.message : String(error),
+      })
+
+      return {
+        verified: false,
+        entry: null,
+        hashMatch: false,
+      }
     }
   }
 
