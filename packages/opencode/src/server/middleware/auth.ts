@@ -3,6 +3,7 @@ import { Config } from "../../config/config"
 import { NamedError } from "../../util/error"
 import z from "zod/v4"
 import { Log } from "../../util/log"
+import crypto from "crypto"
 
 export namespace AuthMiddleware {
   const log = Log.create({ service: "auth.middleware" })
@@ -15,6 +16,45 @@ export namespace AuthMiddleware {
   )
 
   export const HEADER_NAME = "X-OpenCode-API-Key"
+
+  /**
+   * Validate API key format to prevent weak keys
+   */
+  function validateApiKeyFormat(key: string): boolean {
+    return (
+      typeof key === "string" &&
+      key.length >= 32 &&
+      /^[A-Za-z0-9_-]+$/.test(key)
+    )
+  }
+
+  /**
+   * Constant-time comparison to prevent timing attacks
+   */
+  function validateApiKey(provided: string, validKeys: string[]): boolean {
+    let isValid = false
+
+    for (const key of validKeys) {
+      try {
+        // Pad to same length to prevent length-based timing attacks
+        const maxLen = Math.max(provided.length, key.length)
+        const providedBuf = Buffer.alloc(maxLen)
+        const keyBuf = Buffer.alloc(maxLen)
+
+        Buffer.from(provided).copy(providedBuf)
+        Buffer.from(key).copy(keyBuf)
+
+        // Constant-time comparison
+        const match = crypto.timingSafeEqual(providedBuf, keyBuf)
+        isValid = isValid || match
+      } catch {
+        // Length mismatch or invalid buffer - continue checking
+        continue
+      }
+    }
+
+    return isValid
+  }
 
   interface Options {
     /**
@@ -46,9 +86,15 @@ export namespace AuthMiddleware {
 
     // Bypass localhost in development
     if (bypassLocalhost) {
-      const hostname = c.req.header("host")?.split(":")[0]
-      if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1") {
-        log.debug("bypassing auth for localhost", { path: c.req.path })
+      // SECURITY: Use actual remote address, not Host header which can be spoofed
+      const remoteAddress = c.env?.incoming?.socket?.remoteAddress
+      const isLocalhost =
+        remoteAddress === "127.0.0.1" ||
+        remoteAddress === "::1" ||
+        remoteAddress === "::ffff:127.0.0.1"
+
+      if (isLocalhost) {
+        log.debug("bypassing auth for localhost", { path: c.req.path, remoteAddress })
         return next()
       }
     }
@@ -63,9 +109,17 @@ export namespace AuthMiddleware {
       })
     }
 
-    // Validate API key
+    // Validate API key format
+    if (!validateApiKeyFormat(apiKey)) {
+      log.warn("invalid api key format", { path: c.req.path, keyLength: apiKey.length })
+      throw new UnauthorizedError({
+        message: "Invalid API key format. Keys must be at least 32 characters and contain only alphanumeric, hyphen, or underscore characters.",
+      })
+    }
+
+    // Validate API key using constant-time comparison
     const validKeys = config.server?.api_keys ?? []
-    if (!validKeys.includes(apiKey)) {
+    if (!validateApiKey(apiKey, validKeys)) {
       log.warn("invalid api key", { path: c.req.path })
       throw new UnauthorizedError({
         message: "Invalid API key",

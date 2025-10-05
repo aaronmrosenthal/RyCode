@@ -1,13 +1,27 @@
 export namespace Lock {
+  // Default timeout: 30 seconds
+  const DEFAULT_TIMEOUT_MS = 30_000
+
   const locks = new Map<
     string,
     {
       readers: number
       writer: boolean
-      waitingReaders: (() => void)[]
-      waitingWriters: (() => void)[]
+      waitingReaders: Array<{ resolve: () => void; timeout: NodeJS.Timeout }>
+      waitingWriters: Array<{ resolve: () => void; timeout: NodeJS.Timeout }>
+      acquiredAt?: number
     }
   >()
+
+  export class LockTimeoutError extends Error {
+    constructor(
+      public key: string,
+      public timeoutMs: number,
+    ) {
+      super(`Lock timeout after ${timeoutMs}ms for key: ${key}`)
+      this.name = "LockTimeoutError"
+    }
+  }
 
   function get(key: string) {
     if (!locks.has(key)) {
@@ -16,6 +30,7 @@ export namespace Lock {
         writer: false,
         waitingReaders: [],
         waitingWriters: [],
+        acquiredAt: undefined,
       })
     }
     return locks.get(key)!
@@ -27,15 +42,19 @@ export namespace Lock {
 
     // Prioritize writers to prevent starvation
     if (lock.waitingWriters.length > 0) {
-      const nextWriter = lock.waitingWriters.shift()!
-      nextWriter()
+      const next = lock.waitingWriters.shift()!
+      clearTimeout(next.timeout) // Clear timeout
+      lock.acquiredAt = Date.now()
+      next.resolve()
       return
     }
 
     // Wake up all waiting readers
     while (lock.waitingReaders.length > 0) {
-      const nextReader = lock.waitingReaders.shift()!
-      nextReader()
+      const next = lock.waitingReaders.shift()!
+      clearTimeout(next.timeout) // Clear timeout
+      lock.acquiredAt = Date.now()
+      next.resolve()
     }
 
     // Clean up empty locks
@@ -44,12 +63,13 @@ export namespace Lock {
     }
   }
 
-  export async function read(key: string): Promise<Disposable> {
+  export async function read(key: string, timeoutMs: number = DEFAULT_TIMEOUT_MS): Promise<Disposable> {
     const lock = get(key)
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       if (!lock.writer && lock.waitingWriters.length === 0) {
         lock.readers++
+        lock.acquiredAt = Date.now()
         resolve({
           [Symbol.dispose]: () => {
             lock.readers--
@@ -57,25 +77,39 @@ export namespace Lock {
           },
         })
       } else {
-        lock.waitingReaders.push(() => {
-          lock.readers++
-          resolve({
-            [Symbol.dispose]: () => {
-              lock.readers--
-              process(key)
-            },
-          })
+        // Set timeout for waiting readers
+        const timeout = setTimeout(() => {
+          // Remove from waiting queue
+          const index = lock.waitingReaders.findIndex((w) => w.timeout === timeout)
+          if (index !== -1) {
+            lock.waitingReaders.splice(index, 1)
+          }
+          reject(new LockTimeoutError(key, timeoutMs))
+        }, timeoutMs)
+
+        lock.waitingReaders.push({
+          resolve: () => {
+            lock.readers++
+            resolve({
+              [Symbol.dispose]: () => {
+                lock.readers--
+                process(key)
+              },
+            })
+          },
+          timeout,
         })
       }
     })
   }
 
-  export async function write(key: string): Promise<Disposable> {
+  export async function write(key: string, timeoutMs: number = DEFAULT_TIMEOUT_MS): Promise<Disposable> {
     const lock = get(key)
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       if (!lock.writer && lock.readers === 0) {
         lock.writer = true
+        lock.acquiredAt = Date.now()
         resolve({
           [Symbol.dispose]: () => {
             lock.writer = false
@@ -83,16 +117,59 @@ export namespace Lock {
           },
         })
       } else {
-        lock.waitingWriters.push(() => {
-          lock.writer = true
-          resolve({
-            [Symbol.dispose]: () => {
-              lock.writer = false
-              process(key)
-            },
-          })
+        // Set timeout for waiting writers
+        const timeout = setTimeout(() => {
+          // Remove from waiting queue
+          const index = lock.waitingWriters.findIndex((w) => w.timeout === timeout)
+          if (index !== -1) {
+            lock.waitingWriters.splice(index, 1)
+          }
+          reject(new LockTimeoutError(key, timeoutMs))
+        }, timeoutMs)
+
+        lock.waitingWriters.push({
+          resolve: () => {
+            lock.writer = true
+            resolve({
+              [Symbol.dispose]: () => {
+                lock.writer = false
+                process(key)
+              },
+            })
+          },
+          timeout,
         })
       }
     })
+  }
+
+  /**
+   * Get diagnostic info about current locks
+   */
+  export function diagnostics() {
+    const result: Record<
+      string,
+      {
+        readers: number
+        writer: boolean
+        waitingReaders: number
+        waitingWriters: number
+        acquiredAt?: number
+        heldFor?: number
+      }
+    > = {}
+
+    for (const [key, lock] of locks.entries()) {
+      result[key] = {
+        readers: lock.readers,
+        writer: lock.writer,
+        waitingReaders: lock.waitingReaders.length,
+        waitingWriters: lock.waitingWriters.length,
+        acquiredAt: lock.acquiredAt,
+        heldFor: lock.acquiredAt ? Date.now() - lock.acquiredAt : undefined,
+      }
+    }
+
+    return result
   }
 }

@@ -206,6 +206,8 @@ export namespace Provider {
       { providerID: string; modelID: string; info: ModelsDev.Model; language: LanguageModel; npm?: string }
     >()
     const sdk = new Map<number, SDK>()
+    // SECURITY: Track pending SDK initialization to prevent race conditions
+    const sdkInitPromises = new Map<number, Promise<SDK>>()
 
     log.info("init")
 
@@ -357,6 +359,7 @@ export namespace Provider {
       models,
       providers,
       sdk,
+      sdkInitPromises,
     }
   })
 
@@ -376,31 +379,54 @@ export namespace Provider {
         options["includeUsage"] = true
       }
       const key = Bun.hash.xxHash32(JSON.stringify({ pkg, options }))
+
+      // SECURITY: Check if SDK already initialized
       const existing = s.sdk.get(key)
       if (existing) return existing
-      const installedPath = await BunProc.install(pkg, "latest")
-      // The `google-vertex-anthropic` provider points to the `@ai-sdk/google-vertex` package.
-      // Ref: https://github.com/sst/models.dev/blob/0a87de42ab177bebad0620a889e2eb2b4a5dd4ab/providers/google-vertex-anthropic/provider.toml
-      // However, the actual export is at the subpath `@ai-sdk/google-vertex/anthropic`.
-      // Ref: https://ai-sdk.dev/providers/ai-sdk-providers/google-vertex#google-vertex-anthropic-provider-usage
-      // In addition, Bun's dynamic import logic does not support subpath imports,
-      // so we patch the import path to load directly from `dist`.
-      const modPath =
-        provider.id === "google-vertex-anthropic" ? `${installedPath}/dist/anthropic/index.mjs` : installedPath
-      const mod = await import(modPath)
-      if (options["timeout"] !== undefined) {
-        // Only override fetch if user explicitly sets timeout
-        options["fetch"] = async (input: any, init?: any) => {
-          return await fetch(input, { ...init, timeout: options["timeout"] })
-        }
+
+      // SECURITY: Check if initialization is in progress - wait for it
+      const pending = s.sdkInitPromises.get(key)
+      if (pending) {
+        log.debug("waiting for pending SDK initialization", { providerID: provider.id, key })
+        return pending
       }
-      const fn = mod[Object.keys(mod).find((key) => key.startsWith("create"))!]
-      const loaded = fn({
-        name: provider.id,
-        ...options,
-      })
-      s.sdk.set(key, loaded)
-      return loaded as SDK
+
+      // SECURITY: Create initialization promise to prevent concurrent initialization
+      const initPromise = (async () => {
+        try {
+          const installedPath = await BunProc.install(pkg, "latest")
+          // The `google-vertex-anthropic` provider points to the `@ai-sdk/google-vertex` package.
+          // Ref: https://github.com/sst/models.dev/blob/0a87de42ab177bebad0620a889e2eb2b4a5dd4ab/providers/google-vertex-anthropic/provider.toml
+          // However, the actual export is at the subpath `@ai-sdk/google-vertex/anthropic`.
+          // Ref: https://ai-sdk.dev/providers/ai-sdk-providers/google-vertex#google-vertex-anthropic-provider-usage
+          // In addition, Bun's dynamic import logic does not support subpath imports,
+          // so we patch the import path to load directly from `dist`.
+          const modPath =
+            provider.id === "google-vertex-anthropic" ? `${installedPath}/dist/anthropic/index.mjs` : installedPath
+          const mod = await import(modPath)
+          if (options["timeout"] !== undefined) {
+            // Only override fetch if user explicitly sets timeout
+            options["fetch"] = async (input: any, init?: any) => {
+              return await fetch(input, { ...init, timeout: options["timeout"] })
+            }
+          }
+          const fn = mod[Object.keys(mod).find((key) => key.startsWith("create"))!]
+          const loaded = fn({
+            name: provider.id,
+            ...options,
+          })
+          s.sdk.set(key, loaded)
+          return loaded as SDK
+        } finally {
+          // SECURITY: Clean up promise after initialization (success or failure)
+          s.sdkInitPromises.delete(key)
+        }
+      })()
+
+      // SECURITY: Store promise to prevent concurrent initialization
+      s.sdkInitPromises.set(key, initPromise)
+
+      return initPromise
     })().catch((e) => {
       throw new InitError({ providerID: provider.id }, { cause: e })
     })

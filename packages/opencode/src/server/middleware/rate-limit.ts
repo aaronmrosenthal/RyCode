@@ -21,6 +21,10 @@ export namespace RateLimitMiddleware {
     lastRefill: number
   }
 
+  // SECURITY: Maximum buckets to prevent memory exhaustion attacks
+  const MAX_BUCKETS = 10_000
+  const CLEANUP_INTERVAL_MS = 60_000 // 1 minute
+
   interface RateLimitConfig {
     /**
      * Maximum requests per window
@@ -45,20 +49,55 @@ export namespace RateLimitMiddleware {
 
   const buckets = new Map<string, BucketState>()
 
-  // Cleanup old buckets every 10 minutes
+  // Cleanup old buckets more frequently to prevent memory leaks
   setInterval(
     () => {
       const now = Date.now()
       const expiryThreshold = 10 * 60 * 1000 // 10 minutes
+      let cleaned = 0
+
       for (const [key, bucket] of buckets.entries()) {
         if (now - bucket.lastRefill > expiryThreshold) {
           buckets.delete(key)
+          cleaned++
         }
       }
-      log.debug("cleaned up buckets", { remaining: buckets.size })
+
+      if (cleaned > 0) {
+        log.debug("cleaned up buckets", { cleaned, remaining: buckets.size })
+      }
     },
-    10 * 60 * 1000,
+    CLEANUP_INTERVAL_MS,
   ).unref()
+
+  /**
+   * Add bucket with LRU eviction if at capacity
+   */
+  function addBucket(key: string, bucket: BucketState): void {
+    // If at capacity, evict oldest bucket (approximate LRU)
+    if (buckets.size >= MAX_BUCKETS) {
+      // Find and remove the oldest bucket
+      let oldestKey: string | null = null
+      let oldestTime = Date.now()
+
+      for (const [k, b] of buckets.entries()) {
+        if (b.lastRefill < oldestTime) {
+          oldestTime = b.lastRefill
+          oldestKey = k
+        }
+      }
+
+      if (oldestKey) {
+        buckets.delete(oldestKey)
+        log.warn("bucket capacity reached, evicted oldest", {
+          evicted: oldestKey,
+          capacity: MAX_BUCKETS,
+        })
+      }
+    }
+
+    buckets.set(key, bucket)
+  }
 
   function getClientKey(c: Context, keyBy: RateLimitConfig["keyBy"]): string {
     if (typeof keyBy === "function") {
@@ -123,7 +162,8 @@ export namespace RateLimitMiddleware {
         tokens: limit,
         lastRefill: Date.now(),
       }
-      buckets.set(clientKey, bucket)
+      // Use addBucket to enforce capacity limits
+      addBucket(clientKey, bucket)
     }
 
     refillTokens(bucket, limit, windowMs)

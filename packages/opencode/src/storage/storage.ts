@@ -137,6 +137,7 @@ export namespace Storage {
   export async function read<T>(key: string[]) {
     const dir = await state().then((x) => x.dir)
     const target = path.join(dir, ...key) + ".json"
+    // Use file-specific read lock
     using _ = await Lock.read(target)
     return Bun.file(target).json() as Promise<T>
   }
@@ -144,7 +145,8 @@ export namespace Storage {
   export async function update<T>(key: string[], fn: (draft: T) => void) {
     const dir = await state().then((x) => x.dir)
     const target = path.join(dir, ...key) + ".json"
-    using _ = await Lock.write("storage")
+    // FIXED: Use file-specific write lock instead of global "storage" lock
+    using _ = await Lock.write(target)
     const content = await Bun.file(target).json()
     fn(content)
     await Bun.write(target, JSON.stringify(content, null, 2))
@@ -154,7 +156,8 @@ export namespace Storage {
   export async function write<T>(key: string[], content: T) {
     const dir = await state().then((x) => x.dir)
     const target = path.join(dir, ...key) + ".json"
-    using _ = await Lock.write("storage")
+    // FIXED: Use file-specific write lock instead of global "storage" lock
+    using _ = await Lock.write(target)
     await Bun.write(target, JSON.stringify(content, null, 2))
   }
 
@@ -173,5 +176,71 @@ export namespace Storage {
     } catch {
       return []
     }
+  }
+
+  /**
+   * Transaction support for atomic multi-file operations
+   */
+  export class Transaction {
+    private operations: Array<{ type: "write" | "remove"; key: string[]; content?: any }> = []
+    private locks: Disposable[] = []
+    private committed = false
+
+    async write<T>(key: string[], content: T) {
+      if (this.committed) throw new Error("Transaction already committed")
+      this.operations.push({ type: "write", key, content })
+    }
+
+    async remove(key: string[]) {
+      if (this.committed) throw new Error("Transaction already committed")
+      this.operations.push({ type: "remove", key })
+    }
+
+    async commit() {
+      if (this.committed) throw new Error("Transaction already committed")
+      this.committed = true
+
+      const dir = await state().then((x) => x.dir)
+
+      try {
+        // Acquire all locks first (sorted to prevent deadlocks)
+        const lockKeys = this.operations
+          .map((op) => path.join(dir, ...op.key) + ".json")
+          .sort()
+          .filter((key, index, arr) => arr.indexOf(key) === index) // Unique
+
+        for (const key of lockKeys) {
+          const lock = await Lock.write(key)
+          this.locks.push(lock)
+        }
+
+        // Execute all operations
+        for (const op of this.operations) {
+          const target = path.join(dir, ...op.key) + ".json"
+          if (op.type === "write") {
+            await Bun.write(target, JSON.stringify(op.content, null, 2))
+          } else if (op.type === "remove") {
+            await fs.unlink(target).catch(() => {})
+          }
+        }
+      } finally {
+        // Release all locks
+        for (const lock of this.locks) {
+          lock[Symbol.dispose]()
+        }
+      }
+    }
+
+    async rollback() {
+      // Just release locks without executing operations
+      for (const lock of this.locks) {
+        lock[Symbol.dispose]()
+      }
+      this.operations = []
+    }
+  }
+
+  export function transaction() {
+    return new Transaction()
   }
 }

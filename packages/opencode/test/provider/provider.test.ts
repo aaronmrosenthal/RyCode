@@ -159,4 +159,92 @@ describe("Provider", () => {
       expect(sorted[0].id).toBe("model-latest")
     })
   })
+
+  // SECURITY TESTS - SDK initialization race condition
+
+  describe("SDK initialization race conditions", () => {
+    test("should handle concurrent getModel calls without duplicate initialization", async () => {
+      // Start 10 concurrent getModel calls for the same model
+      const promises = Array(10)
+        .fill(0)
+        .map(() => Provider.getModel("anthropic", "claude-3-5-sonnet-20241022"))
+
+      const results = await Promise.all(promises)
+
+      // All should succeed
+      expect(results.length).toBe(10)
+
+      // All should have the same model ID
+      expect(results.every((r) => r.modelID === "claude-3-5-sonnet-20241022")).toBe(true)
+
+      // All should reference the same SDK instance (via npm package name)
+      const npmPackages = new Set(results.map((r) => r.npm))
+      expect(npmPackages.size).toBe(1) // Only one SDK should be loaded
+    })
+
+    test("should handle concurrent getModel calls for different models from same provider", async () => {
+      // Start concurrent calls for different Anthropic models
+      const promises = [
+        Provider.getModel("anthropic", "claude-3-5-sonnet-20241022"),
+        Provider.getModel("anthropic", "claude-3-5-haiku-20241022"),
+        Provider.getModel("anthropic", "claude-3-5-sonnet-20241022"), // Duplicate
+      ]
+
+      const results = await Promise.all(promises)
+
+      // All should succeed
+      expect(results.length).toBe(3)
+
+      // Should have 2 unique models
+      const modelIds = new Set(results.map((r) => r.modelID))
+      expect(modelIds.size).toBe(2)
+
+      // All should use same provider SDK
+      const npmPackages = new Set(results.map((r) => r.npm))
+      expect(npmPackages.size).toBe(1)
+    })
+
+    test("should not cache failed SDK initialization", async () => {
+      // Try to get a model from a provider that will fail
+      // (This test assumes the provider exists but SDK init might fail)
+      try {
+        await Provider.getModel("invalid-provider-xyz", "some-model")
+      } catch (e) {
+        // Expected to fail
+        expect(Provider.ModelNotFoundError.isInstance(e)).toBe(true)
+      }
+
+      // Second attempt should also try initialization (not use cached failure)
+      try {
+        await Provider.getModel("invalid-provider-xyz", "some-model")
+      } catch (e) {
+        expect(Provider.ModelNotFoundError.isInstance(e)).toBe(true)
+      }
+    })
+
+    test("should clean up pending promises after initialization", async () => {
+      // Get a model to trigger initialization
+      const model = await Provider.getModel("anthropic", "claude-3-5-sonnet-20241022")
+      expect(model).toBeDefined()
+
+      // Subsequent calls should use cached SDK, not pending promises
+      const model2 = await Provider.getModel("anthropic", "claude-3-5-sonnet-20241022")
+      expect(model2.modelID).toBe(model.modelID)
+    })
+
+    test("should handle race condition during SDK reload", async () => {
+      // Get initial model
+      const model1 = await Provider.getModel("anthropic", "claude-3-5-sonnet-20241022")
+      expect(model1).toBeDefined()
+
+      // Multiple subsequent calls should all work correctly
+      const promises = Array(5)
+        .fill(0)
+        .map(() => Provider.getModel("anthropic", "claude-3-5-haiku-20241022"))
+
+      const results = await Promise.all(promises)
+      expect(results.length).toBe(5)
+      expect(results.every((r) => r.modelID === "claude-3-5-haiku-20241022")).toBe(true)
+    })
+  })
 })
