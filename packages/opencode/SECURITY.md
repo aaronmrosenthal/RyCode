@@ -186,12 +186,14 @@ See [PLUGIN_SECURITY.md](./PLUGIN_SECURITY.md) for complete documentation.
 
 ### Planned Improvements
 
-- [ ] Process-level plugin sandboxing using worker threads
+- [x] **Process-level plugin sandboxing using worker threads** ✅ **IMPLEMENTED** (October 2025)
 - [ ] Automated CVE scanning for plugin dependencies
 - [x] **GPG signature verification for plugins** ✅ **IMPLEMENTED** (October 2025)
 - [x] **Plugin registry with verified hashes** ✅ **IMPLEMENTED** (October 2025)
 - [ ] Rate limiting for API requests
 - [ ] Network request filtering and monitoring
+
+**Progress: 3 of 6 completed (50%)**
 
 ---
 
@@ -266,10 +268,12 @@ Add researchers who responsibly disclose vulnerabilities:
 
 ### Documentation
 
-- **[Plugin Security Guide](./PLUGIN_SECURITY.md)** - Complete plugin security documentation
-- **[Plugin Registry](./PLUGIN_REGISTRY.md)** - Plugin registry and verification system
-- **[Plugin Signatures](./PLUGIN_SIGNATURES.md)** - GPG and crypto signature verification
-- **[Security Assessment](./SECURITY_ASSESSMENT.md)** - Comprehensive security audit report
+- **[Security Guide](./SECURITY_GUIDE.md)** - Complete user-facing security guide
+- **[Plugin Security](./PLUGIN_SECURITY.md)** - Plugin security system overview
+- **[Plugin Registry](./PLUGIN_REGISTRY.md)** - Hash verification and discovery
+- **[Plugin Signatures](./PLUGIN_SIGNATURES.md)** - Cryptographic signatures (GPG/RSA)
+- **[Plugin Sandboxing](./PLUGIN_SANDBOXING.md)** - Worker thread isolation
+- **[Security Assessment](./SECURITY_ASSESSMENT.md)** - Security audit report
 - **[Plugin Implementation](./PLUGIN_SECURITY_IMPLEMENTATION.md)** - Technical details
 
 ### External Resources

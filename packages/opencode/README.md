@@ -256,12 +256,17 @@ Step 2/3 [████████████████░░░░░░░�
 
 ### Comprehensive Guides
 
+- **[Security Guide](./SECURITY_GUIDE.md)** - ⭐ Complete security guide (START HERE)
 - **[Clickable Links Guide](./CLICKABLE_LINKS.md)** - Complete OSC 8 implementation
 - **[TUI Enhancements](./TUI_ENHANCEMENTS.md)** - All 14 components documented
 - **[Installer Experience](./INSTALLER_EXPERIENCE.md)** - Professional onboarding flow
+
+### Security Documentation
+
 - **[Plugin Security](./PLUGIN_SECURITY.md)** - Enterprise-grade plugin security
 - **[Plugin Registry](./PLUGIN_REGISTRY.md)** - Verified plugin registry system
 - **[Plugin Signatures](./PLUGIN_SIGNATURES.md)** - GPG and crypto signature verification
+- **[Plugin Sandboxing](./PLUGIN_SANDBOXING.md)** - Worker thread isolation
 
 ### Component Examples
 
