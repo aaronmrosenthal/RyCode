@@ -51,7 +51,8 @@ if (image) {
         />
         <Image src={lightImage} {...imageAttrs} class="dark:sl-hidden" />
       </div>
-      <h1>The AI coding agent built for the terminal.</h1>
+      <h1>The AI-Generated IDE</h1>
+      <p class="tagline">Built with <a href="https://toolkit-cli.com" target="_blank">toolkit-cli</a> - Where LLMs Collaborate, Not Compete</p>
     </section>
 
     <section class="cta">
@@ -59,9 +60,9 @@ if (image) {
         <a href="/docs">Get Started</a>
       </div>
       <div class="col2">
-      <button class="command" data-command={`${command} ${protocol}${url} ${bash}`}>
+      <button class="command" data-command="npm i -g rycode@latest">
           <code>
-            <span>{command}&nbsp;</span><span class="protocol">{protocol}</span><span class="highlight">{url}</span>&nbsp;{bash}
+            <span>npm i -g</span>&nbsp;<span class="highlight">rycode@latest</span>
           </code>
           <span class="copy">
             <CopyIcon />
@@ -73,21 +74,21 @@ if (image) {
 
     <section class="content">
       <ul>
-        <li><b>Native TUI</b>: A responsive, native, themeable terminal UI.</li>
-        <li><b>LSP enabled</b>: Automatically loads the right LSPs for the LLM.</li>
-        <li><b>Multi-session</b>: Start multiple agents in parallel on the same project.</li>
-        <li><b>Shareable links</b>: Share a link to any sessions for reference or to debug.</li>
-        <li><b>Claude Pro</b>: Log in with Anthropic to use your Claude Pro or Max account.</li>
-        <li><b>Use any model</b>: Supports 75+ LLM providers through <a href="https://models.dev">Models.dev</a>, including local models.</li>
+        <li><b>Multi-Agent AI</b>: Claude, Gemini, Codex, and Qwen collaborate on your code.</li>
+        <li><b>26 Slash Commands</b>: Powered by toolkit-cli for streamlined workflows.</li>
+        <li><b>Spec-Context Preservation</b>: Maintains project intent across all changes.</li>
+        <li><b>Provider-Agnostic</b>: Not locked to any single AI vendor.</li>
+        <li><b>Terminal-First</b>: Built by developers, for developers.</li>
+        <li><b>Collective Intelligence</b>: Multiple specialized AI models working together.</li>
       </ul>
     </section>
 
     <section class="alternatives">
       <div class="col1">
         <h3>npm</h3>
-        <button class="command" data-command="npm install -g opencode-ai">
+        <button class="command" data-command="npm install -g rycode@latest">
           <code>
-            <span>npm install -g</span> <span class="highlight">opencode-ai</span>
+            <span>npm install -g</span> <span class="highlight">rycode@latest</span>
           </code>
           <span class="copy">
             <CopyIcon />
@@ -97,9 +98,9 @@ if (image) {
       </div>
       <div class="col2">
         <h3>Bun</h3>
-        <button class="command" data-command="bun install -g opencode-ai">
+        <button class="command" data-command="bun install -g rycode@latest">
           <code>
-            <span>bun install -g</span> <span class="highlight">opencode-ai</span>
+            <span>bun install -g</span> <span class="highlight">rycode@latest</span>
           </code>
           <span class="copy">
             <CopyIcon />
@@ -109,9 +110,9 @@ if (image) {
       </div>
       <div class="col3">
         <h3>Homebrew</h3>
-        <button class="command" data-command="brew install sst/tap/opencode">
+        <button class="command" data-command="brew install aaronmrosenthal/tap/rycode">
           <code>
-            <span>brew install</span> <span class="highlight">sst/tap/opencode</span>
+            <span>brew install</span> <span class="highlight">aaronmrosenthal/tap/rycode</span>
           </code>
           <span class="copy">
             <CopyIcon />
@@ -121,9 +122,9 @@ if (image) {
       </div>
       <div class="col4">
         <h3>Paru</h3>
-        <button class="command" data-command="paru -S opencode-bin">
+        <button class="command" data-command="paru -S rycode-bin">
           <code>
-            <span>paru -S</span> <span class="highlight">opencode-bin</span>
+            <span>paru -S</span> <span class="highlight">rycode-bin</span>
           </code>
           <span class="copy">
             <CopyIcon />
@@ -136,26 +137,26 @@ if (image) {
     <section class="images">
       <div class="left">
         <figure>
-          <figcaption>opencode TUI with the tokyonight theme</figcaption>
+          <figcaption>RyCode TUI with multi-agent collaboration</figcaption>
           <a href="/docs/cli">
-            <Image src={TuiScreenshot} alt="opencode TUI with the tokyonight theme" />
+            <Image src={TuiScreenshot} alt="RyCode TUI with multi-agent collaboration" />
           </a>
         </figure>
       </div>
       <div class="right">
         <div class="row1">
           <figure>
-            <figcaption>opencode in VS Code</figcaption>
+            <figcaption>RyCode in VS Code</figcaption>
             <a href="/docs/ide">
-              <Image src={VscodeScreenshot} alt="opencode in VS Code" />
+              <Image src={VscodeScreenshot} alt="RyCode in VS Code" />
             </a>
           </figure>
         </div>
         <div class="row2">
           <figure>
-            <figcaption>opencode in GitHub</figcaption>
+            <figcaption>RyCode in GitHub</figcaption>
             <a href="/docs/github">
-              <Image src={GithubScreenshot} alt="opencode in GitHub" />
+              <Image src={GithubScreenshot} alt="RyCode in GitHub" />
             </a>
           </figure>
         </div>
@@ -167,10 +168,10 @@ if (image) {
         <a href={github.href} target="_blank" rel="noopener noreferrer">GitHub</a>
       </div>
       <div class="col2">
-        <a href={discord.href} target="_blank" rel="noopener noreferrer">Discord</a>
+        <a href="https://toolkit-cli.com" target="_blank" rel="noopener noreferrer">Built with toolkit-cli</a>
       </div>
       <div class="col3">
-      <span>&copy;2025 <a href="https://anoma.ly" target="_blank" rel="noopener noreferrer">Anomaly Innovations</a></span>
+      <span>&copy;2025 <a href="https://github.com/aaronmrosenthal" target="_blank" rel="noopener noreferrer">Aaron Rosenthal</a></span>
       </div>
     </section>
 </div>
@@ -202,6 +203,26 @@ section.top {
     font-size: var(--heading-font-size);
     line-height: 1.25;
     text-transform: uppercase;
+    background: linear-gradient(90deg, #7aa2f7, #9ece6a, #00ffff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .tagline {
+    margin-top: 0.75rem;
+    font-size: 1.125rem;
+    color: var(--sl-color-text-secondary);
+
+    a {
+      color: #7aa2f7;
+      text-decoration: none;
+      font-weight: 600;
+
+      &:hover {
+        color: #9ece6a;
+      }
+    }
   }
 
   img {
@@ -282,8 +303,8 @@ section.cta {
       }
     }
     code .highlight {
-      color: var(--sl-color-text);
-      font-weight: 500;
+      color: #9ece6a;
+      font-weight: 600;
     }
 
     .copy {
@@ -577,8 +598,8 @@ section.alternatives {
     }
 
     code .highlight {
-      color: var(--sl-color-text);
-      font-weight: 500;
+      color: #9ece6a;
+      font-weight: 600;
     }
 
     .copy {
