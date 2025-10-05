@@ -536,6 +536,35 @@ export namespace Config {
         })
         .optional(),
       tools: z.record(z.string(), z.boolean()).optional(),
+      server: z
+        .object({
+          require_auth: z
+            .boolean()
+            .optional()
+            .default(false)
+            .describe("Enable API key authentication for server endpoints"),
+          api_keys: z
+            .array(z.string())
+            .optional()
+            .default([])
+            .describe("List of valid API keys for authentication"),
+          rate_limit: z
+            .object({
+              enabled: z.boolean().optional().default(true).describe("Enable rate limiting"),
+              limit: z.number().int().positive().optional().default(100).describe("Maximum requests per window"),
+              window_ms: z
+                .number()
+                .int()
+                .positive()
+                .optional()
+                .default(60_000)
+                .describe("Rate limit window in milliseconds"),
+            })
+            .optional()
+            .describe("Rate limiting configuration"),
+        })
+        .optional()
+        .describe("Server security and performance settings"),
       experimental: z
         .object({
           hook: z

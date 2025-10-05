@@ -13,6 +13,7 @@ import { ModelsDev } from "../provider/models"
 import { Ripgrep } from "../file/ripgrep"
 import { Config } from "../config/config"
 import { File } from "../file"
+import { FileSecurity } from "../file/security"
 import { LSP } from "../lsp"
 import { MessageV2 } from "../session/message-v2"
 import { callTui, TuiRoute } from "./tui"
@@ -30,6 +31,8 @@ import { SessionCompaction } from "../session/compaction"
 import { SessionRevert } from "../session/revert"
 import { lazy } from "../util/lazy"
 import { InstanceBootstrap } from "../project/bootstrap"
+import { AuthMiddleware } from "./middleware/auth"
+import { RateLimitMiddleware } from "./middleware/rate-limit"
 
 const ERRORS = {
   400: {
@@ -43,6 +46,44 @@ const ERRORS = {
             })
             .meta({
               ref: "Error",
+            }),
+        ),
+      },
+    },
+  },
+  401: {
+    description: "Unauthorized",
+    content: {
+      "application/json": {
+        schema: resolver(
+          z
+            .object({
+              data: z.object({
+                message: z.string(),
+              }),
+            })
+            .meta({
+              ref: "UnauthorizedError",
+            }),
+        ),
+      },
+    },
+  },
+  429: {
+    description: "Rate limit exceeded",
+    content: {
+      "application/json": {
+        schema: resolver(
+          z
+            .object({
+              data: z.object({
+                message: z.string(),
+                retryAfter: z.number(),
+                limit: z.number(),
+              }),
+            })
+            .meta({
+              ref: "RateLimitError",
             }),
         ),
       },
@@ -65,8 +106,20 @@ export namespace Server {
           error: err,
         })
         if (err instanceof NamedError) {
+          let status = 400
+          if (AuthMiddleware.UnauthorizedError.isInstance(err)) {
+            status = 401
+          }
+          if (RateLimitMiddleware.RateLimitError.isInstance(err)) {
+            status = 429
+            const data = err.data as { retryAfter: number }
+            c.header("Retry-After", data.retryAfter.toString())
+          }
+          if (FileSecurity.PathTraversalError.isInstance(err) || FileSecurity.SensitiveFileError.isInstance(err)) {
+            status = 403
+          }
           return c.json(err.toObject(), {
-            status: 400,
+            status,
           })
         }
         return c.json(new NamedError.Unknown({ message: err.toString() }).toObject(), {
@@ -100,6 +153,12 @@ export namespace Server {
         })
       })
       .use(cors())
+      .use(async (c, next) => {
+        return AuthMiddleware.middleware(c, next)
+      })
+      .use(async (c, next) => {
+        return RateLimitMiddleware.middleware(c, next)
+      })
       .get(
         "/doc",
         openAPIRouteHandler(app, {
@@ -1014,8 +1073,9 @@ export namespace Server {
           }),
         ),
         async (c) => {
-          const path = c.req.valid("query").path
-          const content = await File.list(path)
+          const requestedPath = c.req.valid("query").path
+          const validatedPath = FileSecurity.validatePath(requestedPath)
+          const content = await File.list(validatedPath)
           return c.json(content)
         },
       )
@@ -1033,6 +1093,25 @@ export namespace Server {
                 },
               },
             },
+            403: {
+              description: "Forbidden - path validation failed",
+              content: {
+                "application/json": {
+                  schema: resolver(
+                    z
+                      .object({
+                        data: z.object({
+                          requestedPath: z.string(),
+                          message: z.string(),
+                        }),
+                      })
+                      .meta({
+                        ref: "PathValidationError",
+                      }),
+                  ),
+                },
+              },
+            },
           },
         }),
         validator(
@@ -1042,8 +1121,9 @@ export namespace Server {
           }),
         ),
         async (c) => {
-          const path = c.req.valid("query").path
-          const content = await File.read(path)
+          const requestedPath = c.req.valid("query").path
+          const validatedPath = FileSecurity.validatePath(requestedPath)
+          const content = await File.read(validatedPath)
           return c.json(content)
         },
       )
