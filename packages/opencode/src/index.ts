@@ -34,6 +34,11 @@ import {
   PluginRegistrySyncCommand,
   PluginRegistryStatsCommand,
 } from "./cli/cmd/plugin-registry"
+import {
+  PluginSignCommand,
+  PluginVerifySignatureCommand,
+  PluginKeygenCommand,
+} from "./cli/cmd/plugin-signature"
 
 const cancel = new AbortController()
 
@@ -107,6 +112,9 @@ const cli = yargs(hideBin(process.argv))
   .command(PluginRegistrySearchCommand)
   .command(PluginRegistrySyncCommand)
   .command(PluginRegistryStatsCommand)
+  .command(PluginSignCommand)
+  .command(PluginVerifySignatureCommand)
+  .command(PluginKeygenCommand)
   .fail((msg) => {
     if (
       msg.startsWith("Unknown argument") ||

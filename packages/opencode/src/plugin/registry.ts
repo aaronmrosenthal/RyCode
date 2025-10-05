@@ -10,6 +10,7 @@ import { NamedError } from "../util/error"
 import { Log } from "../util/log"
 import path from "path"
 import { existsSync } from "fs"
+import { PluginSignature } from "./signature"
 
 export namespace PluginRegistry {
   const log = Log.create({ service: "plugin.registry" })
@@ -49,6 +50,8 @@ export namespace PluginRegistry {
     timestamp: z.number(),
     /** Capabilities required */
     capabilities: z.record(z.string(), z.boolean()).optional(),
+    /** Optional: Cryptographic signature */
+    signature: PluginSignature.Signature.optional(),
   })
   export type RegistryEntry = z.infer<typeof RegistryEntry>
 
@@ -339,6 +342,71 @@ export namespace PluginRegistry {
     })
 
     return { verified, entry }
+  }
+
+  /**
+   * Verify plugin with both hash and signature
+   */
+  export async function verifyComplete(
+    name: string,
+    version: string,
+    filePath: string,
+    config?: RegistryConfig
+  ): Promise<{
+    hashVerified: boolean
+    signatureVerified: boolean
+    entry: RegistryEntry | null
+    signatureError?: string
+  }> {
+    const { PluginSecurity } = await import("./security")
+
+    // Find entry
+    const entry = await find(name, version, config)
+
+    if (!entry) {
+      return {
+        hashVerified: false,
+        signatureVerified: false,
+        entry: null,
+      }
+    }
+
+    // Verify hash
+    const actualHash = await PluginSecurity.generateHash(filePath)
+    const hashVerified = entry.hash === actualHash
+
+    // Verify signature if present
+    let signatureVerified = false
+    let signatureError: string | undefined
+
+    if (entry.signature) {
+      const sigResult = await PluginSignature.verifyCryptoSignature(
+        filePath,
+        entry.signature,
+        entry.signature.publicKey || ""
+      )
+
+      signatureVerified = sigResult.valid
+      signatureError = sigResult.error
+
+      log.info("complete verification", {
+        name,
+        version,
+        hashVerified,
+        signatureVerified,
+      })
+    } else {
+      // No signature in entry
+      signatureVerified = true // Don't fail if signature is optional
+      log.debug("no signature in entry", { name, version })
+    }
+
+    return {
+      hashVerified,
+      signatureVerified,
+      entry,
+      signatureError,
+    }
   }
 
   /**
