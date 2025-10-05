@@ -171,6 +171,7 @@
         "minimatch": "10.0.3",
         "open": "10.1.2",
         "remeda": "catalog:",
+        "semver": "7.7.2",
         "tree-sitter": "0.22.4",
         "tree-sitter-bash": "0.23.3",
         "turndown": "7.2.0",
