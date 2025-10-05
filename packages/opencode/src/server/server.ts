@@ -33,6 +33,7 @@ import { lazy } from "../util/lazy"
 import { InstanceBootstrap } from "../project/bootstrap"
 import { AuthMiddleware } from "./middleware/auth"
 import { RateLimitMiddleware } from "./middleware/rate-limit"
+import { SecurityHeadersMiddleware } from "./middleware/security-headers"
 
 const ERRORS = {
   400: {
@@ -106,7 +107,7 @@ export namespace Server {
           error: err,
         })
         if (err instanceof NamedError) {
-          let status = 400
+          let status: 400 | 401 | 403 | 413 | 429 = 400
           if (AuthMiddleware.UnauthorizedError.isInstance(err)) {
             status = 401
           }
@@ -117,6 +118,9 @@ export namespace Server {
           }
           if (FileSecurity.PathTraversalError.isInstance(err) || FileSecurity.SensitiveFileError.isInstance(err)) {
             status = 403
+          }
+          if (SecurityHeadersMiddleware.RequestTooLargeError.isInstance(err)) {
+            status = 413
           }
           return c.json(err.toObject(), {
             status,
@@ -153,6 +157,7 @@ export namespace Server {
         })
       })
       .use(cors())
+      .use((c, next) => SecurityHeadersMiddleware.middleware(c, next))
       .use((c, next) => AuthMiddleware.middleware(c, next))
       .use((c, next) => RateLimitMiddleware.middleware(c, next))
       .get(

@@ -1,4 +1,4 @@
-import { Context } from "hono"
+import type { Context } from "hono"
 import { NamedError } from "../../util/error"
 import z from "zod/v4"
 import { Log } from "../../util/log"

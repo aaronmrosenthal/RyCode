@@ -1,4 +1,4 @@
-import { Context } from "hono"
+import type { Context } from "hono"
 import { Config } from "../../config/config"
 import { NamedError } from "../../util/error"
 import z from "zod/v4"
@@ -99,13 +99,13 @@ export namespace AuthMiddleware {
       }
     }
 
-    // Check API key
-    const apiKey = c.req.header(HEADER_NAME) || c.req.query("api_key")
+    // Check API key (header only for security)
+    const apiKey = c.req.header(HEADER_NAME)
 
     if (!apiKey) {
       log.warn("missing api key", { path: c.req.path })
       throw new UnauthorizedError({
-        message: `Missing API key. Provide ${HEADER_NAME} header or api_key query parameter.`,
+        message: `Missing API key. Provide ${HEADER_NAME} header (query parameters not supported for security reasons).`,
       })
     }
 
