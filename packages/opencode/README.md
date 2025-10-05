@@ -261,6 +261,7 @@ Step 2/3 [████████████████░░░░░░░�
 - **[Installer Experience](./INSTALLER_EXPERIENCE.md)** - Professional onboarding flow
 - **[Plugin Security](./PLUGIN_SECURITY.md)** - Enterprise-grade plugin security
 - **[Plugin Registry](./PLUGIN_REGISTRY.md)** - Verified plugin registry system
+- **[Plugin Signatures](./PLUGIN_SIGNATURES.md)** - GPG and crypto signature verification
 
 ### Component Examples
 

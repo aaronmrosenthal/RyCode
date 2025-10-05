@@ -188,7 +188,7 @@ See [PLUGIN_SECURITY.md](./PLUGIN_SECURITY.md) for complete documentation.
 
 - [ ] Process-level plugin sandboxing using worker threads
 - [ ] Automated CVE scanning for plugin dependencies
-- [ ] GPG signature verification for plugins
+- [x] **GPG signature verification for plugins** ✅ **IMPLEMENTED** (October 2025)
 - [x] **Plugin registry with verified hashes** ✅ **IMPLEMENTED** (October 2025)
 - [ ] Rate limiting for API requests
 - [ ] Network request filtering and monitoring
@@ -268,6 +268,7 @@ Add researchers who responsibly disclose vulnerabilities:
 
 - **[Plugin Security Guide](./PLUGIN_SECURITY.md)** - Complete plugin security documentation
 - **[Plugin Registry](./PLUGIN_REGISTRY.md)** - Plugin registry and verification system
+- **[Plugin Signatures](./PLUGIN_SIGNATURES.md)** - GPG and crypto signature verification
 - **[Security Assessment](./SECURITY_ASSESSMENT.md)** - Comprehensive security audit report
 - **[Plugin Implementation](./PLUGIN_SECURITY_IMPLEMENTATION.md)** - Technical details
 
