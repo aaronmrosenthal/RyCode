@@ -80,6 +80,11 @@ demo: build
 	@echo "Running demo..."
 	$(BUILD_DIR)/$(BINARY_NAME) --demo
 
+# Run chat interface
+chat: build
+	@echo "Running chat interface..."
+	$(BUILD_DIR)/$(BINARY_NAME) --chat
+
 # Show help
 help:
 	@echo "Available targets:"
@@ -96,5 +101,6 @@ help:
 	@echo "  deps               - Download dependencies"
 	@echo "  verify             - Verify dependencies"
 	@echo "  tidy               - Tidy dependencies"
-	@echo "  demo               - Run demo mode"
+	@echo "  demo               - Run theme demo mode"
+	@echo "  chat               - Run interactive chat interface"
 	@echo "  help               - Show this help"
