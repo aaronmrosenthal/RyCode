@@ -5,9 +5,9 @@
  * Shows how to use the new TUI components in a practical workflow
  */
 
-import { UI } from "./src/cli/ui"
-import { EnhancedTUI } from "./src/cli/tui-enhanced"
-import { CyberpunkPrompts } from "./src/cli/theme"
+import { UI } from "../../src/cli/ui"
+import { EnhancedTUI } from "../../src/cli/tui-enhanced"
+import { CyberpunkPrompts } from "../../src/cli/theme"
 
 async function enhancedWhatsNext() {
   UI.empty()

@@ -5,7 +5,7 @@
  * Multiple killer logo variants for RyCode
  */
 
-import { UI } from "./src/cli/ui"
+import { UI } from "../../src/cli/ui"
 
 // Logo Variant 1: Bold Blocky (Classic)
 const RYCODE_CLASSIC = [

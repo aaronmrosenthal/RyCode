@@ -4,8 +4,8 @@
  * Test clickable links - matches the user's "What's Next?" scenario
  */
 
-import { whatsNext } from "./src/cli/whats-next"
-import { UI } from "./src/cli/ui"
+import { whatsNext } from "../../src/cli/whats-next"
+import { UI } from "../../src/cli/ui"
 
 console.log("\n" + "=".repeat(70))
 console.log(UI.glow("🧪 TESTING CLICKABLE LINKS", UI.Style.MATRIX_GREEN))

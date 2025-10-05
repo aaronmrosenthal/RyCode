@@ -5,9 +5,9 @@
  * Showcases all the new verbose and interactive TUI components
  */
 
-import { UI } from "./src/cli/ui"
-import { EnhancedTUI } from "./src/cli/tui-enhanced"
-import { CyberpunkPrompts } from "./src/cli/theme"
+import { UI } from "../../src/cli/ui"
+import { EnhancedTUI } from "../../src/cli/tui-enhanced"
+import { CyberpunkPrompts } from "../../src/cli/theme"
 
 async function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))

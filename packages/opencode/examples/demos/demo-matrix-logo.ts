@@ -5,7 +5,7 @@
  * Showcase the Matrix digital rain aesthetic
  */
 
-import { UI } from "./src/cli/ui"
+import { UI } from "../../src/cli/ui"
 
 async function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))

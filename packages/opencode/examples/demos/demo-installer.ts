@@ -5,9 +5,9 @@
  * Showcases the professional onboarding flow
  */
 
-import { UI } from "./src/cli/ui"
-import { InstallerMessages } from "./src/cli/installer-messages"
-import { EnhancedTUI } from "./src/cli/tui-enhanced"
+import { UI } from "../../src/cli/ui"
+import { InstallerMessages } from "../../src/cli/installer-messages"
+import { EnhancedTUI } from "../../src/cli/tui-enhanced"
 
 async function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))

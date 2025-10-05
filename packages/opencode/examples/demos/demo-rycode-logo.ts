@@ -5,7 +5,7 @@
  * Showcase the new killer RyCode ASCII art
  */
 
-import { UI } from "./src/cli/ui"
+import { UI } from "../../src/cli/ui"
 
 async function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
