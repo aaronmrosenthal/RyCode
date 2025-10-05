@@ -94,6 +94,21 @@ See [PLUGIN_SECURITY.md](./PLUGIN_SECURITY.md) for complete documentation.
    }
    ```
 
+2. **Use CLI Commands for Plugin Management**
+   ```bash
+   # Check if a plugin is trusted
+   rycode plugin:check my-plugin 1.0.0
+
+   # Generate hash for a plugin
+   rycode plugin:hash /path/to/plugin.js
+
+   # Verify plugin integrity
+   rycode plugin:verify /path/to/plugin.js --hash <expected-hash>
+
+   # View security audit log
+   rycode plugin:audit
+   ```
+
 2. **Pin Plugin Versions**
    ```jsonc
    {

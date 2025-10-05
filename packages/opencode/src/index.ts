@@ -20,6 +20,12 @@ import { GithubCommand } from "./cli/cmd/github"
 import { ExportCommand } from "./cli/cmd/export"
 import { AttachCommand } from "./cli/cmd/attach"
 import { DemoUICommand } from "./cli/cmd/demo-ui"
+import {
+  PluginHashCommand,
+  PluginAuditCommand,
+  PluginCheckCommand,
+  PluginVerifyCommand,
+} from "./cli/cmd/plugin"
 
 const cancel = new AbortController()
 
@@ -83,6 +89,10 @@ const cli = yargs(hideBin(process.argv))
   .command(ExportCommand)
   .command(GithubCommand)
   .command(DemoUICommand)
+  .command(PluginHashCommand)
+  .command(PluginAuditCommand)
+  .command(PluginCheckCommand)
+  .command(PluginVerifyCommand)
   .fail((msg) => {
     if (
       msg.startsWith("Unknown argument") ||

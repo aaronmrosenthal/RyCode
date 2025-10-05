@@ -1295,6 +1295,149 @@ namespace PluginSecurity {
 
 ---
 
+## CLI Commands
+
+RyCode provides CLI commands for managing plugin security:
+
+### plugin:hash
+
+Generate SHA-256 hash for a plugin file.
+
+```bash
+rycode plugin:hash /path/to/plugin.js
+
+# With JSON output
+rycode plugin:hash /path/to/plugin.js --json
+```
+
+**Output:**
+```
+Plugin Hash Generated
+
+File:  /path/to/plugin.js
+Hash:  abc123...
+
+Add to your .rycode.json:
+{
+  "plugin_security": {
+    "trustedPlugins": [{
+      "name": "plugin",
+      "hash": "abc123..."
+    }]
+  }
+}
+```
+
+### plugin:check
+
+Check if a plugin is trusted and view its capabilities.
+
+```bash
+rycode plugin:check opencode-copilot-auth 0.0.3
+
+# With JSON output
+rycode plugin:check opencode-copilot-auth 0.0.3 --json
+```
+
+**Output:**
+```
+Plugin Trust Status
+
+  ✓ TRUSTED
+
+  Plugin:   opencode-copilot-auth
+  Version:  0.0.3
+  Official: Yes
+
+Capabilities:
+
+  ✓ fileSystemRead
+  ✗ fileSystemWrite
+  ✓ network
+  ✗ shell
+  ✓ env
+  ✓ projectMetadata
+  ✓ aiClient
+```
+
+### plugin:verify
+
+Verify plugin integrity using SHA-256 hash.
+
+```bash
+rycode plugin:verify /path/to/plugin.js --hash abc123...
+
+# With JSON output
+rycode plugin:verify /path/to/plugin.js --hash abc123... --json
+```
+
+**Output (Pass):**
+```
+Plugin Integrity Verification
+
+File:     /path/to/plugin.js
+Expected: abc123...
+Actual:   abc123...
+
+✓ Integrity check PASSED
+  Plugin has not been tampered with.
+```
+
+**Output (Fail):**
+```
+Plugin Integrity Verification
+
+File:     /path/to/plugin.js
+Expected: abc123...
+Actual:   def456...
+
+✗ Integrity check FAILED
+  Plugin may have been tampered with!
+
+⚠ DO NOT use this plugin.
+```
+
+### plugin:audit
+
+View security audit log.
+
+```bash
+rycode plugin:audit
+
+# Filter by action
+rycode plugin:audit --filter loaded
+rycode plugin:audit --filter denied
+
+# Limit results
+rycode plugin:audit --limit 10
+
+# JSON output
+rycode plugin:audit --json
+```
+
+**Output:**
+```
+Plugin Security Audit Log
+3 entries
+
+2025-10-05T16:30:00.000Z
+  ✓ opencode-copilot-auth@0.0.3
+  loaded
+  Capabilities: fileSystemRead, network, env, projectMetadata, aiClient
+
+2025-10-05T16:31:00.000Z
+  ✗ unknown-plugin@1.0.0
+  denied
+  Reason: not in allowlist
+
+2025-10-05T16:32:00.000Z
+  ✓ opencode-anthropic-auth@0.0.2
+  loaded
+  Capabilities: fileSystemRead, network, env, projectMetadata, aiClient
+```
+
+---
+
 ## Next Steps
 
 ### Immediate (Recommended)
