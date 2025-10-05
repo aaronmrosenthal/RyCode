@@ -1,4 +1,4 @@
-module github.com/sst/opencode-sdk-go
+module github.com/aaronmrosenthal/rycode-sdk-go
 
 go 1.21
 

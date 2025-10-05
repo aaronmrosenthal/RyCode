@@ -203,7 +203,7 @@ export const TuiCommand = cmd({
 
 /**
  * Get the correct command to run opencode CLI
- * In development: ["bun", "run", "packages/opencode/src/index.ts"]
+ * In development: ["bun", "run", "packages/rycode/src/index.ts"]
  * In production: ["/path/to/opencode"]
  */
 function getOpencodeCommand(): string[] {

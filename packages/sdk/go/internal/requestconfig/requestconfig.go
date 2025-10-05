@@ -18,11 +18,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sst/opencode-sdk-go/internal"
-	"github.com/sst/opencode-sdk-go/internal/apierror"
-	"github.com/sst/opencode-sdk-go/internal/apiform"
-	"github.com/sst/opencode-sdk-go/internal/apiquery"
-	"github.com/sst/opencode-sdk-go/internal/param"
+	"github.com/aaronmrosenthal/rycode-sdk-go/internal"
+	"github.com/aaronmrosenthal/rycode-sdk-go/internal/apierror"
+	"github.com/aaronmrosenthal/rycode-sdk-go/internal/apiform"
+	"github.com/aaronmrosenthal/rycode-sdk-go/internal/apiquery"
+	"github.com/aaronmrosenthal/rycode-sdk-go/internal/param"
 )
 
 func getDefaultHeaders() map[string]string {

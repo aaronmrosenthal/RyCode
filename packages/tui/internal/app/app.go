@@ -12,14 +12,14 @@ import (
 	"log/slog"
 
 	tea "github.com/charmbracelet/bubbletea/v2"
-	"github.com/sst/opencode-sdk-go"
-	"github.com/sst/opencode/internal/clipboard"
-	"github.com/sst/opencode/internal/commands"
-	"github.com/sst/opencode/internal/components/toast"
-	"github.com/sst/opencode/internal/id"
-	"github.com/sst/opencode/internal/styles"
-	"github.com/sst/opencode/internal/theme"
-	"github.com/sst/opencode/internal/util"
+	"github.com/aaronmrosenthal/rycode-sdk-go"
+	"github.com/aaronmrosenthal/rycode/internal/clipboard"
+	"github.com/aaronmrosenthal/rycode/internal/commands"
+	"github.com/aaronmrosenthal/rycode/internal/components/toast"
+	"github.com/aaronmrosenthal/rycode/internal/id"
+	"github.com/aaronmrosenthal/rycode/internal/styles"
+	"github.com/aaronmrosenthal/rycode/internal/theme"
+	"github.com/aaronmrosenthal/rycode/internal/util"
 )
 
 type Message struct {

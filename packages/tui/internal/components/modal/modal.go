@@ -4,9 +4,9 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss/v2"
-	"github.com/sst/opencode/internal/layout"
-	"github.com/sst/opencode/internal/styles"
-	"github.com/sst/opencode/internal/theme"
+	"github.com/aaronmrosenthal/rycode/internal/layout"
+	"github.com/aaronmrosenthal/rycode/internal/styles"
+	"github.com/aaronmrosenthal/rycode/internal/theme"
 )
 
 // CloseModalMsg is a message to signal that the active modal should be closed.

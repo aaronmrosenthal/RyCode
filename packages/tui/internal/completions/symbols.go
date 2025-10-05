@@ -6,10 +6,10 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/sst/opencode-sdk-go"
-	"github.com/sst/opencode/internal/app"
-	"github.com/sst/opencode/internal/styles"
-	"github.com/sst/opencode/internal/theme"
+	"github.com/aaronmrosenthal/rycode-sdk-go"
+	"github.com/aaronmrosenthal/rycode/internal/app"
+	"github.com/aaronmrosenthal/rycode/internal/styles"
+	"github.com/aaronmrosenthal/rycode/internal/theme"
 )
 
 type symbolsContextGroup struct {

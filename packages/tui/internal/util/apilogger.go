@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"sync"
 
-	opencode "github.com/sst/opencode-sdk-go"
+	opencode "github.com/aaronmrosenthal/rycode-sdk-go"
 )
 
 func sanitizeValue(val any) any {

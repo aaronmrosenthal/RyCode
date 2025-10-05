@@ -110,8 +110,8 @@ async function enhancedWhatsNext() {
     EnhancedTUI.collapsible(
       "A: Commit Changes",
       `Stage and commit all changes to version control\n` +
-        `  Modified: ${UI.fileLink("/Users/aaron/Code/RyCode/opencode/packages/opencode/src/cli/tui-enhanced.ts")}\n` +
-        `  Created: ${UI.fileLink("/Users/aaron/Code/RyCode/opencode/packages/opencode/TUI_ENHANCEMENTS.md")}`,
+        `  Modified: ${UI.fileLink("/Users/aaron/Code/RyCode/opencode/packages/rycode/src/cli/tui-enhanced.ts")}\n` +
+        `  Created: ${UI.fileLink("/Users/aaron/Code/RyCode/opencode/packages/rycode/TUI_ENHANCEMENTS.md")}`,
       true,
       { titleColor: UI.Style.CLAUDE_BLUE }
     )

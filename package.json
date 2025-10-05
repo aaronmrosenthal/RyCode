@@ -6,7 +6,7 @@
   "packageManager": "bun@1.2.21",
   "description": "The AI-Generated IDE - Built with toolkit-cli",
   "scripts": {
-    "dev": "bun run packages/opencode/src/index.ts",
+    "dev": "bun run packages/rycode/src/index.ts",
     "typecheck": "bun turbo typecheck",
     "prepare": "husky"
   },

@@ -1,5 +1,5 @@
 {
-  "name": "@opencode-ai/console-scripts",
+  "name": "@rycode-ai/console-scripts",
   "version": "0.14.1",
   "$schema": "https://json.schemastore.org/package.json",
   "private": true,
@@ -10,7 +10,7 @@
     "shell-prod": "sst shell --stage production -- bun tsx"
   },
   "dependencies": {
-    "@opencode-ai/console-core": "workspace:*",
+    "@rycode-ai/console-core": "workspace:*",
     "tsx": "4.20.5"
   },
   "devDependencies": {

@@ -5,8 +5,8 @@ import (
 
 	"github.com/charmbracelet/lipgloss/v2"
 	"github.com/charmbracelet/lipgloss/v2/compat"
-	"github.com/sst/opencode/internal/styles"
-	"github.com/sst/opencode/internal/theme"
+	"github.com/aaronmrosenthal/rycode/internal/styles"
+	"github.com/aaronmrosenthal/rycode/internal/theme"
 )
 
 type Direction int

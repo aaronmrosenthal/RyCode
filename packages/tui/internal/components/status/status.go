@@ -11,12 +11,12 @@ import (
 	"github.com/charmbracelet/lipgloss/v2"
 	"github.com/charmbracelet/lipgloss/v2/compat"
 	"github.com/fsnotify/fsnotify"
-	"github.com/sst/opencode/internal/app"
-	"github.com/sst/opencode/internal/commands"
-	"github.com/sst/opencode/internal/layout"
-	"github.com/sst/opencode/internal/styles"
-	"github.com/sst/opencode/internal/theme"
-	"github.com/sst/opencode/internal/util"
+	"github.com/aaronmrosenthal/rycode/internal/app"
+	"github.com/aaronmrosenthal/rycode/internal/commands"
+	"github.com/aaronmrosenthal/rycode/internal/layout"
+	"github.com/aaronmrosenthal/rycode/internal/styles"
+	"github.com/aaronmrosenthal/rycode/internal/theme"
+	"github.com/aaronmrosenthal/rycode/internal/util"
 )
 
 type GitBranchUpdatedMsg struct {

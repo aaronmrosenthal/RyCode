@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
-  "name": "@opencode-ai/sdk",
+  "name": "@rycode-ai/sdk",
   "version": "0.14.1",
   "type": "module",
   "scripts": {

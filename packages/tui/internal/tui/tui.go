@@ -15,21 +15,21 @@ import (
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/charmbracelet/lipgloss/v2"
 
-	"github.com/sst/opencode-sdk-go"
-	"github.com/sst/opencode/internal/api"
-	"github.com/sst/opencode/internal/app"
-	"github.com/sst/opencode/internal/commands"
-	"github.com/sst/opencode/internal/completions"
-	"github.com/sst/opencode/internal/components/chat"
-	cmdcomp "github.com/sst/opencode/internal/components/commands"
-	"github.com/sst/opencode/internal/components/dialog"
-	"github.com/sst/opencode/internal/components/modal"
-	"github.com/sst/opencode/internal/components/status"
-	"github.com/sst/opencode/internal/components/toast"
-	"github.com/sst/opencode/internal/layout"
-	"github.com/sst/opencode/internal/styles"
-	"github.com/sst/opencode/internal/theme"
-	"github.com/sst/opencode/internal/util"
+	"github.com/aaronmrosenthal/rycode-sdk-go"
+	"github.com/aaronmrosenthal/rycode/internal/api"
+	"github.com/aaronmrosenthal/rycode/internal/app"
+	"github.com/aaronmrosenthal/rycode/internal/commands"
+	"github.com/aaronmrosenthal/rycode/internal/completions"
+	"github.com/aaronmrosenthal/rycode/internal/components/chat"
+	cmdcomp "github.com/aaronmrosenthal/rycode/internal/components/commands"
+	"github.com/aaronmrosenthal/rycode/internal/components/dialog"
+	"github.com/aaronmrosenthal/rycode/internal/components/modal"
+	"github.com/aaronmrosenthal/rycode/internal/components/status"
+	"github.com/aaronmrosenthal/rycode/internal/components/toast"
+	"github.com/aaronmrosenthal/rycode/internal/layout"
+	"github.com/aaronmrosenthal/rycode/internal/styles"
+	"github.com/aaronmrosenthal/rycode/internal/theme"
+	"github.com/aaronmrosenthal/rycode/internal/util"
 )
 
 // InterruptDebounceTimeoutMsg is sent when the interrupt key debounce timeout expires
@@ -82,7 +82,7 @@ type Model struct {
 func (a Model) Init() tea.Cmd {
 	var cmds []tea.Cmd
 	// https://github.com/charmbracelet/bubbletea/issues/1440
-	// https://github.com/sst/opencode/issues/127
+	// https://github.com/aaronmrosenthal/rycode/issues/127
 	if !util.IsWsl() {
 		cmds = append(cmds, tea.RequestBackgroundColor)
 	}

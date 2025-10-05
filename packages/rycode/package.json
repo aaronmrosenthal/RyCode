@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
   "version": "0.14.1",
-  "name": "opencode",
+  "name": "rycode",
   "type": "module",
   "private": true,
   "scripts": {
@@ -12,7 +12,7 @@
     "generate-api-key": "bun run ./src/cli/generate-api-key.ts"
   },
   "bin": {
-    "opencode": "./bin/opencode"
+    "rycode": "./bin/rycode"
   },
   "exports": {
     "./*": "./src/*.ts"
@@ -37,8 +37,8 @@
     "@hono/zod-validator": "catalog:",
     "@modelcontextprotocol/sdk": "1.15.1",
     "@openauthjs/openauth": "0.4.3",
-    "@opencode-ai/plugin": "workspace:*",
-    "@opencode-ai/sdk": "workspace:*",
+    "@rycode-ai/plugin": "workspace:*",
+    "@rycode-ai/sdk": "workspace:*",
     "@standard-schema/spec": "1.0.0",
     "@zip.js/zip.js": "2.7.62",
     "ai": "catalog:",

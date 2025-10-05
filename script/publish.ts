@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 import { $ } from "bun"
-import { createOpencodeClient, createOpencodeServer } from "@opencode-ai/sdk"
+import { createOpencodeClient, createOpencodeServer } from "@rycode-ai/sdk"
 if (process.versions.bun !== "1.2.21") {
   throw new Error("This script requires bun@1.2.21")
 }
@@ -104,7 +104,7 @@ for (const file of pkgjsons) {
 await $`bun install`
 
 console.log("\n=== opencode ===\n")
-await import(`../packages/opencode/script/publish.ts`)
+await import(`../packages/rycode/script/publish.ts`)
 
 console.log("\n=== sdk ===\n")
 await import(`../packages/sdk/js/script/publish.ts`)
@@ -122,7 +122,7 @@ if (!snapshot) {
   await $`git cherry-pick HEAD..origin/dev`.nothrow()
   await $`git push origin HEAD --tags --no-verify --force`
 
-  await $`gh release create v${version} --title "v${version}" --notes ${notes.join("\n") ?? "No notable changes"} ./packages/opencode/dist/*.zip`
+  await $`gh release create v${version} --title "v${version}" --notes ${notes.join("\n") ?? "No notable changes"} ./packages/rycode/dist/*.zip`
 }
 if (snapshot) {
   await $`git checkout -b snapshot-${version}`

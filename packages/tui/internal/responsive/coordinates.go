@@ -490,8 +490,8 @@ func (pf *PositionedFocusable) SetRect(rect Rect) {
 // TODO: Import missing dependencies
 // These would normally be imported:
 // tea "github.com/charmbracelet/bubbletea/v2"
-// "github.com/sst/opencode/internal/theme"
+// "github.com/aaronmrosenthal/rycode/internal/theme"
 
 // Placeholder to make code compile
 import tea "github.com/charmbracelet/bubbletea/v2"
-import "github.com/sst/opencode/internal/theme"
+import "github.com/aaronmrosenthal/rycode/internal/theme"

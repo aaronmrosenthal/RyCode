@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/sst/opencode-sdk-go/internal/apijson"
-	"github.com/sst/opencode-sdk-go/internal/apiquery"
-	"github.com/sst/opencode-sdk-go/internal/param"
-	"github.com/sst/opencode-sdk-go/internal/requestconfig"
-	"github.com/sst/opencode-sdk-go/option"
+	"github.com/aaronmrosenthal/rycode-sdk-go/internal/apijson"
+	"github.com/aaronmrosenthal/rycode-sdk-go/internal/apiquery"
+	"github.com/aaronmrosenthal/rycode-sdk-go/internal/param"
+	"github.com/aaronmrosenthal/rycode-sdk-go/internal/requestconfig"
+	"github.com/aaronmrosenthal/rycode-sdk-go/option"
 )
 
 // AgentService contains methods and other services that help with interacting with

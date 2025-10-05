@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss/v2"
-	"github.com/sst/opencode/internal/theme"
+	"github.com/aaronmrosenthal/rycode/internal/theme"
 )
 
 // AccessibilityLevel defines the level of accessibility features

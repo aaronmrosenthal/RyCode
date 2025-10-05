@@ -3,8 +3,8 @@
 package opencode
 
 import (
-	"github.com/sst/opencode-sdk-go/internal/apierror"
-	"github.com/sst/opencode-sdk-go/shared"
+	"github.com/aaronmrosenthal/rycode-sdk-go/internal/apierror"
+	"github.com/aaronmrosenthal/rycode-sdk-go/shared"
 )
 
 type Error = apierror.Error

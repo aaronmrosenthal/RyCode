@@ -1,11 +1,11 @@
-import { Billing } from "@opencode-ai/console-core/billing.js"
+import { Billing } from "@rycode-ai/console-core/billing.js"
 import type { APIEvent } from "@solidjs/start/server"
-import { and, Database, eq, sql } from "@opencode-ai/console-core/drizzle/index.js"
-import { BillingTable, PaymentTable } from "@opencode-ai/console-core/schema/billing.sql.js"
-import { Identifier } from "@opencode-ai/console-core/identifier.js"
-import { centsToMicroCents } from "@opencode-ai/console-core/util/price.js"
-import { Actor } from "@opencode-ai/console-core/actor.js"
-import { Resource } from "@opencode-ai/console-resource"
+import { and, Database, eq, sql } from "@rycode-ai/console-core/drizzle/index.js"
+import { BillingTable, PaymentTable } from "@rycode-ai/console-core/schema/billing.sql.js"
+import { Identifier } from "@rycode-ai/console-core/identifier.js"
+import { centsToMicroCents } from "@rycode-ai/console-core/util/price.js"
+import { Actor } from "@rycode-ai/console-core/actor.js"
+import { Resource } from "@rycode-ai/console-resource"
 
 export async function POST(input: APIEvent) {
   const body = await Billing.stripe().webhooks.constructEventAsync(

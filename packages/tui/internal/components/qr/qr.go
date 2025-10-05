@@ -3,8 +3,8 @@ package qr
 import (
 	"strings"
 
-	"github.com/sst/opencode/internal/styles"
-	"github.com/sst/opencode/internal/theme"
+	"github.com/aaronmrosenthal/rycode/internal/styles"
+	"github.com/aaronmrosenthal/rycode/internal/theme"
 	"rsc.io/qr"
 )
 

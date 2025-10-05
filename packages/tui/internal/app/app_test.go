@@ -3,7 +3,7 @@ package app
 import (
 	"testing"
 
-	"github.com/sst/opencode-sdk-go"
+	"github.com/aaronmrosenthal/rycode-sdk-go"
 )
 
 // TestFindModelByFullID tests the findModelByFullID function

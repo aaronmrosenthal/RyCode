@@ -11,13 +11,13 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea/v2"
 	flag "github.com/spf13/pflag"
-	"github.com/sst/opencode-sdk-go"
-	"github.com/sst/opencode-sdk-go/option"
-	"github.com/sst/opencode/internal/api"
-	"github.com/sst/opencode/internal/app"
-	"github.com/sst/opencode/internal/clipboard"
-	"github.com/sst/opencode/internal/tui"
-	"github.com/sst/opencode/internal/util"
+	"github.com/aaronmrosenthal/rycode-sdk-go"
+	"github.com/aaronmrosenthal/rycode-sdk-go/option"
+	"github.com/aaronmrosenthal/rycode/internal/api"
+	"github.com/aaronmrosenthal/rycode/internal/app"
+	"github.com/aaronmrosenthal/rycode/internal/clipboard"
+	"github.com/aaronmrosenthal/rycode/internal/tui"
+	"github.com/aaronmrosenthal/rycode/internal/util"
 	"golang.org/x/sync/errgroup"
 )
 

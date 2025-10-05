@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/lipgloss/v2"
-	"github.com/sst/opencode/internal/theme"
+	"github.com/aaronmrosenthal/rycode/internal/theme"
 )
 
 // Event represents a timeline event

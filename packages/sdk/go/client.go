@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/sst/opencode-sdk-go/internal/requestconfig"
-	"github.com/sst/opencode-sdk-go/option"
+	"github.com/aaronmrosenthal/rycode-sdk-go/internal/requestconfig"
+	"github.com/aaronmrosenthal/rycode-sdk-go/option"
 )
 
 // Client creates a struct with services and top level methods that help with

@@ -13,7 +13,7 @@
 
 ## Debugging
 
-- To test opencode in the `packages/opencode` directory you can run `bun dev`
+- To test rycode in the `packages/rycode` directory you can run `bun dev`
 
 ## Tool Calling
 

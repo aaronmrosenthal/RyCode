@@ -1,9 +1,10 @@
-module github.com/sst/opencode
+module github.com/aaronmrosenthal/rycode
 
 go 1.24.0
 
 require (
 	github.com/BurntSushi/toml v1.5.0
+	github.com/aaronmrosenthal/rycode-sdk-go v0.1.0-alpha.8
 	github.com/alecthomas/chroma/v2 v2.18.0
 	github.com/charmbracelet/bubbles/v2 v2.0.0-beta.1
 	github.com/charmbracelet/bubbletea/v2 v2.0.0-beta.4
@@ -17,14 +18,13 @@ require (
 	github.com/muesli/reflow v0.3.0
 	github.com/muesli/termenv v0.16.0
 	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3
-	github.com/sst/opencode-sdk-go v0.1.0-alpha.8
 	golang.org/x/image v0.28.0
 	rsc.io/qr v0.2.0
 )
 
 replace (
+	github.com/aaronmrosenthal/rycode-sdk-go => ../sdk/go
 	github.com/charmbracelet/x/input => ./input
-	github.com/sst/opencode-sdk-go => ../sdk/go
 )
 
 require golang.org/x/exp v0.0.0-20250305212735-054e65f0b394 // indirect
@@ -88,7 +88,7 @@ require (
 	golang.org/x/net v0.41.0 // indirect
 	golang.org/x/sync v0.15.0
 	golang.org/x/sys v0.33.0 // indirect
-	golang.org/x/term v0.32.0 // indirect
+	golang.org/x/term v0.32.0
 	golang.org/x/text v0.26.0
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

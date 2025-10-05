@@ -4,9 +4,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/sst/opencode-sdk-go"
-	"github.com/sst/opencode/internal/attachment"
-	"github.com/sst/opencode/internal/id"
+	"github.com/aaronmrosenthal/rycode-sdk-go"
+	"github.com/aaronmrosenthal/rycode/internal/attachment"
+	"github.com/aaronmrosenthal/rycode/internal/id"
 )
 
 type Prompt struct {

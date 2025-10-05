@@ -2,12 +2,12 @@ package dialog
 
 import (
 	tea "github.com/charmbracelet/bubbletea/v2"
-	"github.com/sst/opencode/internal/app"
-	commandsComponent "github.com/sst/opencode/internal/components/commands"
-	"github.com/sst/opencode/internal/components/modal"
-	"github.com/sst/opencode/internal/layout"
-	"github.com/sst/opencode/internal/theme"
-	"github.com/sst/opencode/internal/viewport"
+	"github.com/aaronmrosenthal/rycode/internal/app"
+	commandsComponent "github.com/aaronmrosenthal/rycode/internal/components/commands"
+	"github.com/aaronmrosenthal/rycode/internal/components/modal"
+	"github.com/aaronmrosenthal/rycode/internal/layout"
+	"github.com/aaronmrosenthal/rycode/internal/theme"
+	"github.com/aaronmrosenthal/rycode/internal/viewport"
 )
 
 type helpDialog struct {

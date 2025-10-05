@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
-  "name": "@opencode-ai/plugin",
+  "name": "@rycode-ai/plugin",
   "version": "0.14.1",
   "type": "module",
   "scripts": {
@@ -15,7 +15,7 @@
     "dist"
   ],
   "dependencies": {
-    "@opencode-ai/sdk": "workspace:*",
+    "@rycode-ai/sdk": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {

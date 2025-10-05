@@ -3,8 +3,8 @@ import { useAuthSession } from "~/context/auth.session"
 import { IconLogo } from "../component/icon"
 import { withActor } from "~/context/auth.withActor"
 import { query, action, redirect, createAsync, RouteSectionProps, useParams, A } from "@solidjs/router"
-import { User } from "@opencode-ai/console-core/user.js"
-import { Actor } from "@opencode-ai/console-core/actor.js"
+import { User } from "@rycode-ai/console-core/user.js"
+import { Actor } from "@rycode-ai/console-core/actor.js"
 import { getRequestEvent } from "solid-js/web"
 
 const getUserInfo = query(async (workspaceID: string) => {

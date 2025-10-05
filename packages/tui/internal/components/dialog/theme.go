@@ -2,12 +2,12 @@ package dialog
 
 import (
 	tea "github.com/charmbracelet/bubbletea/v2"
-	list "github.com/sst/opencode/internal/components/list"
-	"github.com/sst/opencode/internal/components/modal"
-	"github.com/sst/opencode/internal/layout"
-	"github.com/sst/opencode/internal/styles"
-	"github.com/sst/opencode/internal/theme"
-	"github.com/sst/opencode/internal/util"
+	list "github.com/aaronmrosenthal/rycode/internal/components/list"
+	"github.com/aaronmrosenthal/rycode/internal/components/modal"
+	"github.com/aaronmrosenthal/rycode/internal/layout"
+	"github.com/aaronmrosenthal/rycode/internal/styles"
+	"github.com/aaronmrosenthal/rycode/internal/theme"
+	"github.com/aaronmrosenthal/rycode/internal/util"
 )
 
 // ThemeSelectedMsg is sent when the theme is changed
