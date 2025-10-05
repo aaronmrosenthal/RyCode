@@ -12,6 +12,17 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+const (
+	// StreamDelayMs is the delay between streaming chunks in milliseconds
+	StreamDelayMs = 50
+	// StreamCompleteDelayMs is the delay before marking stream complete
+	StreamCompleteDelayMs = 100
+	// InputBarHeight is the height of the input bar area
+	InputBarHeight = 6
+	// BorderHeight is the height of borders
+	BorderHeight = 2
+)
+
 // StreamChunkMsg is sent when a new chunk of streaming text arrives
 type StreamChunkMsg struct {
 	Chunk string
@@ -65,13 +76,19 @@ func (m ChatModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case StreamChunkMsg:
 		// Update the last message with new chunk
-		m.messages.UpdateLastMessage(m.messages.Messages[len(m.messages.Messages)-1].Content + msg.Chunk)
+		if len(m.messages.Messages) == 0 {
+			return m, nil
+		}
+		lastMsg := m.messages.Messages[len(m.messages.Messages)-1]
+		m.messages.UpdateLastMessage(lastMsg.Content + msg.Chunk)
 		return m, m.streamNextChunk()
 
 	case StreamCompleteMsg:
 		// Mark streaming as complete
 		m.streaming = false
-		m.messages.SetLastMessageStatus(components.Sent)
+		if len(m.messages.Messages) > 0 {
+			m.messages.SetLastMessageStatus(components.Sent)
+		}
 		m.input.SetFocus(true)
 		return m, nil
 	}
@@ -220,7 +237,7 @@ func (m *ChatModel) streamNextChunk() tea.Cmd {
 	if len(currentWords) < len(words) {
 		nextWord := words[len(currentWords)]
 
-		return tea.Tick(50*time.Millisecond, func(t time.Time) tea.Msg {
+		return tea.Tick(StreamDelayMs*time.Millisecond, func(t time.Time) tea.Msg {
 			if len(currentWords) == 0 {
 				return StreamChunkMsg{Chunk: nextWord}
 			}
@@ -229,7 +246,7 @@ func (m *ChatModel) streamNextChunk() tea.Cmd {
 	}
 
 	// Streaming complete
-	return tea.Tick(100*time.Millisecond, func(t time.Time) tea.Msg {
+	return tea.Tick(StreamCompleteDelayMs*time.Millisecond, func(t time.Time) tea.Msg {
 		return StreamCompleteMsg{}
 	})
 }
@@ -266,8 +283,7 @@ func (m *ChatModel) generateAIResponse() string {
 // updateDimensions updates component dimensions based on layout
 func (m *ChatModel) updateDimensions() {
 	// Calculate available space
-	inputHeight := 6 // Input bar + buttons + actions
-	messagesHeight := m.height - inputHeight - 2 // -2 for borders
+	messagesHeight := m.height - InputBarHeight - BorderHeight
 
 	// Update message list dimensions
 	m.messages.Width = m.width
