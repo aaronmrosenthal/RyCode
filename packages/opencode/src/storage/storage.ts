@@ -128,13 +128,38 @@ export namespace Storage {
     }
   })
 
+  // BUG FIX: Validate storage keys
+  function validateKey(key: string[]): void {
+    if (key.length === 0) {
+      throw new Error("Storage key cannot be empty")
+    }
+
+    for (const segment of key) {
+      if (!segment || typeof segment !== "string") {
+        throw new Error(`Invalid key segment: ${segment}`)
+      }
+      // Prevent directory traversal attacks
+      if (segment.includes("..") || segment.includes("/") || segment.includes("\\")) {
+        throw new Error(`Invalid characters in key segment: ${segment}`)
+      }
+      // Prevent hidden files
+      if (segment.startsWith(".")) {
+        throw new Error(`Key segments cannot start with dot: ${segment}`)
+      }
+    }
+  }
+
   export async function remove(key: string[]) {
+    validateKey(key)
     const dir = await state().then((x) => x.dir)
     const target = path.join(dir, ...key) + ".json"
-    await fs.unlink(target).catch(() => {})
+    await fs.unlink(target).catch((error) => {
+      log.debug("File delete failed (may not exist)", { target, error: error.message })
+    })
   }
 
   export async function read<T>(key: string[]) {
+    validateKey(key)
     const dir = await state().then((x) => x.dir)
     const target = path.join(dir, ...key) + ".json"
     // Use file-specific read lock
@@ -143,8 +168,11 @@ export namespace Storage {
   }
 
   export async function update<T>(key: string[], fn: (draft: T) => void) {
+    validateKey(key)
     const dir = await state().then((x) => x.dir)
     const target = path.join(dir, ...key) + ".json"
+    // Ensure parent directory exists
+    await fs.mkdir(path.dirname(target), { recursive: true })
     // FIXED: Use file-specific write lock instead of global "storage" lock
     using _ = await Lock.write(target)
     const content = await Bun.file(target).json()
@@ -153,12 +181,27 @@ export namespace Storage {
     return content as T
   }
 
+  // BUG FIX: Validate content size (max 10MB)
+  const MAX_CONTENT_SIZE = 10 * 1024 * 1024 // 10MB
+
   export async function write<T>(key: string[], content: T) {
+    validateKey(key)
+
+    // Validate content size
+    const json = JSON.stringify(content, null, 2)
+    if (json.length > MAX_CONTENT_SIZE) {
+      throw new Error(
+        `Content too large: ${json.length} bytes (max ${MAX_CONTENT_SIZE} bytes)`,
+      )
+    }
+
     const dir = await state().then((x) => x.dir)
     const target = path.join(dir, ...key) + ".json"
+    // Ensure parent directory exists
+    await fs.mkdir(path.dirname(target), { recursive: true })
     // FIXED: Use file-specific write lock instead of global "storage" lock
     using _ = await Lock.write(target)
-    await Bun.write(target, JSON.stringify(content, null, 2))
+    await Bun.write(target, json)
   }
 
   const glob = new Bun.Glob("**/*")
@@ -218,9 +261,14 @@ export namespace Storage {
         for (const op of this.operations) {
           const target = path.join(dir, ...op.key) + ".json"
           if (op.type === "write") {
+            // Ensure parent directory exists
+            await fs.mkdir(path.dirname(target), { recursive: true })
             await Bun.write(target, JSON.stringify(op.content, null, 2))
           } else if (op.type === "remove") {
-            await fs.unlink(target).catch(() => {})
+            await fs.unlink(target).catch((error) => {
+              // File may not exist, log for debugging
+              log.debug("File delete failed (may not exist)", { target, error: error.message })
+            })
           }
         }
       } finally {
@@ -232,7 +280,10 @@ export namespace Storage {
     }
 
     async rollback() {
-      // Just release locks without executing operations
+      if (this.committed) throw new Error("Transaction already committed or rolled back")
+      this.committed = true
+
+      // Release locks without executing operations
       for (const lock of this.locks) {
         lock[Symbol.dispose]()
       }

@@ -290,4 +290,86 @@ describe("Storage Transactions", () => {
       expect(data.value).toBe(3)
     })
   })
+
+  describe("BUG FIXES - Critical Issues", () => {
+    test("BUG FIX: rollback should prevent subsequent commit", async () => {
+      const tx = Storage.transaction()
+
+      await tx.write(["test", "bug-rollback"], { value: "should-not-exist" })
+      await tx.rollback()
+
+      // BUG: Previously, commit() after rollback() would still execute!
+      await expect(tx.commit()).rejects.toThrow("Transaction already committed")
+
+      // Data should NOT exist
+      await expect(Storage.read(["test", "bug-rollback"])).rejects.toThrow()
+    })
+
+    test("BUG FIX: should create deep directory structures", async () => {
+      // BUG: Previously failed with ENOENT on first write to new path
+      const tx = Storage.transaction()
+
+      await tx.write(["new-namespace", "deep", "nested", "path"], { value: "created" })
+      await tx.commit()
+
+      const data = await Storage.read<{ value: string }>([
+        "new-namespace",
+        "deep",
+        "nested",
+        "path",
+      ])
+      expect(data.value).toBe("created")
+    })
+
+    test("BUG FIX: Storage.write should create parent directories", async () => {
+      // BUG: Previously threw ENOENT error
+      await Storage.write(["brand-new", "directory", "test"], { data: 123 })
+
+      const result = await Storage.read<{ data: number }>([
+        "brand-new",
+        "directory",
+        "test",
+      ])
+      expect(result.data).toBe(123)
+    })
+
+    test("BUG FIX: Storage.update should create parent directories", async () => {
+      // First create the file
+      await Storage.write(["update-test", "deep", "file"], { count: 0 })
+
+      // BUG: Previously update might fail if dirs were deleted externally
+      await Storage.update<{ count: number }>(["update-test", "deep", "file"], (draft) => {
+        draft.count++
+      })
+
+      const result = await Storage.read<{ count: number }>([
+        "update-test",
+        "deep",
+        "file",
+      ])
+      expect(result.count).toBe(1)
+    })
+
+    test("BUG FIX: double rollback should throw error", async () => {
+      const tx = Storage.transaction()
+
+      await tx.write(["test", "double-rollback"], { value: 1 })
+      await tx.rollback()
+
+      // Second rollback should fail
+      await expect(tx.rollback()).rejects.toThrow(
+        "Transaction already committed or rolled back",
+      )
+    })
+
+    test("BUG FIX: commit after rollback should throw error", async () => {
+      const tx = Storage.transaction()
+
+      await tx.write(["test", "rollback-then-commit"], { value: 1 })
+      await tx.rollback()
+
+      // Should not be able to commit after rollback
+      await expect(tx.commit()).rejects.toThrow("Transaction already committed")
+    })
+  })
 })

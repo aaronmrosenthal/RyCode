@@ -23,24 +23,41 @@ export namespace Share {
       .then(async () => {
         const content = pending.get(key)
         if (content === undefined) return
-        pending.delete(key)
 
-        return fetch(`${URL}/share_sync`, {
-          method: "POST",
-          body: JSON.stringify({
-            sessionID: sessionID,
-            secret,
-            key: key,
-            content,
-          }),
-        })
-      })
-      .then((x) => {
-        if (x) {
-          log.info("synced", {
-            key: key,
-            status: x.status,
+        try {
+          // BUG FIX: Add 30s timeout to prevent indefinite hangs
+          const controller = new AbortController()
+          const timeout = setTimeout(() => controller.abort(), 30000)
+
+          try {
+            const response = await fetch(`${URL}/share_sync`, {
+              method: "POST",
+              body: JSON.stringify({
+                sessionID: sessionID,
+                secret,
+                key: key,
+                content,
+              }),
+              signal: controller.signal,
+            })
+
+            log.info("synced", {
+              key: key,
+              status: response.status,
+            })
+          } finally {
+            clearTimeout(timeout)
+          }
+        } catch (error: any) {
+          // BUG FIX: Log errors instead of silently swallowing them
+          log.error("sync failed", {
+            key,
+            error: error.message,
+            type: error.name,
           })
+        } finally {
+          // BUG FIX: Always delete from pending to prevent memory leak
+          pending.delete(key)
         }
       })
   }
@@ -70,18 +87,36 @@ export namespace Share {
     (Installation.isSnapshot() || Installation.isDev() ? "https://api.dev.opencode.ai" : "https://api.opencode.ai")
 
   export async function create(sessionID: string) {
-    return fetch(`${URL}/share_create`, {
-      method: "POST",
-      body: JSON.stringify({ sessionID: sessionID }),
-    })
-      .then((x) => x.json())
-      .then((x) => x as { url: string; secret: string })
+    // BUG FIX: Add 30s timeout to prevent indefinite hangs
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 30000)
+
+    try {
+      return await fetch(`${URL}/share_create`, {
+        method: "POST",
+        body: JSON.stringify({ sessionID: sessionID }),
+        signal: controller.signal,
+      })
+        .then((x) => x.json())
+        .then((x) => x as { url: string; secret: string })
+    } finally {
+      clearTimeout(timeout)
+    }
   }
 
   export async function remove(sessionID: string, secret: string) {
-    return fetch(`${URL}/share_delete`, {
-      method: "POST",
-      body: JSON.stringify({ sessionID, secret }),
-    }).then((x) => x.json())
+    // BUG FIX: Add 30s timeout to prevent indefinite hangs
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 30000)
+
+    try {
+      return await fetch(`${URL}/share_delete`, {
+        method: "POST",
+        body: JSON.stringify({ sessionID, secret }),
+        signal: controller.signal,
+      }).then((x) => x.json())
+    } finally {
+      clearTimeout(timeout)
+    }
   }
 }

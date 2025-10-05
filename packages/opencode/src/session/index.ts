@@ -173,13 +173,44 @@ export namespace Session {
   }
 
   export async function unshare(id: string) {
-    const share = await getShare(id)
+    const share = await getShare(id).catch(() => undefined)
     if (!share) return
-    await Storage.remove(["share", id])
-    await update(id, (draft) => {
-      draft.share = undefined
-    })
-    await Share.remove(id, share.secret)
+
+    // BUG FIX: Use transaction for atomic local updates
+    const tx = Storage.transaction()
+
+    try {
+      // Remove share metadata
+      await tx.remove(["share", id])
+
+      // Update session to remove share info
+      const session = await get(id)
+      session.share = undefined
+      await tx.write(["session", Instance.project.id, id], session)
+
+      // Commit atomic local changes
+      await tx.commit()
+
+      // Remote deletion (best effort, don't fail if this errors)
+      await Share.remove(id, share.secret).catch((error) => {
+        log.warn("Failed to remove remote share", {
+          sessionID: id,
+          error: error.message,
+        })
+      })
+
+      // Publish update event
+      Bus.publish(Event.Updated, {
+        info: session,
+      })
+    } catch (error: any) {
+      await tx.rollback()
+      log.error("Failed to unshare session", {
+        sessionID: id,
+        error: error.message,
+      })
+      throw new Error(`Failed to unshare session ${id}: ${error.message}`, { cause: error })
+    }
   }
 
   export async function update(id: string, editor: (session: Info) => void) {
@@ -244,27 +275,68 @@ export namespace Session {
 
   export async function remove(sessionID: string, emitEvent = true) {
     const project = Instance.project
+    let session: Info | undefined
+
     try {
-      const session = await get(sessionID)
-      for (const child of await children(sessionID)) {
-        await remove(child.id, false)
-      }
-      await unshare(sessionID).catch(() => {})
-      for (const msg of await Storage.list(["message", sessionID])) {
-        for (const part of await Storage.list(["part", msg.at(-1)!])) {
-          await Storage.remove(part)
+      session = await get(sessionID)
+
+      // Collect all descendant sessions recursively
+      const allSessions = await collectAllDescendants(sessionID)
+
+      // BUG FIX: Use transaction for atomic deletion
+      const tx = Storage.transaction()
+
+      try {
+        // Delete all sessions and their data atomically
+        for (const sid of allSessions) {
+          // Delete all messages and parts for this session
+          for (const msg of await Storage.list(["message", sid])) {
+            for (const part of await Storage.list(["part", msg.at(-1)!])) {
+              await tx.remove(part)
+            }
+            await tx.remove(msg)
+          }
+          // Delete the session itself
+          await tx.remove(["session", project.id, sid])
         }
-        await Storage.remove(msg)
-      }
-      await Storage.remove(["session", project.id, sessionID])
-      if (emitEvent) {
-        Bus.publish(Event.Deleted, {
-          info: session,
+
+        await tx.commit()
+
+        // BUG FIX: Unshare after successful deletion (best effort)
+        await unshare(sessionID).catch((error) => {
+          log.warn("Failed to unshare session", { sessionID, error: error.message })
         })
+
+        if (emitEvent && session) {
+          Bus.publish(Event.Deleted, {
+            info: session,
+          })
+        }
+      } catch (txError) {
+        await tx.rollback()
+        throw txError
       }
-    } catch (e) {
-      log.error(e)
+    } catch (e: any) {
+      log.error("Failed to remove session", {
+        sessionID,
+        error: e.message,
+        stack: e.stack,
+      })
+      throw new Error(`Failed to remove session ${sessionID}: ${e.message}`, { cause: e })
     }
+  }
+
+  // Helper function to collect all descendant sessions
+  async function collectAllDescendants(sessionID: string): Promise<string[]> {
+    const result = [sessionID]
+    const childSessions = await children(sessionID)
+
+    for (const child of childSessions) {
+      const descendants = await collectAllDescendants(child.id)
+      result.push(...descendants)
+    }
+
+    return result
   }
 
   export async function updateMessage(msg: MessageV2.Info) {
