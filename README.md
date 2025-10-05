@@ -146,7 +146,7 @@ RyCode is **OpenCode optimized by toolkit-cli's multi-agent AI collaboration**. 
 
 ```bash
 # Started with OpenCode
-git clone https://github.com/sst/opencode
+git clone https://github.com/aaronmrosenthal/rycode
 
 # Ran toolkit-cli optimization commands
 toolkit-cli /fix opencode/

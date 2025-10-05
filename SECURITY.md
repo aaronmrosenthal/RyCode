@@ -2,7 +2,7 @@
 
 ## Reporting Security Issues
 
-OpenCode takes security seriously. If you discover a security vulnerability, please report it to:
+RyCode takes security seriously. If you discover a security vulnerability, please report it to:
 
 **Email**: support@sst.dev
 **Subject**: [SECURITY] OpenCode Vulnerability Report
@@ -19,7 +19,7 @@ We aim to respond to security reports within 48 hours and will provide regular u
 
 ### Authentication
 
-OpenCode supports API key authentication for server endpoints to prevent unauthorized access.
+RyCode supports API key authentication for server endpoints to prevent unauthorized access.
 
 #### Enabling Authentication
 
@@ -54,7 +54,7 @@ By default, authentication is bypassed for localhost connections in development 
 
 ### Rate Limiting
 
-OpenCode includes built-in rate limiting to prevent abuse and resource exhaustion.
+RyCode includes built-in rate limiting to prevent abuse and resource exhaustion.
 
 #### Configuration
 
@@ -88,7 +88,7 @@ When rate limited, you'll receive a `429 Too Many Requests` response with a `Ret
 
 ### Path Validation
 
-OpenCode validates all file paths to prevent directory traversal attacks and access to sensitive files.
+RyCode validates all file paths to prevent directory traversal attacks and access to sensitive files.
 
 #### Protected Files
 
@@ -170,11 +170,11 @@ Attempts to access files outside these boundaries will be rejected with a `403 F
 - **Disable Localhost Bypass**: Set `bypassLocalhost: false` in production
 - **Enable Auth**: Always enable authentication for exposed servers
 - **Monitor Logs**: Review logs for suspicious activity
-- **Update Regularly**: Keep OpenCode updated for security patches
+- **Update Regularly**: Keep RyCode updated for security patches
 
 ### 4. File System Security
 
-- **Principle of Least Privilege**: Run OpenCode with minimal required permissions
+- **Principle of Least Privilege**: Run RyCode with minimal required permissions
 - **Isolated Directories**: Use dedicated project directories
 - **Read-Only Where Possible**: Mount sensitive directories as read-only
 
@@ -204,8 +204,8 @@ Attempts to access files outside these boundaries will be rejected with a `403 F
 Security patches are released as soon as possible after discovery. Critical vulnerabilities may receive out-of-band releases.
 
 Subscribe to security announcements:
-- GitHub Security Advisories: https://github.com/sst/opencode/security/advisories
-- Discord: https://opencode.ai/discord
+- GitHub Security Advisories: https://github.com/aaronmrosenthal/rycode/security/advisories
+- Discord: https://rycode.ai/discord
 
 ## Supported Versions
 
@@ -222,7 +222,7 @@ We appreciate the security research community's efforts. Security researchers wh
 ## Contact
 
 For non-security issues, please use:
-- GitHub Issues: https://github.com/sst/opencode/issues
-- Discord: https://opencode.ai/discord
+- GitHub Issues: https://github.com/aaronmrosenthal/rycode/issues
+- Discord: https://rycode.ai/discord
 
 For security-related inquiries: support@sst.dev

@@ -351,7 +351,7 @@ The killer TUI isn't just faster or prettier - it's an **extension of the develo
 
 **Morning:**
 ```
-$ opencode
+$ rycode
 [Cyberpunk logo with gradient animation]
 💬 Good morning! You left off debugging the auth flow.
    Timeline: ◄═══●═══► [Click to resume]
