@@ -7,8 +7,8 @@
     </picture>
   </a>
 </p>
-<p align="center">AI coding agent built with <a href="https://toolkit-cli.com">toolkit-cli</a></p>
-<p align="center"><em>Where LLMs Collaborate, Not Compete</em></p>
+<p align="center"><strong>The AI-Generated IDE</strong></p>
+<p align="center">Built with <a href="https://toolkit-cli.com">toolkit-cli</a> - Where LLMs Collaborate, Not Compete</p>
 <p align="center">
   <a href="https://github.com/aaronmrosenthal/RyCode"><img alt="GitHub" src="https://img.shields.io/github/stars/aaronmrosenthal/RyCode?style=flat-square" /></a>
 </p>
@@ -17,68 +17,76 @@
 
 ---
 
+## About RyCode
+
+RyCode is a next-generation AI coding agent that leverages **multi-agent collaboration** through [toolkit-cli](https://toolkit-cli.com). Unlike traditional single-model approaches, RyCode harnesses the collective intelligence of multiple LLMs (Claude, Gemini, Codex, Qwen) working together to deliver superior development experiences.
+
+### Powered by toolkit-cli
+
+This project showcases the power of toolkit-cli's innovative approach:
+
+- **26 AI-Powered Slash Commands** - Streamlined workflows for every development task
+- **Multi-Agent Architecture** - Different AI models collaborate on complex problems
+- **Spec-Context Preservation** - Maintains project intent across all changes
+- **Provider-Agnostic** - Not locked into any single AI vendor
+- **Terminal-First** - Built by developers, for developers
+
+### Why Multi-Agent?
+
+RyCode demonstrates that multiple specialized AI models working together outperform any single model alone. Each agent brings unique strengths:
+
+- **Claude** - Deep reasoning and code analysis
+- **Gemini** - Fast iteration and broad knowledge
+- **Codex** - Precise code generation
+- **Qwen** - Efficient problem-solving
+
+Together, they create an IDE that thinks, adapts, and evolves with your codebase.
+
+---
+
 ### Installation
 
 ```bash
-# YOLO
-curl -fsSL https://opencode.ai/install | bash
-
 # Package managers
-npm i -g opencode-ai@latest        # or bun/pnpm/yarn
-brew install sst/tap/opencode      # macOS and Linux
-paru -S opencode-bin               # Arch Linux
+npm i -g rycode@latest             # or bun/pnpm/yarn
+brew install aaronmrosenthal/tap/rycode      # macOS and Linux
 ```
 
 > [!TIP]
-> Remove versions older than 0.1.x before installing.
+> RyCode is actively developed. Check back for updates!
 
 #### Installation Directory
 
 The install script respects the following priority order for the installation path:
 
-1. `$OPENCODE_INSTALL_DIR` - Custom installation directory
+1. `$RYCODE_INSTALL_DIR` - Custom installation directory
 2. `$XDG_BIN_DIR` - XDG Base Directory Specification compliant path
 3. `$HOME/bin` - Standard user binary directory (if exists or can be created)
-4. `$HOME/.opencode/bin` - Default fallback
-
-```bash
-# Examples
-OPENCODE_INSTALL_DIR=/usr/local/bin curl -fsSL https://opencode.ai/install | bash
-XDG_BIN_DIR=$HOME/.local/bin curl -fsSL https://opencode.ai/install | bash
-```
+4. `$HOME/.rycode/bin` - Default fallback
 
 ### Documentation
 
-For more info on how to configure OpenCode [**head over to our docs**](https://opencode.ai/docs).
+For more info on how to configure RyCode, see the inline help and configuration options.
 
 ### Contributing
 
-OpenCode is an opinionated tool so any fundamental feature needs to go through a
-design process with the core team.
+RyCode is built with toolkit-cli and showcases multi-agent AI development. Contributions are welcome!
 
-> [!IMPORTANT]
-> We do not accept PRs for core features.
-
-However we still merge a ton of PRs - you can contribute:
+We accept PRs for:
 
 - Bug fixes
 - Improvements to LLM performance
-- Support for new providers
-- Fixes for env specific quirks
-- Missing standard behavior
-- Documentation
+- Support for new AI providers
+- Env-specific fixes
+- Documentation improvements
+- New toolkit-cli slash command integrations
 
-Take a look at the git history to see what kind of PRs we end up merging.
-
-> [!NOTE]
-> If you do not follow the above guidelines we might close your PR.
-
-To run OpenCode locally you need.
+To run RyCode locally you need:
 
 - Bun
 - Golang 1.24.x
 
-And run.
+And run:
 
 ```bash
 $ bun install
@@ -87,23 +95,40 @@ $ bun dev
 
 #### Development Notes
 
-**API Client**: After making changes to the TypeScript API endpoints in `packages/opencode/src/server/server.ts`, you will need the OpenCode team to generate a new stainless sdk for the clients.
+**Built with toolkit-cli**: This project demonstrates collaborative AI development patterns. Changes to core functionality may involve multiple AI agents working together through toolkit's slash command system.
 
 ### FAQ
 
-#### How is this different than Claude Code?
+#### What makes RyCode different?
 
-It's very similar to Claude Code in terms of capability. Here are the key differences:
+RyCode is built with **multi-agent AI collaboration** at its core:
 
-- 100% open source
-- Not coupled to any provider. Although Anthropic is recommended, OpenCode can be used with OpenAI, Google or even local models. As models evolve the gaps between them will close and pricing will drop so being provider-agnostic is important.
-- A focus on TUI. OpenCode is built by neovim users and the creators of [terminal.shop](https://terminal.shop); we are going to push the limits of what's possible in the terminal.
-- A client/server architecture. This for example can allow OpenCode to run on your computer, while you can drive it remotely from a mobile app. Meaning that the TUI frontend is just one of the possible clients.
+- **Powered by toolkit-cli** - Leverages 26 AI slash commands and multi-model orchestration
+- **Multiple LLMs working together** - Claude, Gemini, Codex, and Qwen collaborate on your code
+- **Provider-agnostic** - Not locked to any single AI vendor
+- **Terminal-first** - Built for developers who live in the terminal
+- **Spec-context preservation** - Maintains project intent across all AI-generated changes
+- **Client/server architecture** - Run locally, control remotely
 
-#### What's the other repo?
+#### How does multi-agent collaboration work?
 
-The other confusingly named repo has no relation to this one. You can [read the story behind it here](https://x.com/thdxr/status/1933561254481666466).
+Different AI models excel at different tasks. RyCode uses toolkit-cli to orchestrate specialized agents:
+
+- Complex reasoning? Claude leads
+- Fast iteration? Gemini steps in
+- Code generation? Codex delivers
+- Efficient solutions? Qwen optimizes
+
+The result: Better code, faster development, maintained context.
+
+#### Is this better than single-model tools?
+
+Yes! Multi-agent systems consistently outperform single models because:
+- Each model contributes its unique strengths
+- Models verify and improve each other's outputs
+- Specialized agents handle specialized tasks
+- The collective intelligence exceeds individual capabilities
 
 ---
 
-**Join our community** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
+**Built with** [toolkit-cli](https://toolkit-cli.com) | **Created by** [Aaron Rosenthal](https://github.com/aaronmrosenthal)

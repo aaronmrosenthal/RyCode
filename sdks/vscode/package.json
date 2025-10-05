@@ -1,12 +1,12 @@
 {
-  "name": "opencode",
-  "displayName": "opencode",
-  "description": "opencode for VS Code",
+  "name": "rycode",
+  "displayName": "RyCode",
+  "description": "RyCode - The AI-Generated IDE built with toolkit-cli",
   "version": "0.14.1",
-  "publisher": "sst-dev",
+  "publisher": "aaronmrosenthal",
   "repository": {
     "type": "git",
-    "url": "https://github.com/sst/opencode"
+    "url": "https://github.com/aaronmrosenthal/RyCode"
   },
   "license": "MIT",
   "icon": "images/icon.png",
@@ -25,54 +25,54 @@
   "contributes": {
     "commands": [
       {
-        "command": "opencode.openTerminal",
-        "title": "Open opencode",
+        "command": "rycode.openTerminal",
+        "title": "Open RyCode",
         "icon": {
           "light": "images/button-dark.svg",
           "dark": "images/button-light.svg"
         }
       },
       {
-        "command": "opencode.openNewTerminal",
-        "title": "Open opencode in new tab",
+        "command": "rycode.openNewTerminal",
+        "title": "Open RyCode in new tab",
         "icon": {
           "light": "images/button-dark.svg",
           "dark": "images/button-light.svg"
         }
       },
       {
-        "command": "opencode.addFilepathToTerminal",
+        "command": "rycode.addFilepathToTerminal",
         "title": "Add Filepath to Terminal"
       }
     ],
     "menus": {
       "editor/title": [
         {
-          "command": "opencode.openNewTerminal",
+          "command": "rycode.openNewTerminal",
           "group": "navigation"
         }
       ]
     },
     "keybindings": [
       {
-        "command": "opencode.openTerminal",
-        "title": "Run opencode",
+        "command": "rycode.openTerminal",
+        "title": "Run RyCode",
         "key": "cmd+escape",
         "mac": "cmd+escape",
         "win": "ctrl+escape",
         "linux": "ctrl+escape"
       },
       {
-        "command": "opencode.openNewTerminal",
-        "title": "Run opencode",
+        "command": "rycode.openNewTerminal",
+        "title": "Run RyCode",
         "key": "cmd+shift+escape",
         "mac": "cmd+shift+escape",
         "win": "ctrl+shift+escape",
         "linux": "ctrl+shift+escape"
       },
       {
-        "command": "opencode.addFilepathToTerminal",
-        "title": "opencode: Insert At-Mentioned",
+        "command": "rycode.addFilepathToTerminal",
+        "title": "RyCode: Insert At-Mentioned",
         "key": "cmd+alt+k",
         "mac": "cmd+alt+k",
         "win": "ctrl+alt+K",

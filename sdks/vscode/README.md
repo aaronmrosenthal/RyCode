@@ -1,21 +1,22 @@
-# opencode VS Code Extension
+# RyCode VS Code Extension
 
-A Visual Studio Code extension that integrates [opencode](https://opencode.ai) directly into your development workflow.
+A Visual Studio Code extension that integrates [RyCode](https://github.com/aaronmrosenthal/RyCode) - The AI-Generated IDE built with toolkit-cli - directly into your development workflow.
 
 ## Prerequisites
 
-This extension requires the [opencode CLI](https://opencode.ai) to be installed on your system. Visit [opencode.ai](https://opencode.ai) for installation instructions.
+This extension requires the RyCode CLI to be installed on your system. Visit the [RyCode repository](https://github.com/aaronmrosenthal/RyCode) for installation instructions.
 
 ## Features
 
-- **Quick Launch**: Use `Cmd+Esc` (Mac) or `Ctrl+Esc` (Windows/Linux) to open opencode in a split terminal view, or focus an existing terminal session if one is already running.
-- **New Session**: Use `Cmd+Shift+Esc` (Mac) or `Ctrl+Shift+Esc` (Windows/Linux) to start a new opencode terminal session, even if one is already open. You can also click the opencode button in the UI.
-- **Context Awareness**: Automatically share your current selection or tab with opencode.
+- **Quick Launch**: Use `Cmd+Esc` (Mac) or `Ctrl+Esc` (Windows/Linux) to open RyCode in a split terminal view, or focus an existing terminal session if one is already running.
+- **New Session**: Use `Cmd+Shift+Esc` (Mac) or `Ctrl+Shift+Esc` (Windows/Linux) to start a new RyCode terminal session, even if one is already open. You can also click the RyCode button in the UI.
+- **Context Awareness**: Automatically share your current selection or tab with RyCode.
 - **File Reference Shortcuts**: Use `Cmd+Option+K` (Mac) or `Alt+Ctrl+K` (Linux/Windows) to insert file references. For example, `@File#L37-42`.
+- **Multi-Agent Collaboration**: Leverage toolkit-cli's 26 slash commands and multiple AI models working together.
 
 ## Support
 
-This is an early release. If you encounter issues or have feedback, please create an issue at https://github.com/sst/opencode/issues.
+If you encounter issues or have feedback, please create an issue at https://github.com/aaronmrosenthal/RyCode/issues.
 
 ## Development
 
