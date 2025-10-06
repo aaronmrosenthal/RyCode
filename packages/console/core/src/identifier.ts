@@ -10,6 +10,7 @@ export namespace Identifier {
     usage: "usg",
     user: "usr",
     workspace: "wrk",
+    test: "tst",
   } as const
 
   export function create(prefix: keyof typeof prefixes, given?: string): string {
