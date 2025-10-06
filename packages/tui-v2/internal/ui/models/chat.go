@@ -116,9 +116,9 @@ func NewChatModel() ChatModel {
 		titleGradient:    titleGradient,
 		providerName:     providerName,
 		tokenMeter:       tokenMeter,
-		showLogo:         true,              // Enable logo by default
-		matrixRain:       nil,               // Initialize on first render
-		enableMatrixRain: false,             // Disabled by default (opt-in)
+		showLogo:         true,  // Enable logo by default
+		matrixRain:       nil,   // Initialize on first render
+		enableMatrixRain: false, // Disabled by default (opt-in)
 	}
 }
 

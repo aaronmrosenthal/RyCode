@@ -230,10 +230,10 @@ func ScanlineEffect(text string, lineHeight int) string {
 
 // MatrixRainBackground represents an animated background with falling Matrix characters
 type MatrixRainBackground struct {
-	Width        int
-	Height       int
-	ColumnCount  int
-	Columns      []MatrixRainColumn
+	Width       int
+	Height      int
+	ColumnCount int
+	Columns     []MatrixRainColumn
 }
 
 // MatrixRainColumn represents a single column of falling characters
