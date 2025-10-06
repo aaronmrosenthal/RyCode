@@ -1,10 +1,13 @@
 package models
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/aaronmrosenthal/rycode/packages/tui-v2/internal/ai"
+	_ "github.com/aaronmrosenthal/rycode/packages/tui-v2/internal/ai/providers" // Register providers
 	"github.com/aaronmrosenthal/rycode/packages/tui-v2/internal/layout"
 	"github.com/aaronmrosenthal/rycode/packages/tui-v2/internal/theme"
 	"github.com/aaronmrosenthal/rycode/packages/tui-v2/internal/ui/components"
@@ -33,25 +36,42 @@ type StreamCompleteMsg struct{}
 
 // ChatModel represents the chat interface
 type ChatModel struct {
-	messages  components.MessageList
-	input     components.InputBar
-	width     int
-	height    int
-	layoutMgr *layout.LayoutManager
-	streaming bool
-	theme     theme.Theme
-	ready     bool
+	messages     components.MessageList
+	input        components.InputBar
+	width        int
+	height       int
+	layoutMgr    *layout.LayoutManager
+	streaming    bool
+	theme        theme.Theme
+	ready        bool
+	aiProvider   ai.Provider
+	aiEnabled    bool
+	aiError      error
+	streamChan   <-chan ai.StreamEvent
+	streamActive bool
 }
 
 // NewChatModel creates a new chat model
 func NewChatModel() ChatModel {
+	// Try to initialize AI provider
+	provider, err := ai.NewProvider(nil) // nil = use env config
+
+	aiEnabled := err == nil
+	if !aiEnabled {
+		// Fall back to mock responses
+		provider = nil
+	}
+
 	return ChatModel{
-		messages:  components.NewMessageList([]components.Message{}, 80, 20),
-		input:     components.NewInputBar(80),
-		layoutMgr: layout.NewLayoutManager(80, 24),
-		streaming: false,
-		theme:     theme.MatrixTheme,
-		ready:     false,
+		messages:   components.NewMessageList([]components.Message{}, 80, 20),
+		input:      components.NewInputBar(80),
+		layoutMgr:  layout.NewLayoutManager(80, 24),
+		streaming:  false,
+		theme:      theme.MatrixTheme,
+		ready:      false,
+		aiProvider: provider,
+		aiEnabled:  aiEnabled,
+		aiError:    err,
 	}
 }
 
@@ -81,11 +101,18 @@ func (m ChatModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		lastMsg := m.messages.Messages[len(m.messages.Messages)-1]
 		m.messages.UpdateLastMessage(lastMsg.Content + msg.Chunk)
+
+		// Continue streaming from active channel or fall back to mock
+		if m.streamActive && m.streamChan != nil {
+			return m, m.waitForNextStreamEvent()
+		}
 		return m, m.streamNextChunk()
 
 	case StreamCompleteMsg:
 		// Mark streaming as complete
 		m.streaming = false
+		m.streamActive = false
+		m.streamChan = nil
 		if len(m.messages.Messages) > 0 {
 			m.messages.SetLastMessageStatus(components.Sent)
 		}
@@ -200,6 +227,9 @@ func (m *ChatModel) sendMessage() tea.Cmd {
 	// Add to message list
 	m.messages.AddMessage(userMsg)
 
+	// Store prompt for AI
+	prompt := m.input.GetValue()
+
 	// Clear input
 	m.input.Clear()
 	m.input.SetFocus(false)
@@ -217,11 +247,63 @@ func (m *ChatModel) sendMessage() tea.Cmd {
 	m.messages.AddMessage(aiMsg)
 	m.streaming = true
 
-	// Start streaming response
+	// Use real AI if available, otherwise fall back to mock
+	if m.aiEnabled && m.aiProvider != nil {
+		return m.streamRealAI(prompt)
+	}
+
+	// Fall back to mock streaming
 	return m.streamNextChunk()
 }
 
-// streamNextChunk simulates streaming AI response
+// streamRealAI handles real AI provider streaming
+func (m *ChatModel) streamRealAI(prompt string) tea.Cmd {
+	return func() tea.Msg {
+		// Build conversation history
+		history := make([]ai.Message, 0, len(m.messages.Messages)-1)
+		for i := 0; i < len(m.messages.Messages)-1; i++ {
+			msg := m.messages.Messages[i]
+			role := ai.RoleUser
+			if !msg.IsUser {
+				role = ai.RoleAssistant
+			}
+			history = append(history, ai.Message{
+				Role:    role,
+				Content: msg.Content,
+			})
+		}
+
+		// Start streaming from AI provider
+		ctx := context.Background()
+		eventCh, err := m.aiProvider.Stream(ctx, prompt, history)
+		if err != nil {
+			return StreamChunkMsg{Chunk: fmt.Sprintf("❌ Error: %v", err)}
+		}
+
+		// Store channel and wait for first event
+		m.streamChan = eventCh
+		m.streamActive = true
+
+		// Wait for first event
+		event, ok := <-eventCh
+		if !ok {
+			return StreamCompleteMsg{}
+		}
+
+		switch event.Type {
+		case ai.EventTypeChunk:
+			return StreamChunkMsg{Chunk: event.Content}
+		case ai.EventTypeComplete:
+			return StreamCompleteMsg{}
+		case ai.EventTypeError:
+			return StreamChunkMsg{Chunk: fmt.Sprintf("\n\n❌ Error: %v", event.Error)}
+		default:
+			return StreamCompleteMsg{}
+		}
+	}
+}
+
+// streamNextChunk simulates streaming AI response (fallback when no AI provider)
 func (m *ChatModel) streamNextChunk() tea.Cmd {
 	// Simulate AI response based on user input
 	response := m.generateAIResponse()
@@ -354,11 +436,23 @@ func (m ChatModel) renderStatusBar() string {
 	var status string
 
 	if m.streaming {
-		status = m.theme.Info.Render("⚡ AI is responding...")
+		provider := "Mock"
+		if m.aiEnabled && m.aiProvider != nil {
+			provider = fmt.Sprintf("%s (%s)", m.aiProvider.Name(), m.aiProvider.Model())
+		}
+		status = m.theme.Info.Render(fmt.Sprintf("⚡ %s is responding...", provider))
 	} else if m.input.Focused {
 		status = m.theme.Hint.Render("Press Enter to send • Tab to accept suggestion • Ctrl+L to clear • Esc to quit")
 	} else {
 		status = m.theme.Hint.Render("Type to start • Ctrl+C to quit")
+	}
+
+	// Add AI provider info
+	aiInfo := "Mock AI"
+	if m.aiEnabled && m.aiProvider != nil {
+		aiInfo = fmt.Sprintf("%s (%s)", m.aiProvider.Name(), m.aiProvider.Model())
+	} else if m.aiError != nil {
+		aiInfo = fmt.Sprintf("⚠️  No AI (set ANTHROPIC_API_KEY or OPENAI_API_KEY)")
 	}
 
 	messageCount := fmt.Sprintf("%d messages", len(m.messages.Messages))
@@ -367,10 +461,36 @@ func (m ChatModel) renderStatusBar() string {
 		Foreground(theme.MatrixGreenDim).
 		Padding(0, 1)
 
+	separator := lipgloss.NewStyle().Foreground(theme.MatrixGreenDark).Render(" │ ")
+
 	return lipgloss.JoinHorizontal(
 		lipgloss.Top,
 		statusStyle.Render(status),
-		lipgloss.NewStyle().Foreground(theme.MatrixGreenDark).Render(" │ "),
+		separator,
+		statusStyle.Render(aiInfo),
+		separator,
 		statusStyle.Render(messageCount),
 	)
+}
+
+// waitForNextStreamEvent waits for the next stream event from active AI channel
+func (m *ChatModel) waitForNextStreamEvent() tea.Cmd {
+	return func() tea.Msg {
+		event, ok := <-m.streamChan
+		if !ok {
+			// Channel closed
+			return StreamCompleteMsg{}
+		}
+
+		switch event.Type {
+		case ai.EventTypeChunk:
+			return StreamChunkMsg{Chunk: event.Content}
+		case ai.EventTypeComplete:
+			return StreamCompleteMsg{}
+		case ai.EventTypeError:
+			return StreamChunkMsg{Chunk: fmt.Sprintf("\n\n❌ Error: %v", event.Error)}
+		default:
+			return StreamCompleteMsg{}
+		}
+	}
 }

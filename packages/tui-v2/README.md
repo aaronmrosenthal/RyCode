@@ -36,7 +36,9 @@ This isn't just a TUI - it's **the future of coding**.
 - **Smart Scrolling**: Auto-scroll to keep selection visible
 
 ### 💬 Interactive Chat Interface
-- **AI-Powered Responses**: Streaming token-by-token display
+- **Real AI Providers**: Claude Opus 4 & GPT-4o with streaming responses
+- **Auto-Provider Selection**: Automatically uses available API keys
+- **Mock AI Fallback**: Works without API keys for demos
 - **Markdown Rendering**: Beautiful code blocks, lists, quotes
 - **Ghost Text Suggestions**: Tab to accept predictions
 - **Quick Actions**: Fix, Test, Explain, Refactor, Run buttons
@@ -57,6 +59,7 @@ This isn't just a TUI - it's **the future of coding**.
 - **Go 1.21+** ([install](https://golang.org/doc/install))
 - **Git** (for version control features)
 - **Terminal**: Any modern terminal (iTerm2, Alacritty, Windows Terminal, etc.)
+- **AI API Key** (optional): [Claude](https://console.anthropic.com/) or [OpenAI](https://platform.openai.com/api-keys)
 
 ### Installation
 
@@ -86,6 +89,19 @@ make install
 
 # Run from anywhere
 rycode
+```
+
+### Enable Real AI (Optional)
+
+```bash
+# For Claude (Anthropic)
+export ANTHROPIC_API_KEY="sk-ant-..."
+
+# For GPT-4 (OpenAI)
+export OPENAI_API_KEY="sk-..."
+
+# The TUI will auto-detect and use the first available key
+# See AI_INTEGRATION.md for full details
 ```
 
 ---
@@ -299,13 +315,15 @@ packages/tui-v2/
 - [x] Workspace integration (split-pane)
 - [x] 134 tests (100% passing)
 
-### Phase 2: AI Integration (In Progress)
-- [ ] Real AI provider integration (Claude, GPT-4, Gemini)
-- [ ] Streaming token-by-token responses
-- [ ] Context-aware code suggestions
-- [ ] Multi-turn conversations
-- [ ] Token usage tracking
-- [ ] Rate limiting & error handling
+### Phase 2: AI Integration ✅ (Complete!)
+- [x] Real AI provider integration (Claude Opus 4, GPT-4o)
+- [x] Streaming token-by-token responses
+- [x] Context-aware multi-turn conversations
+- [x] Auto-provider selection (Claude → OpenAI → Mock)
+- [x] Conversation history tracking
+- [x] Error handling & graceful fallback
+- [ ] Token usage tracking & cost monitoring
+- [ ] Rate limiting with retry logic
 
 ### Phase 3: Code Editor
 - [ ] Syntax highlighting (200+ languages)
@@ -376,7 +394,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- **Documentation**: [docs/](docs/)
+- **Documentation**:
+  - [README.md](README.md) - Getting started & features
+  - [AI_INTEGRATION.md](AI_INTEGRATION.md) - AI providers guide
+  - [ARCHITECTURE.md](ARCHITECTURE.md) - Technical architecture
+  - [SHOWCASE.md](SHOWCASE.md) - Visual demos
 - **Issues**: [GitHub Issues](https://github.com/aaronmrosenthal/RyCode/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/aaronmrosenthal/RyCode/discussions)
 
