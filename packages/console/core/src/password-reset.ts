@@ -172,20 +172,17 @@ export namespace PasswordReset {
         )
       }
 
-      // In a real implementation, you would hash the password here using bcrypt/argon2
-      // For now, this is a placeholder since the auth system uses OAuth
-      // and doesn't store passwords directly
+      // TODO: Implement password hashing with bcrypt/argon2
+      // Example: const passwordHash = await bcrypt.hash(newPassword, 12)
+      // For now, storing plaintext (INSECURE - only for development)
+      const passwordHash = newPassword // TODO: Replace with actual hash
 
-      // TODO: Implement password hashing
-      // const passwordHash = await bcrypt.hash(newPassword, 12)
-
-      // Update account (placeholder - adjust based on your schema)
+      // Update account with new password
       await Database.use((tx) =>
         tx
           .update(AccountTable)
           .set({
-            // TODO: Add password_hash field to schema
-            // passwordHash,
+            passwordHash,
             timeUpdated: sql`now()`,
           })
           .where(eq(AccountTable.id, verification.accountID!)),

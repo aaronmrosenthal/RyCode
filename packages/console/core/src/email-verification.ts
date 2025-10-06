@@ -122,8 +122,7 @@ export namespace EmailVerification {
       tx
         .update(AccountTable)
         .set({
-          // TODO: Add emailVerified field to schema
-          // emailVerified: true,
+          emailVerified: true,
           timeUpdated: sql`now()`,
         })
         .where(eq(AccountTable.id, verificationData.accountID)),
@@ -158,9 +157,7 @@ export namespace EmailVerification {
       return false
     }
 
-    // Check emailVerified field (add to schema if needed)
-    // return account.emailVerified === true
-    return true // Placeholder
+    return account.emailVerified === true
   })
 
   /**
