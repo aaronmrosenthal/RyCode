@@ -42,6 +42,9 @@ type TokenUpdateMsg struct {
 	ResponseTokens int
 }
 
+// TickMsg is sent on each animation frame
+type TickMsg time.Time
+
 // ChatModel represents the chat interface
 type ChatModel struct {
 	messages           components.MessageList
@@ -62,6 +65,13 @@ type ChatModel struct {
 	lastResponseTokens int                // Tokens in last response
 	activeCtx          context.Context    // Context for active AI request
 	cancelRequest      context.CancelFunc // Cancel function for active request
+	animFrame          int                // Animation frame counter
+	titleGradient      theme.AnimatedGradient
+	providerName       string                      // Current provider name (e.g., "claude", "gpt-4o")
+	tokenMeter         components.TokenMeter       // Token usage meter
+	showLogo           bool                        // Show ASCII logo in header
+	matrixRain         *theme.MatrixRainBackground // Background Matrix rain (optional)
+	enableMatrixRain   bool                        // Enable Matrix rain background
 }
 
 // NewChatModel creates a new chat model
@@ -75,22 +85,49 @@ func NewChatModel() ChatModel {
 		provider = nil
 	}
 
+	// Determine provider name for branding
+	providerName := "AI"
+	if provider != nil {
+		// Try to get provider name from config
+		providerName = "claude" // Default, could be enhanced to detect from provider
+	}
+
+	// Create animated gradient for title (Matrix green → Cyan → Blue)
+	titleGradient := theme.NewAnimatedGradient(
+		[]lipgloss.Color{theme.MatrixGreen, theme.NeonCyan, theme.NeonBlue, theme.MatrixGreen},
+		8*time.Second,
+	)
+
+	// Create token meter
+	maxTokens := 4096 // Default max tokens
+	tokenMeter := components.NewTokenMeter(0, 0, maxTokens, 80)
+
 	return ChatModel{
-		messages:   components.NewMessageList([]components.Message{}, 80, 20),
-		input:      components.NewInputBar(80),
-		layoutMgr:  layout.NewLayoutManager(80, 24),
-		streaming:  false,
-		theme:      theme.MatrixTheme,
-		ready:      false,
-		aiProvider: provider,
-		aiEnabled:  aiEnabled,
-		aiError:    err,
+		messages:         components.NewMessageList([]components.Message{}, 80, 20),
+		input:            components.NewInputBar(80),
+		layoutMgr:        layout.NewLayoutManager(80, 24),
+		streaming:        false,
+		theme:            theme.MatrixTheme,
+		ready:            false,
+		aiProvider:       provider,
+		aiEnabled:        aiEnabled,
+		aiError:          err,
+		animFrame:        0,
+		titleGradient:    titleGradient,
+		providerName:     providerName,
+		tokenMeter:       tokenMeter,
+		showLogo:         true,              // Enable logo by default
+		matrixRain:       nil,               // Initialize on first render
+		enableMatrixRain: false,             // Disabled by default (opt-in)
 	}
 }
 
 // Init initializes the chat model
 func (m ChatModel) Init() tea.Cmd {
-	return nil
+	// Start animation ticker at 30fps
+	return tea.Tick(time.Second/30, func(t time.Time) tea.Msg {
+		return TickMsg(t)
+	})
 }
 
 // Update handles messages and updates the model
@@ -159,6 +196,23 @@ func (m ChatModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.input.SetFocus(true)
 		return m, nil
+
+	case TickMsg:
+		// Animation tick - increment frame counter
+		m.animFrame++
+
+		// Update token meter frame
+		m.tokenMeter.SetFrame(m.animFrame)
+
+		// Update Matrix rain if enabled
+		if m.enableMatrixRain && m.matrixRain != nil {
+			m.matrixRain.Update()
+		}
+
+		// Continue animation ticker
+		return m, tea.Tick(time.Second/30, func(t time.Time) tea.Msg {
+			return TickMsg(t)
+		})
 	}
 
 	return m, nil
@@ -453,8 +507,8 @@ func (m ChatModel) View() string {
 	deviceClass := m.layoutMgr.GetDeviceClass()
 	header := m.renderHeader(deviceClass)
 
-	// Messages area
-	messagesView := m.messages.Render()
+	// Messages area with animations
+	messagesView := m.renderMessages()
 
 	// Separator
 	separator := strings.Repeat("─", m.width)
@@ -463,40 +517,118 @@ func (m ChatModel) View() string {
 	// Input area
 	inputView := m.input.Render()
 
+	// Token meter (if there's usage)
+	var tokenMeterView string
+	if m.sessionTokens > 0 || m.streaming {
+		// Update token counts
+		m.tokenMeter.UpdateTokens(m.lastPromptTokens, m.lastResponseTokens)
+		m.tokenMeter.SetAnimated(m.streaming) // Pulse when streaming
+		tokenMeterView = m.tokenMeter.Render()
+	}
+
 	// Status bar
 	statusBar := m.renderStatusBar()
 
 	// Compose layout
-	content := lipgloss.JoinVertical(
-		lipgloss.Left,
-		header,
-		messagesView,
-		separatorStyle.Render(separator),
-		inputView,
-		statusBar,
-	)
+	var parts []string
+	parts = append(parts, header)
+	parts = append(parts, messagesView)
+	if tokenMeterView != "" {
+		parts = append(parts, separatorStyle.Render(separator))
+		parts = append(parts, tokenMeterView)
+	}
+	parts = append(parts, separatorStyle.Render(separator))
+	parts = append(parts, inputView)
+	parts = append(parts, statusBar)
+
+	content := lipgloss.JoinVertical(lipgloss.Left, parts...)
 
 	return content
 }
 
 // renderHeader renders the chat header
 func (m ChatModel) renderHeader(deviceClass layout.DeviceClass) string {
-	title := theme.GradientTextPreset("RyCode Matrix TUI", theme.GradientMatrix)
-	subtitle := m.theme.Subtitle.Render(fmt.Sprintf("Device: %s • %dx%d", deviceClass, m.width, m.height))
+	var headerContent string
+
+	if m.showLogo && m.width >= 60 {
+		// Show ASCII logo for larger screens
+		logo := theme.RenderLogoWithTagline(true, m.animFrame, m.width)
+		headerContent = logo
+	} else {
+		// Animated gradient title for smaller screens
+		title := theme.AnimatedGradientText("RyCode Matrix TUI", m.titleGradient)
+
+		// Provider info with branding
+		var providerInfo string
+		if m.aiEnabled && m.aiProvider != nil {
+			providerColor := theme.GetProviderColor(m.providerName)
+			icon := theme.GetProviderIcon(m.providerName)
+			providerStyle := lipgloss.NewStyle().Foreground(providerColor)
+			providerInfo = providerStyle.Render(icon + " Powered by " + m.providerName)
+		} else {
+			providerInfo = m.theme.Dim.Render("⚠ Mock AI (No API key)")
+		}
+
+		subtitle := m.theme.Subtitle.Render(fmt.Sprintf("Device: %s • %dx%d • ", deviceClass, m.width, m.height)) + providerInfo
+
+		headerContent = lipgloss.JoinVertical(
+			lipgloss.Left,
+			title,
+			subtitle,
+		)
+	}
+
+	// Breathing border effect when streaming
+	var borderColor lipgloss.Color
+	if m.streaming {
+		borderColor = theme.InterpolateBrightness(theme.NeonCyan, 0.6+0.4*(float64(m.animFrame%30)/30.0))
+	} else {
+		borderColor = theme.MatrixGreen
+	}
 
 	headerStyle := lipgloss.NewStyle().
 		Padding(0, 1).
 		BorderStyle(lipgloss.RoundedBorder()).
 		BorderBottom(true).
-		BorderForeground(theme.MatrixGreen)
+		BorderForeground(borderColor)
 
-	return headerStyle.Render(
-		lipgloss.JoinVertical(
-			lipgloss.Left,
-			title,
-			subtitle,
-		),
-	)
+	return headerStyle.Render(headerContent)
+}
+
+// renderMessages renders messages with animation support
+func (m ChatModel) renderMessages() string {
+	if len(m.messages.Messages) == 0 {
+		emptyStyle := lipgloss.NewStyle().
+			Foreground(theme.MatrixGreenDark).
+			Italic(true).
+			Width(m.width).
+			Height(m.messages.Height).
+			Align(lipgloss.Center, lipgloss.Center)
+
+		return emptyStyle.Render("No messages yet.\nStart a conversation!")
+	}
+
+	var bubbles []string
+	for _, msg := range m.messages.Messages {
+		bubble := components.MessageBubble{
+			Message:      msg,
+			Width:        m.width,
+			Theme:        m.theme,
+			AnimFrame:    m.animFrame,
+			ProviderName: m.providerName,
+		}
+		bubbles = append(bubbles, bubble.Render())
+	}
+
+	// Join messages with spacing
+	content := strings.Join(bubbles, "\n\n")
+
+	// Apply height constraint
+	style := lipgloss.NewStyle().
+		Width(m.width).
+		MaxHeight(m.messages.Height)
+
+	return style.Render(content)
 }
 
 // renderStatusBar renders the status bar

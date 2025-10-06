@@ -86,3 +86,47 @@ var (
 		To:   NeonOrange,
 	}
 )
+
+// AI Provider Brand Colors
+var (
+	ClaudeBlue    = lipgloss.Color("#5B8DEF") // Claude brand blue
+	ClaudeCyan    = lipgloss.Color("#00D4FF") // Claude accent cyan
+	OpenAIMagenta = lipgloss.Color("#FF006E") // OpenAI brand magenta
+	OpenAIGreen   = lipgloss.Color("#10A37F") // OpenAI accent green
+)
+
+// ProviderColors maps provider names to their brand colors
+var ProviderColors = map[string]lipgloss.Color{
+	"claude":        ClaudeBlue,
+	"claude-opus-4": ClaudeBlue,
+	"anthropic":     ClaudeBlue,
+	"openai":        OpenAIMagenta,
+	"gpt-4":         OpenAIMagenta,
+	"gpt-4o":        OpenAIMagenta,
+}
+
+// ProviderIcons maps provider names to their display icons
+var ProviderIcons = map[string]string{
+	"claude":        "🤖",
+	"claude-opus-4": "🤖",
+	"anthropic":     "🤖",
+	"openai":        "🧠",
+	"gpt-4":         "🧠",
+	"gpt-4o":        "🧠",
+}
+
+// GetProviderColor returns the brand color for a provider
+func GetProviderColor(provider string) lipgloss.Color {
+	if color, ok := ProviderColors[provider]; ok {
+		return color
+	}
+	return MatrixGreen // Default fallback
+}
+
+// GetProviderIcon returns the icon for a provider
+func GetProviderIcon(provider string) string {
+	if icon, ok := ProviderIcons[provider]; ok {
+		return icon
+	}
+	return "🤖" // Default fallback
+}

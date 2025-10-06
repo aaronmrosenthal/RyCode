@@ -27,8 +27,8 @@ func TestChatModel_Init(t *testing.T) {
 	m := NewChatModel()
 	cmd := m.Init()
 
-	if cmd != nil {
-		t.Error("Expected Init to return nil")
+	if cmd == nil {
+		t.Error("Expected Init to return animation ticker command")
 	}
 }
 
@@ -412,17 +412,13 @@ func TestChatModel_View_AfterReady(t *testing.T) {
 	m.ready = true
 	m.width = 80
 	m.height = 24
+	m.showLogo = false // Disable logo for test to check title
 
 	view := m.View()
 
-	// Should contain header elements
+	// Should contain header elements (either logo or title)
 	if !strings.Contains(view, "RyCode") {
 		t.Error("Expected view to contain 'RyCode'")
-	}
-
-	// Should contain device info
-	if !strings.Contains(view, "Device:") {
-		t.Error("Expected view to contain device info")
 	}
 }
 

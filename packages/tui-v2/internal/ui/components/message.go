@@ -33,9 +33,11 @@ type Message struct {
 
 // MessageBubble renders a message with markdown and syntax highlighting
 type MessageBubble struct {
-	Message Message
-	Width   int
-	Theme   theme.Theme
+	Message      Message
+	Width        int
+	Theme        theme.Theme
+	AnimFrame    int    // Animation frame for effects
+	ProviderName string // Provider name for branding (e.g., "claude", "gpt-4o")
 }
 
 // NewMessageBubble creates a new message bubble
@@ -91,15 +93,22 @@ func (mb MessageBubble) renderHeader() string {
 	timestamp := formatTimestamp(mb.Message.Timestamp)
 
 	// Color author based on type
-	var authorStyle lipgloss.Style
+	var authorText string
 	if mb.Message.IsUser {
-		authorStyle = lipgloss.NewStyle().
+		// User: cyan with user icon
+		authorStyle := lipgloss.NewStyle().
 			Foreground(theme.NeonCyan).
 			Bold(true)
+		authorText = authorStyle.Render("👤 " + author)
 	} else {
-		authorStyle = lipgloss.NewStyle().
-			Foreground(theme.MatrixGreen).
-			Bold(true)
+		// AI: provider-branded with gradient
+		providerColor := theme.GetProviderColor(mb.ProviderName)
+		icon := theme.GetProviderIcon(mb.ProviderName)
+
+		// Create gradient from provider color to matrix green
+		gradientText := theme.GradientText(author, providerColor, theme.MatrixGreen)
+		iconStyle := lipgloss.NewStyle().Foreground(providerColor)
+		authorText = iconStyle.Render(icon+" ") + gradientText
 	}
 
 	timestampStyle := lipgloss.NewStyle().
@@ -107,7 +116,7 @@ func (mb MessageBubble) renderHeader() string {
 
 	return lipgloss.JoinHorizontal(
 		lipgloss.Left,
-		authorStyle.Render(author),
+		authorText,
 		timestampStyle.Render(" • "+timestamp),
 	)
 }
@@ -166,8 +175,8 @@ func (mb MessageBubble) renderStatus() string {
 		icon = "✗"
 		color = theme.NeonPink
 	case Streaming:
-		icon = "..."
-		color = theme.NeonCyan
+		// Advanced streaming visualization with animated spinner
+		return mb.renderStreamingIndicator()
 	default:
 		return ""
 	}
@@ -177,6 +186,29 @@ func (mb MessageBubble) renderStatus() string {
 		Align(lipgloss.Right)
 
 	return style.Render(icon)
+}
+
+// renderStreamingIndicator renders an advanced streaming indicator with animation
+func (mb MessageBubble) renderStreamingIndicator() string {
+	// Animated spinner frames (braille dots)
+	spinners := []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
+	spinnerFrame := mb.AnimFrame % len(spinners)
+	spinner := spinners[spinnerFrame]
+
+	// Pulsing "AI is thinking" text
+	thinkingText := "AI is thinking"
+	intensity := 0.5 + 0.5*(float64(mb.AnimFrame%30)/30.0)
+	thinkingColor := theme.InterpolateBrightness(theme.NeonCyan, intensity)
+	thinkingStyle := lipgloss.NewStyle().Foreground(thinkingColor)
+
+	// Spinner in cyan
+	spinnerStyle := lipgloss.NewStyle().Foreground(theme.NeonCyan).Bold(true)
+
+	return lipgloss.JoinHorizontal(
+		lipgloss.Left,
+		spinnerStyle.Render(spinner+" "),
+		thinkingStyle.Render(thinkingText),
+	)
 }
 
 // formatTimestamp formats a timestamp for display

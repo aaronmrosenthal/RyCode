@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/lipgloss"
 )
@@ -225,4 +226,211 @@ func ScanlineEffect(text string, lineHeight int) string {
 	}
 
 	return strings.TrimSuffix(result.String(), "\n")
+}
+
+// MatrixRainBackground represents an animated background with falling Matrix characters
+type MatrixRainBackground struct {
+	Width        int
+	Height       int
+	ColumnCount  int
+	Columns      []MatrixRainColumn
+}
+
+// MatrixRainColumn represents a single column of falling characters
+type MatrixRainColumn struct {
+	X      int // X position
+	Y      int // Y position (top of trail)
+	Speed  int // Fall speed (pixels per frame)
+	Length int // Trail length
+	Offset int // Character offset for variation
+}
+
+// NewMatrixRainBackground creates a new Matrix rain background
+func NewMatrixRainBackground(width, height int) MatrixRainBackground {
+	columnCount := width / 3 // Sparse columns to avoid clutter
+	if columnCount < 1 {
+		columnCount = 1
+	}
+
+	columns := make([]MatrixRainColumn, columnCount)
+	for i := range columns {
+		columns[i] = MatrixRainColumn{
+			X:      (i * 3) + (i % 2), // Stagger positions
+			Y:      -(i % height),     // Start at different heights
+			Speed:  1 + (i % 2),       // Vary speeds
+			Length: 5 + (i % 8),       // Vary trail lengths
+			Offset: i * 7,             // Character variation
+		}
+	}
+
+	return MatrixRainBackground{
+		Width:       width,
+		Height:      height,
+		ColumnCount: columnCount,
+		Columns:     columns,
+	}
+}
+
+// Update updates the rain animation
+func (mrb *MatrixRainBackground) Update() {
+	for i := range mrb.Columns {
+		// Move column down
+		mrb.Columns[i].Y += mrb.Columns[i].Speed
+
+		// Reset if off screen
+		if mrb.Columns[i].Y > mrb.Height+mrb.Columns[i].Length {
+			mrb.Columns[i].Y = -mrb.Columns[i].Length
+			mrb.Columns[i].Offset += 13 // Change character pattern
+		}
+	}
+}
+
+// Render renders the Matrix rain (very dim to not distract)
+func (mrb MatrixRainBackground) Render() string {
+	// Create empty grid
+	grid := make([][]rune, mrb.Height)
+	for i := range grid {
+		grid[i] = make([]rune, mrb.Width)
+		for j := range grid[i] {
+			grid[i][j] = ' '
+		}
+	}
+
+	chars := "ｦｱｳｴｵｶｷｹｺｻｼｽｾｿﾀﾂﾃﾅﾆﾇﾈﾊﾋﾎﾏﾐﾑﾒﾓﾔﾕﾗﾘﾜ0123456789"
+	runes := []rune(chars)
+
+	// Draw columns
+	for _, col := range mrb.Columns {
+		for i := 0; i < col.Length; i++ {
+			y := col.Y - i
+			if y >= 0 && y < mrb.Height && col.X < mrb.Width {
+				// Select character
+				charIndex := (col.Offset + i) % len(runes)
+				grid[y][col.X] = runes[charIndex]
+			}
+		}
+	}
+
+	// Render grid with very dim colors
+	var result strings.Builder
+	dimStyle := lipgloss.NewStyle().Foreground(MatrixGreenVDark)
+
+	for _, row := range grid {
+		result.WriteString(dimStyle.Render(string(row)) + "\n")
+	}
+
+	return strings.TrimSuffix(result.String(), "\n")
+}
+
+// AnimatedGradient represents a time-based color gradient animation
+type AnimatedGradient struct {
+	Colors    []lipgloss.Color // Multi-color palette to cycle through
+	Duration  time.Duration    // Full animation cycle duration
+	StartTime time.Time        // When animation started
+}
+
+// NewAnimatedGradient creates a new animated gradient
+func NewAnimatedGradient(colors []lipgloss.Color, duration time.Duration) AnimatedGradient {
+	return AnimatedGradient{
+		Colors:    colors,
+		Duration:  duration,
+		StartTime: time.Now(),
+	}
+}
+
+// ColorAt returns the interpolated color at a given position and current time
+func (ag AnimatedGradient) ColorAt(position float64) lipgloss.Color {
+	if len(ag.Colors) == 0 {
+		return MatrixGreen
+	}
+
+	if len(ag.Colors) == 1 {
+		return ag.Colors[0]
+	}
+
+	// Calculate animation progress (0.0 - 1.0)
+	elapsed := time.Since(ag.StartTime)
+	timeProgress := float64(elapsed%ag.Duration) / float64(ag.Duration)
+
+	// Shift position based on time (creates wave effect)
+	shiftedPosition := position + timeProgress
+	if shiftedPosition > 1.0 {
+		shiftedPosition -= 1.0
+	}
+
+	// Determine which two colors to interpolate between
+	numSegments := len(ag.Colors) - 1
+	segmentSize := 1.0 / float64(numSegments)
+	segmentIndex := int(shiftedPosition / segmentSize)
+
+	if segmentIndex >= numSegments {
+		segmentIndex = numSegments - 1
+	}
+
+	// Calculate interpolation within segment
+	segmentProgress := (shiftedPosition - float64(segmentIndex)*segmentSize) / segmentSize
+
+	// Interpolate between colors
+	fromRGB := hexToRGB(string(ag.Colors[segmentIndex]))
+	toRGB := hexToRGB(string(ag.Colors[segmentIndex+1]))
+	resultRGB := interpolateRGB(fromRGB, toRGB, segmentProgress)
+
+	return lipgloss.Color(rgbToHex(resultRGB))
+}
+
+// AnimatedGradientText creates text with time-based animated gradient
+func AnimatedGradientText(text string, ag AnimatedGradient) string {
+	if len(text) == 0 {
+		return ""
+	}
+
+	if len(text) == 1 {
+		return lipgloss.NewStyle().Foreground(ag.ColorAt(0)).Render(text)
+	}
+
+	var result strings.Builder
+	runes := []rune(text)
+
+	for i, char := range runes {
+		position := float64(i) / float64(len(runes)-1)
+		color := ag.ColorAt(position)
+		style := lipgloss.NewStyle().Foreground(color)
+		result.WriteString(style.Render(string(char)))
+	}
+
+	return result.String()
+}
+
+// BreathingBorder creates a pulsing border effect
+func BreathingBorder(content string, baseColor lipgloss.Color, frame int, width int) string {
+	// Calculate intensity using sine wave (0.4 - 1.0 for subtle effect)
+	intensity := 0.4 + 0.6*(math.Sin(float64(frame)*0.08)+1.0)/2.0
+
+	// Adjust color brightness based on intensity
+	rgb := hexToRGB(string(baseColor))
+	adjustedRGB := RGB{
+		R: int(float64(rgb.R) * intensity),
+		G: int(float64(rgb.G) * intensity),
+		B: int(float64(rgb.B) * intensity),
+	}
+	borderColor := lipgloss.Color(rgbToHex(adjustedRGB))
+
+	style := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(borderColor).
+		Padding(1).
+		Width(width - 4)
+
+	return style.Render(content)
+}
+
+// InterpolateBrightness adjusts color brightness
+func InterpolateBrightness(baseColor lipgloss.Color, intensity float64) lipgloss.Color {
+	rgb := hexToRGB(string(baseColor))
+	adjustedRGB := RGB{
+		R: int(float64(rgb.R) * intensity),
+		G: int(float64(rgb.G) * intensity),
+		B: int(float64(rgb.B) * intensity),
+	}
+	return lipgloss.Color(rgbToHex(adjustedRGB))
 }
