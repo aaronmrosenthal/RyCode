@@ -28,11 +28,19 @@ const (
 
 // StreamChunkMsg is sent when a new chunk of streaming text arrives
 type StreamChunkMsg struct {
-	Chunk string
+	Chunk        string
+	TokensUsed   int // Tokens in this chunk (0 if unknown)
+	PromptTokens int // Prompt tokens (set on first chunk)
 }
 
 // StreamCompleteMsg is sent when streaming is complete
 type StreamCompleteMsg struct{}
+
+// TokenUpdateMsg is sent to update token counters (thread-safe)
+type TokenUpdateMsg struct {
+	PromptTokens   int
+	ResponseTokens int
+}
 
 // ChatModel represents the chat interface
 type ChatModel struct {
@@ -107,11 +115,31 @@ func (m ChatModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		lastMsg := m.messages.Messages[len(m.messages.Messages)-1]
 		m.messages.UpdateLastMessage(lastMsg.Content + msg.Chunk)
 
+		// Update token counters (thread-safe)
+		if msg.PromptTokens > 0 {
+			m.lastPromptTokens = msg.PromptTokens
+		}
+		if msg.TokensUsed > 0 {
+			m.sessionTokens += msg.TokensUsed
+			m.lastResponseTokens += msg.TokensUsed
+		}
+
 		// Continue streaming from active channel or fall back to mock
 		if m.streamActive && m.streamChan != nil {
 			return m, m.waitForNextStreamEvent()
 		}
 		return m, m.streamNextChunk()
+
+	case TokenUpdateMsg:
+		// Update token counters (thread-safe message-based update)
+		if msg.PromptTokens > 0 {
+			m.lastPromptTokens = msg.PromptTokens
+		}
+		if msg.ResponseTokens > 0 {
+			m.sessionTokens += msg.ResponseTokens
+			m.lastResponseTokens += msg.ResponseTokens
+		}
+		return m, nil
 
 	case StreamCompleteMsg:
 		// Mark streaming as complete
@@ -292,7 +320,6 @@ func (m *ChatModel) streamRealAI(prompt string) tea.Cmd {
 
 		// Estimate prompt tokens
 		estimatedPromptTokens := ai.EstimateConversationTokens(history) + ai.EstimateTokens(prompt)
-		m.lastPromptTokens = estimatedPromptTokens
 
 		// Create cancellable context with 2 minute timeout
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
@@ -315,22 +342,25 @@ func (m *ChatModel) streamRealAI(prompt string) tea.Cmd {
 			return StreamCompleteMsg{}
 		}
 
-		// Track token usage from event (or estimate if not provided)
-		if event.PromptTokens > 0 {
-			m.lastPromptTokens = event.PromptTokens
+		// Prepare token counts for first chunk
+		promptTokens := event.PromptTokens
+		if promptTokens == 0 {
+			promptTokens = estimatedPromptTokens
 		}
-		if event.Content != "" && event.TokensUsed == 0 {
+
+		tokensUsed := event.TokensUsed
+		if event.Content != "" && tokensUsed == 0 {
 			// Estimate if provider doesn't give us exact count
-			event.TokensUsed = ai.EstimateTokens(event.Content)
-		}
-		if event.TokensUsed > 0 {
-			m.sessionTokens += event.TokensUsed
-			m.lastResponseTokens += event.TokensUsed
+			tokensUsed = ai.EstimateTokens(event.Content)
 		}
 
 		switch event.Type {
 		case ai.EventTypeChunk:
-			return StreamChunkMsg{Chunk: event.Content}
+			return StreamChunkMsg{
+				Chunk:        event.Content,
+				TokensUsed:   tokensUsed,
+				PromptTokens: promptTokens,
+			}
 		case ai.EventTypeComplete:
 			return StreamCompleteMsg{}
 		case ai.EventTypeError:
@@ -525,28 +555,21 @@ func (m *ChatModel) waitForNextStreamEvent() tea.Cmd {
 			return StreamCompleteMsg{}
 		}
 
-		// Track token usage
-		if event.PromptTokens > 0 {
-			m.lastPromptTokens = event.PromptTokens
-		}
-
-		// Estimate tokens if provider doesn't give exact count
+		// Prepare token info (don't mutate state here - that happens in Update())
+		promptTokens := event.PromptTokens
 		tokensUsed := event.TokensUsed
 		if event.Content != "" && tokensUsed == 0 {
+			// Estimate if provider doesn't give exact count
 			tokensUsed = ai.EstimateTokens(event.Content)
-		}
-
-		if tokensUsed > 0 {
-			m.sessionTokens += tokensUsed
-			m.lastResponseTokens += tokensUsed
-		}
-		if event.TotalTokens > 0 {
-			m.lastResponseTokens = event.TotalTokens
 		}
 
 		switch event.Type {
 		case ai.EventTypeChunk:
-			return StreamChunkMsg{Chunk: event.Content}
+			return StreamChunkMsg{
+				Chunk:        event.Content,
+				TokensUsed:   tokensUsed,
+				PromptTokens: promptTokens,
+			}
 		case ai.EventTypeComplete:
 			return StreamCompleteMsg{}
 		case ai.EventTypeError:
