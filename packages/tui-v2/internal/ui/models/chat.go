@@ -44,24 +44,24 @@ type TokenUpdateMsg struct {
 
 // ChatModel represents the chat interface
 type ChatModel struct {
-	messages        components.MessageList
-	input           components.InputBar
-	width           int
-	height          int
-	layoutMgr       *layout.LayoutManager
-	streaming       bool
-	theme           theme.Theme
-	ready           bool
-	aiProvider      ai.Provider
-	aiEnabled       bool
-	aiError         error
-	streamChan      <-chan ai.StreamEvent
-	streamActive    bool
-	sessionTokens   int // Total tokens used this session
-	lastPromptTokens int // Tokens in last prompt
-	lastResponseTokens int // Tokens in last response
-	activeCtx       context.Context    // Context for active AI request
-	cancelRequest   context.CancelFunc // Cancel function for active request
+	messages           components.MessageList
+	input              components.InputBar
+	width              int
+	height             int
+	layoutMgr          *layout.LayoutManager
+	streaming          bool
+	theme              theme.Theme
+	ready              bool
+	aiProvider         ai.Provider
+	aiEnabled          bool
+	aiError            error
+	streamChan         <-chan ai.StreamEvent
+	streamActive       bool
+	sessionTokens      int                // Total tokens used this session
+	lastPromptTokens   int                // Tokens in last prompt
+	lastResponseTokens int                // Tokens in last response
+	activeCtx          context.Context    // Context for active AI request
+	cancelRequest      context.CancelFunc // Cancel function for active request
 }
 
 // NewChatModel creates a new chat model

@@ -3,7 +3,9 @@
 > The AI-Native, Mobile-First Terminal IDE with Matrix Cyberpunk Aesthetics
 
 [![Go Version](https://img.shields.io/badge/go-1.21%2B-blue)](https://golang.org/doc/install)
-[![Tests](https://img.shields.io/badge/tests-134%20passing-brightgreen)](https://github.com/aaronmrosenthal/RyCode)
+[![Tests](https://img.shields.io/badge/tests-140%2B%20passing-brightgreen)](https://github.com/aaronmrosenthal/RyCode)
+[![Coverage](https://img.shields.io/badge/coverage-60%25%2B-green)](https://github.com/aaronmrosenthal/RyCode)
+[![Production](https://img.shields.io/badge/production-ready-success)](PRODUCTION_READY.md)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 ## 🎯 Vision
@@ -22,11 +24,12 @@ This isn't just a TUI - it's **the future of coding**.
 - **Semantic Color System**: Error (pink), warning (yellow), success (green), info (cyan)
 - **Syntax Highlighting**: 200+ languages via Chroma
 
-### 📱 Mobile-First Responsive Design
-- **6 Device Classes**: PhonePortrait → PhoneLandscape → Tablet → Desktop
+### 📱 Mobile-First Responsive Design (Education Optimized)
+- **9 Device Classes**: iPhone SE → iPhone 12-14 → iPad Mini → iPad → iPad Pro → Chromebook → Laptop → Desktop
 - **Automatic Adaptation**: UI adapts to terminal size (40-160+ columns)
-- **Smart Layouts**: Stack on mobile, split on tablet, multi-pane on desktop
-- **Touch-Friendly**: Large targets, clear focus indicators
+- **Smart Layouts**: Chat-only on phones, split view on tablets, multi-pane on desktop
+- **Touch-Friendly**: Large targets, drawer navigation, optimized for students
+- **Accessibility**: Font scaling, high contrast, keyboard-first navigation
 
 ### 🗂️ File Tree Navigation
 - **Vim-Style Shortcuts**: j/k navigate, h/l expand/collapse, g/G first/last
@@ -37,7 +40,10 @@ This isn't just a TUI - it's **the future of coding**.
 
 ### 💬 Interactive Chat Interface
 - **Real AI Providers**: Claude Opus 4 & GPT-4o with streaming responses
+- **Secure API Keys**: AES-256-GCM encrypted in memory, auto-zeroed
 - **Auto-Provider Selection**: Automatically uses available API keys
+- **Token Tracking**: Real-time usage display, session totals
+- **Context Cancellation**: Press Esc to cancel mid-stream
 - **Mock AI Fallback**: Works without API keys for demos
 - **Markdown Rendering**: Beautiful code blocks, lists, quotes
 - **Ghost Text Suggestions**: Tab to accept predictions

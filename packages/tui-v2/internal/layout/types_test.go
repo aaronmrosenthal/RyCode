@@ -307,10 +307,10 @@ func TestDeviceClass_ShouldShowFileTreeOverlay(t *testing.T) {
 // Test breakpoint transitions for education devices
 func TestDeviceClass_EducationDevices(t *testing.T) {
 	tests := []struct {
-		name     string
-		width    int
+		name      string
+		width     int
 		wantClass DeviceClass
-		wantDesc string
+		wantDesc  string
 	}{
 		{"iPhone SE with large font", 38, PhoneTiny, "Emergency tiny mode"},
 		{"iPhone SE portrait", 45, PhoneCompact, "iPhone SE, Mini"},
