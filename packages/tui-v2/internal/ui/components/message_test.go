@@ -52,9 +52,9 @@ func TestMessageBubble_RenderMarkdown(t *testing.T) {
 
 func TestMessageBubble_RenderCodeBlock(t *testing.T) {
 	msg := Message{
-		ID:      "3",
-		Author:  "AI",
-		Content: "```go\nfunc main() {\n  println(\"hello\")\n}\n```",
+		ID:        "3",
+		Author:    "AI",
+		Content:   "```go\nfunc main() {\n  println(\"hello\")\n}\n```",
 		Timestamp: time.Now(),
 		Status:    Sent,
 		IsUser:    false,

@@ -143,15 +143,15 @@ func (n *TreeNode) Icon() string {
 
 // FileTree represents a file tree component
 type FileTree struct {
-	Root           *TreeNode
-	FlatList       []*TreeNode // Flattened list for rendering
-	SelectedIndex  int
-	ScrollOffset   int
-	Width          int
-	Height         int
-	RootPath       string
-	ShowHidden     bool
-	GitStatusMap   map[string]GitStatus
+	Root          *TreeNode
+	FlatList      []*TreeNode // Flattened list for rendering
+	SelectedIndex int
+	ScrollOffset  int
+	Width         int
+	Height        int
+	RootPath      string
+	ShowHidden    bool
+	GitStatusMap  map[string]GitStatus
 }
 
 // NewFileTree creates a new file tree

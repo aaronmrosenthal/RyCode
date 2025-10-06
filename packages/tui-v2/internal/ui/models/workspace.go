@@ -20,13 +20,13 @@ const (
 
 // WorkspaceModel represents the full IDE workspace with FileTree and Chat
 type WorkspaceModel struct {
-	fileTree    *components.FileTree
-	chat        ChatModel
-	focus       FocusPane
-	width       int
-	height      int
-	layoutMgr   *layout.LayoutManager
-	ready       bool
+	fileTree      *components.FileTree
+	chat          ChatModel
+	focus         FocusPane
+	width         int
+	height        int
+	layoutMgr     *layout.LayoutManager
+	ready         bool
 	fileTreeWidth int // Width of file tree pane
 }
 
@@ -150,9 +150,12 @@ func (m WorkspaceModel) handleFileTreeKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) 
 func (m *WorkspaceModel) updateDimensions() {
 	// Initialize FileTree if needed
 	if m.fileTree == nil {
-		// Get current working directory for now
-		// TODO: Make this configurable
-		m.fileTree = components.NewFileTree(".", m.fileTreeWidth, m.height-2)
+		rootPath := m.layoutMgr.GetDeviceClass().String() // Temporary: use device class as placeholder
+		if m.width > 0 && m.height > 0 {
+			// Use actual root path from NewWorkspaceModel
+			rootPath = "."
+		}
+		m.fileTree = components.NewFileTree(rootPath, m.fileTreeWidth, max(m.height-2, 10))
 	}
 
 	// Calculate dimensions based on device class
@@ -235,7 +238,7 @@ func (m WorkspaceModel) renderHeader() string {
 	title := theme.GradientTextPreset("RyCode Workspace", theme.GradientMatrix)
 	subtitle := theme.MatrixTheme.Subtitle.Render(
 		deviceClass.String() + " • " +
-		m.layoutMgr.GetDeviceClass().String(),
+			m.layoutMgr.GetDeviceClass().String(),
 	)
 
 	headerStyle := lipgloss.NewStyle().

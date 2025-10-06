@@ -33,14 +33,14 @@ type StreamCompleteMsg struct{}
 
 // ChatModel represents the chat interface
 type ChatModel struct {
-	messages    components.MessageList
-	input       components.InputBar
-	width       int
-	height      int
-	layoutMgr   *layout.LayoutManager
-	streaming   bool
-	theme       theme.Theme
-	ready       bool
+	messages  components.MessageList
+	input     components.InputBar
+	width     int
+	height    int
+	layoutMgr *layout.LayoutManager
+	streaming bool
+	theme     theme.Theme
+	ready     bool
 }
 
 // NewChatModel creates a new chat model

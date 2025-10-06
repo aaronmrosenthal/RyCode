@@ -4,21 +4,21 @@ import "github.com/charmbracelet/lipgloss"
 
 // Matrix Theme Primary Colors
 var (
-	MatrixGreen      = lipgloss.Color("#00ff00") // Primary Matrix green
+	MatrixGreen       = lipgloss.Color("#00ff00") // Primary Matrix green
 	MatrixGreenBright = lipgloss.Color("#00ff88") // Brighter variant
-	MatrixGreenDim   = lipgloss.Color("#00dd00")  // Dimmed variant
-	MatrixGreenDark  = lipgloss.Color("#004400")  // Dark variant
-	MatrixGreenVDark = lipgloss.Color("#002200")  // Very dark variant
+	MatrixGreenDim    = lipgloss.Color("#00dd00") // Dimmed variant
+	MatrixGreenDark   = lipgloss.Color("#004400") // Dark variant
+	MatrixGreenVDark  = lipgloss.Color("#002200") // Very dark variant
 )
 
 // Neon Cyberpunk Accent Colors
 var (
-	NeonCyan    = lipgloss.Color("#00ffff") // Bright cyan
-	NeonPink    = lipgloss.Color("#ff3366") // Hot pink
-	NeonPurple  = lipgloss.Color("#cc00ff") // Electric purple
-	NeonYellow  = lipgloss.Color("#ffaa00") // Amber yellow
-	NeonOrange  = lipgloss.Color("#ff6600") // Vibrant orange
-	NeonBlue    = lipgloss.Color("#0088ff") // Electric blue
+	NeonCyan   = lipgloss.Color("#00ffff") // Bright cyan
+	NeonPink   = lipgloss.Color("#ff3366") // Hot pink
+	NeonPurple = lipgloss.Color("#cc00ff") // Electric purple
+	NeonYellow = lipgloss.Color("#ffaa00") // Amber yellow
+	NeonOrange = lipgloss.Color("#ff6600") // Vibrant orange
+	NeonBlue   = lipgloss.Color("#0088ff") // Electric blue
 )
 
 // Background Colors
@@ -31,11 +31,11 @@ var (
 
 // Semantic Colors
 var (
-	ColorError    = NeonPink     // Error states
-	ColorWarning  = NeonYellow   // Warning states
-	ColorSuccess  = MatrixGreen  // Success states
-	ColorInfo     = NeonCyan     // Informational
-	ColorPrimary  = MatrixGreen  // Primary actions
+	ColorError     = NeonPink       // Error states
+	ColorWarning   = NeonYellow     // Warning states
+	ColorSuccess   = MatrixGreen    // Success states
+	ColorInfo      = NeonCyan       // Informational
+	ColorPrimary   = MatrixGreen    // Primary actions
 	ColorSecondary = MatrixGreenDim // Secondary actions
 )
 
@@ -53,13 +53,13 @@ var (
 
 // Code Syntax Colors (for syntax highlighting)
 var (
-	SyntaxKeyword  = NeonPink    // Keywords
-	SyntaxString   = NeonYellow  // Strings
-	SyntaxNumber   = NeonCyan    // Numbers
+	SyntaxKeyword  = NeonPink        // Keywords
+	SyntaxString   = NeonYellow      // Strings
+	SyntaxNumber   = NeonCyan        // Numbers
 	SyntaxComment  = MatrixGreenDark // Comments
-	SyntaxFunction = NeonBlue    // Functions
-	SyntaxType     = NeonPurple  // Types
-	SyntaxOperator = MatrixGreen // Operators
+	SyntaxFunction = NeonBlue        // Functions
+	SyntaxType     = NeonPurple      // Types
+	SyntaxOperator = MatrixGreen     // Operators
 )
 
 // Gradient Presets

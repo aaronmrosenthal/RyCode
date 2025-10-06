@@ -9,31 +9,31 @@ import (
 
 // InputBar represents the message input field
 type InputBar struct {
-	Value          string
-	Cursor         int
-	Placeholder    string
-	MaxLines       int
-	Width          int
-	GhostText      string
+	Value           string
+	Cursor          int
+	Placeholder     string
+	MaxLines        int
+	Width           int
+	GhostText       string
 	ShowVoiceButton bool
-	ShowActions    bool
-	Focused        bool
-	Theme          theme.Theme
+	ShowActions     bool
+	Focused         bool
+	Theme           theme.Theme
 }
 
 // NewInputBar creates a new input bar
 func NewInputBar(width int) InputBar {
 	return InputBar{
-		Value:          "",
-		Cursor:         0,
-		Placeholder:    "Type a message or press 🎤 to speak...",
-		MaxLines:       10,
-		Width:          width,
-		GhostText:      "",
+		Value:           "",
+		Cursor:          0,
+		Placeholder:     "Type a message or press 🎤 to speak...",
+		MaxLines:        10,
+		Width:           width,
+		GhostText:       "",
 		ShowVoiceButton: true,
-		ShowActions:    true,
-		Focused:        false,
-		Theme:          theme.MatrixTheme,
+		ShowActions:     true,
+		Focused:         false,
+		Theme:           theme.MatrixTheme,
 	}
 }
 
