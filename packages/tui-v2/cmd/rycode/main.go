@@ -163,20 +163,33 @@ func main() {
 			}
 			return
 
+		case "--workspace":
+			p := tea.NewProgram(
+				workspaceModel(),
+				tea.WithAltScreen(),
+				tea.WithMouseCellMotion(),
+			)
+			if _, err := p.Run(); err != nil {
+				fmt.Printf("Error: %v\n", err)
+				os.Exit(1)
+			}
+			return
+
 		case "--help", "-h":
 			fmt.Println("RyCode Matrix TUI v2")
 			fmt.Println("\nUsage:")
-			fmt.Println("  rycode           Run default interface")
-			fmt.Println("  rycode --demo    Show theme demo")
-			fmt.Println("  rycode --chat    Interactive chat interface")
-			fmt.Println("  rycode --help    Show this help")
+			fmt.Println("  rycode              Run workspace (FileTree + Chat)")
+			fmt.Println("  rycode --workspace  Run workspace (explicit)")
+			fmt.Println("  rycode --chat       Interactive chat only")
+			fmt.Println("  rycode --demo       Show theme demo")
+			fmt.Println("  rycode --help       Show this help")
 			return
 		}
 	}
 
-	// Create Bubble Tea program (default: chat)
+	// Create Bubble Tea program (default: workspace)
 	p := tea.NewProgram(
-		chatModel(),
+		workspaceModel(),
 		tea.WithAltScreen(),       // Use alternate screen buffer
 		tea.WithMouseCellMotion(), // Enable mouse support
 	)
@@ -225,4 +238,14 @@ func (m demoModelType) View() string {
 // Chat mode - returns the chat model
 func chatModel() models.ChatModel {
 	return models.NewChatModel()
+}
+
+// Workspace mode - returns the workspace model with FileTree + Chat
+func workspaceModel() models.WorkspaceModel {
+	// Get current working directory
+	cwd, err := os.Getwd()
+	if err != nil {
+		cwd = "."
+	}
+	return models.NewWorkspaceModel(cwd)
 }

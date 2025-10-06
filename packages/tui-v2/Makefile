@@ -85,6 +85,11 @@ chat: build
 	@echo "Running chat interface..."
 	$(BUILD_DIR)/$(BINARY_NAME) --chat
 
+# Run workspace (FileTree + Chat)
+workspace: build
+	@echo "Running workspace..."
+	$(BUILD_DIR)/$(BINARY_NAME) --workspace
+
 # Show help
 help:
 	@echo "Available targets:"
@@ -103,4 +108,5 @@ help:
 	@echo "  tidy               - Tidy dependencies"
 	@echo "  demo               - Run theme demo mode"
 	@echo "  chat               - Run interactive chat interface"
+	@echo "  workspace          - Run workspace (FileTree + Chat)"
 	@echo "  help               - Show this help"
