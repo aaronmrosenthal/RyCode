@@ -32,10 +32,13 @@ const (
 
 // StreamEvent represents a single event in the streaming response
 type StreamEvent struct {
-	Type    EventType
-	Content string
-	Error   error
-	Done    bool
+	Type         EventType
+	Content      string
+	Error        error
+	Done         bool
+	TokensUsed   int // Tokens used in this chunk (if available)
+	TotalTokens  int // Total tokens used so far (cumulative)
+	PromptTokens int // Tokens in the prompt (set on first event)
 }
 
 // EventType represents the type of streaming event

@@ -36,19 +36,22 @@ type StreamCompleteMsg struct{}
 
 // ChatModel represents the chat interface
 type ChatModel struct {
-	messages     components.MessageList
-	input        components.InputBar
-	width        int
-	height       int
-	layoutMgr    *layout.LayoutManager
-	streaming    bool
-	theme        theme.Theme
-	ready        bool
-	aiProvider   ai.Provider
-	aiEnabled    bool
-	aiError      error
-	streamChan   <-chan ai.StreamEvent
-	streamActive bool
+	messages        components.MessageList
+	input           components.InputBar
+	width           int
+	height          int
+	layoutMgr       *layout.LayoutManager
+	streaming       bool
+	theme           theme.Theme
+	ready           bool
+	aiProvider      ai.Provider
+	aiEnabled       bool
+	aiError         error
+	streamChan      <-chan ai.StreamEvent
+	streamActive    bool
+	sessionTokens   int // Total tokens used this session
+	lastPromptTokens int // Tokens in last prompt
+	lastResponseTokens int // Tokens in last response
 }
 
 // NewChatModel creates a new chat model
@@ -273,6 +276,10 @@ func (m *ChatModel) streamRealAI(prompt string) tea.Cmd {
 			})
 		}
 
+		// Estimate prompt tokens
+		estimatedPromptTokens := ai.EstimateConversationTokens(history) + ai.EstimateTokens(prompt)
+		m.lastPromptTokens = estimatedPromptTokens
+
 		// Start streaming from AI provider
 		ctx := context.Background()
 		eventCh, err := m.aiProvider.Stream(ctx, prompt, history)
@@ -288,6 +295,19 @@ func (m *ChatModel) streamRealAI(prompt string) tea.Cmd {
 		event, ok := <-eventCh
 		if !ok {
 			return StreamCompleteMsg{}
+		}
+
+		// Track token usage from event (or estimate if not provided)
+		if event.PromptTokens > 0 {
+			m.lastPromptTokens = event.PromptTokens
+		}
+		if event.Content != "" && event.TokensUsed == 0 {
+			// Estimate if provider doesn't give us exact count
+			event.TokensUsed = ai.EstimateTokens(event.Content)
+		}
+		if event.TokensUsed > 0 {
+			m.sessionTokens += event.TokensUsed
+			m.lastResponseTokens += event.TokensUsed
 		}
 
 		switch event.Type {
@@ -447,12 +467,17 @@ func (m ChatModel) renderStatusBar() string {
 		status = m.theme.Hint.Render("Type to start • Ctrl+C to quit")
 	}
 
-	// Add AI provider info
+	// Add AI provider info with token usage
 	aiInfo := "Mock AI"
 	if m.aiEnabled && m.aiProvider != nil {
-		aiInfo = fmt.Sprintf("%s (%s)", m.aiProvider.Name(), m.aiProvider.Model())
+		providerName := fmt.Sprintf("%s (%s)", m.aiProvider.Name(), m.aiProvider.Model())
+		if m.sessionTokens > 0 {
+			aiInfo = fmt.Sprintf("%s • %d tokens", providerName, m.sessionTokens)
+		} else {
+			aiInfo = providerName
+		}
 	} else if m.aiError != nil {
-		aiInfo = fmt.Sprintf("⚠️  No AI (set ANTHROPIC_API_KEY or OPENAI_API_KEY)")
+		aiInfo = "⚠️  No AI (set ANTHROPIC_API_KEY or OPENAI_API_KEY)"
 	}
 
 	messageCount := fmt.Sprintf("%d messages", len(m.messages.Messages))
@@ -480,6 +505,25 @@ func (m *ChatModel) waitForNextStreamEvent() tea.Cmd {
 		if !ok {
 			// Channel closed
 			return StreamCompleteMsg{}
+		}
+
+		// Track token usage
+		if event.PromptTokens > 0 {
+			m.lastPromptTokens = event.PromptTokens
+		}
+
+		// Estimate tokens if provider doesn't give exact count
+		tokensUsed := event.TokensUsed
+		if event.Content != "" && tokensUsed == 0 {
+			tokensUsed = ai.EstimateTokens(event.Content)
+		}
+
+		if tokensUsed > 0 {
+			m.sessionTokens += tokensUsed
+			m.lastResponseTokens += tokensUsed
+		}
+		if event.TotalTokens > 0 {
+			m.lastResponseTokens = event.TotalTokens
 		}
 
 		switch event.Type {
