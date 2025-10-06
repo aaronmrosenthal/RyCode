@@ -10,15 +10,20 @@ import crypto from "crypto"
 
 export namespace EmailVerification {
   // Store verification tokens in-memory for now
-  // In production, you'd want to use Redis or a database table
+  // WARNING: In production, use Redis or database table for persistence
   const verificationTokens = new Map<
     string,
     {
       accountID: string
       email: string
       expiresAt: number
+      attempts: number
     }
   >()
+
+  const MAX_VERIFICATION_ATTEMPTS = 10
+  const RATE_LIMIT_WINDOW = 60 * 60 * 1000 // 1 hour
+  const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
 
   /**
    * Send verification email to a new account
@@ -29,21 +34,43 @@ export namespace EmailVerification {
       email: z.string().email(),
     }),
     async ({ accountID, email }) => {
+      // Rate limiting
+      const normalizedEmail = email.toLowerCase().trim()
+      const rateLimit = rateLimitMap.get(normalizedEmail)
+      const now = Date.now()
+
+      if (rateLimit) {
+        if (now < rateLimit.resetAt && rateLimit.count >= 5) {
+          console.warn(`Rate limit exceeded for email verification: ${normalizedEmail}`)
+          throw new Error("Too many verification emails sent. Please try again later.")
+        }
+        if (now >= rateLimit.resetAt) {
+          rateLimitMap.set(normalizedEmail, { count: 1, resetAt: now + RATE_LIMIT_WINDOW })
+        } else {
+          rateLimit.count++
+        }
+      } else {
+        rateLimitMap.set(normalizedEmail, { count: 1, resetAt: now + RATE_LIMIT_WINDOW })
+      }
+
       // Generate secure verification token
       const token = crypto.randomBytes(32).toString("hex")
       const expiresAt = Date.now() + 24 * 60 * 60 * 1000 // 24 hours
 
-      // Store token
+      // Store token with attempt tracking
       verificationTokens.set(token, {
         accountID,
-        email,
+        email: normalizedEmail,
         expiresAt,
+        attempts: 0,
       })
 
       // Clean up expired tokens periodically
       cleanupExpiredTokens()
 
-      // Send verification email
+      // Send verification email with proper URL encoding
+      const verifyUrl = `${process.env.AUTH_FRONTEND_URL}/auth/verify-email?token=${encodeURIComponent(token)}`
+
       try {
         await AWS.sendEmail({
           to: email,
@@ -51,9 +78,10 @@ export namespace EmailVerification {
           body: `
             <h1>Welcome to OpenCode!</h1>
             <p>Please verify your email address by clicking the link below:</p>
-            <p><a href="${process.env.AUTH_FRONTEND_URL}/auth/verify-email?token=${token}">Verify Email</a></p>
+            <p><a href="${verifyUrl}">Verify Email</a></p>
             <p>This link will expire in 24 hours.</p>
             <p>If you didn't create an account, you can safely ignore this email.</p>
+            <p><small>For security, this link can only be used once.</small></p>
           `,
         })
       } catch (e) {
@@ -80,20 +108,32 @@ export namespace EmailVerification {
       throw new Error("Verification token expired")
     }
 
+    // Check for brute force attempts
+    if (verificationData.attempts >= MAX_VERIFICATION_ATTEMPTS) {
+      verificationTokens.delete(token)
+      console.warn(`Max verification attempts exceeded for account ${verificationData.accountID}`)
+      throw new Error("Token locked due to too many attempts")
+    }
+
+    verificationData.attempts++
+
     // Mark email as verified in the database
     await Database.use((tx) =>
       tx
         .update(AccountTable)
         .set({
-          // Add emailVerified field to schema if needed
+          // TODO: Add emailVerified field to schema
           // emailVerified: true,
           timeUpdated: sql`now()`,
         })
         .where(eq(AccountTable.id, verificationData.accountID)),
     )
 
-    // Invalidate the token
+    // Invalidate the token after successful verification
     verificationTokens.delete(token)
+
+    // Clear rate limit
+    rateLimitMap.delete(verificationData.email)
 
     return {
       success: true,

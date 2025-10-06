@@ -14,12 +14,21 @@ export namespace Test {
    */
   export const create = fn(
     z.object({
-      name: z.string().min(1).max(255),
-      description: z.string().optional(),
+      name: z.string().min(1).max(255).trim(),
+      description: z.string().max(10000).optional(), // Prevent DoS with large descriptions
       status: z.enum(TestStatus).default("active"),
     }),
     async ({ name, description, status }) => {
       const workspaceID = Actor.workspace()
+
+      // Sanitize inputs
+      const sanitizedName = name.trim()
+      const sanitizedDescription = description?.trim() ?? null
+
+      // Validate name is not just whitespace
+      if (sanitizedName.length === 0) {
+        throw new Error("Name cannot be empty or whitespace only")
+      }
 
       const id = Identifier.create("test")
 
@@ -27,13 +36,13 @@ export namespace Test {
         tx.insert(TestTable).values({
           id,
           workspaceID,
-          name,
-          description: description ?? null,
+          name: sanitizedName,
+          description: sanitizedDescription,
           status,
         }),
       )
 
-      return { id, name, description, status }
+      return { id, name: sanitizedName, description: sanitizedDescription, status }
     },
   )
 
@@ -95,23 +104,38 @@ export namespace Test {
   export const update = fn(
     z.object({
       id: z.string(),
-      name: z.string().min(1).max(255).optional(),
-      description: z.string().optional(),
+      name: z.string().min(1).max(255).trim().optional(),
+      description: z.string().max(10000).optional(),
       status: z.enum(TestStatus).optional(),
     }),
     async ({ id, name, description, status }) => {
       const workspaceID = Actor.workspace()
+
+      // Validate at least one field is being updated
+      if (name === undefined && description === undefined && status === undefined) {
+        throw new Error("At least one field must be provided for update")
+      }
 
       // Build update object with only provided fields
       const updateData: any = {
         timeUpdated: sql`now()`,
       }
 
-      if (name !== undefined) updateData.name = name
-      if (description !== undefined) updateData.description = description
-      if (status !== undefined) updateData.status = status
+      if (name !== undefined) {
+        const sanitizedName = name.trim()
+        if (sanitizedName.length === 0) {
+          throw new Error("Name cannot be empty or whitespace only")
+        }
+        updateData.name = sanitizedName
+      }
+      if (description !== undefined) {
+        updateData.description = description.trim() || null
+      }
+      if (status !== undefined) {
+        updateData.status = status
+      }
 
-      const result = await Database.use((tx) =>
+      await Database.use((tx) =>
         tx
           .update(TestTable)
           .set(updateData)
@@ -125,7 +149,11 @@ export namespace Test {
       )
 
       // Return updated entity
-      return await fromID(id)
+      const updated = await fromID(id)
+      if (!updated) {
+        throw new Error("Test entity not found or has been deleted")
+      }
+      return updated
     },
   )
 

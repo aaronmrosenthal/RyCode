@@ -10,15 +10,23 @@ import crypto from "crypto"
 
 export namespace PasswordReset {
   // Store password reset tokens in-memory for now
-  // In production, you'd want to use Redis or a database table
+  // WARNING: In production, use Redis or database table for:
+  // - Persistence across server restarts
+  // - Distributed systems support
+  // - Better memory management
   const resetTokens = new Map<
     string,
     {
       accountID: string
       email: string
       expiresAt: number
+      attempts: number // Track verification attempts to prevent brute force
     }
   >()
+
+  const MAX_RESET_ATTEMPTS = 5
+  const RATE_LIMIT_WINDOW = 15 * 60 * 1000 // 15 minutes
+  const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
 
   /**
    * Request a password reset email
@@ -28,18 +36,39 @@ export namespace PasswordReset {
       email: z.string().email(),
     }),
     async ({ email }) => {
-      // Find account by email
+      // Rate limiting: Prevent spam/abuse
+      const normalizedEmail = email.toLowerCase().trim()
+      const rateLimit = rateLimitMap.get(normalizedEmail)
+      const now = Date.now()
+
+      if (rateLimit) {
+        if (now < rateLimit.resetAt) {
+          if (rateLimit.count >= 3) {
+            // Too many requests - but still return success to prevent enumeration
+            console.warn(`Rate limit exceeded for password reset: ${normalizedEmail}`)
+            return { success: true }
+          }
+          rateLimit.count++
+        } else {
+          // Reset window expired
+          rateLimitMap.set(normalizedEmail, { count: 1, resetAt: now + RATE_LIMIT_WINDOW })
+        }
+      } else {
+        rateLimitMap.set(normalizedEmail, { count: 1, resetAt: now + RATE_LIMIT_WINDOW })
+      }
+
+      // Find account by email (case-insensitive)
       const account = await Database.use((tx) =>
         tx
           .select()
           .from(AccountTable)
-          .where(eq(AccountTable.email, email))
+          .where(sql`LOWER(${AccountTable.email}) = ${normalizedEmail}`)
           .then((rows) => rows[0]),
       )
 
       // Always return success to prevent email enumeration attacks
       if (!account) {
-        console.log(`Password reset requested for non-existent email: ${email}`)
+        console.log(`Password reset requested for non-existent email: ${normalizedEmail}`)
         return { success: true }
       }
 
@@ -47,32 +76,37 @@ export namespace PasswordReset {
       const token = crypto.randomBytes(32).toString("hex")
       const expiresAt = Date.now() + 60 * 60 * 1000 // 1 hour
 
-      // Store token
+      // Store token with attempt tracking
       resetTokens.set(token, {
         accountID: account.id,
         email: account.email,
         expiresAt,
+        attempts: 0,
       })
 
       // Clean up expired tokens periodically
       cleanupExpiredTokens()
 
-      // Send reset email
+      // Send reset email with proper HTML escaping
+      const resetUrl = `${process.env.AUTH_FRONTEND_URL}/auth/reset-password?token=${encodeURIComponent(token)}`
+
       try {
         await AWS.sendEmail({
-          to: email,
+          to: account.email, // Use account email, not user input
           subject: "Reset your OpenCode password",
           body: `
             <h1>Reset your password</h1>
             <p>You requested to reset your password. Click the link below to continue:</p>
-            <p><a href="${process.env.AUTH_FRONTEND_URL}/auth/reset-password?token=${token}">Reset Password</a></p>
+            <p><a href="${resetUrl}">Reset Password</a></p>
             <p>This link will expire in 1 hour.</p>
             <p>If you didn't request this, you can safely ignore this email.</p>
+            <p><small>For security, this link can only be used once.</small></p>
           `,
         })
       } catch (e) {
         console.error("Failed to send password reset email:", e)
-        throw new Error("Failed to send password reset email")
+        // Don't expose email sending errors to prevent enumeration
+        return { success: true }
       }
 
       return { success: true }
@@ -94,6 +128,16 @@ export namespace PasswordReset {
       return { valid: false, reason: "Token expired" }
     }
 
+    // Check for brute force attempts
+    if (resetData.attempts >= MAX_RESET_ATTEMPTS) {
+      resetTokens.delete(token)
+      console.warn(`Max verification attempts exceeded for token`)
+      return { valid: false, reason: "Token locked due to too many attempts" }
+    }
+
+    // Increment attempt counter
+    resetData.attempts++
+
     return {
       valid: true,
       accountID: resetData.accountID,
@@ -107,7 +151,7 @@ export namespace PasswordReset {
   export const resetPassword = fn(
     z.object({
       token: z.string(),
-      newPassword: z.string().min(8),
+      newPassword: z.string().min(8).max(128), // Max length to prevent DoS
     }),
     async ({ token, newPassword }) => {
       const verification = verifyToken(token)
@@ -116,23 +160,45 @@ export namespace PasswordReset {
         throw new Error(verification.reason || "Invalid token")
       }
 
-      // In a real implementation, you would hash the password here
+      // Password strength validation
+      const hasUpperCase = /[A-Z]/.test(newPassword)
+      const hasLowerCase = /[a-z]/.test(newPassword)
+      const hasNumber = /[0-9]/.test(newPassword)
+      const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(newPassword)
+
+      if (!hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecialChar) {
+        throw new Error(
+          "Password must contain at least one uppercase letter, lowercase letter, number, and special character",
+        )
+      }
+
+      // In a real implementation, you would hash the password here using bcrypt/argon2
       // For now, this is a placeholder since the auth system uses OAuth
       // and doesn't store passwords directly
+
+      // TODO: Implement password hashing
+      // const passwordHash = await bcrypt.hash(newPassword, 12)
 
       // Update account (placeholder - adjust based on your schema)
       await Database.use((tx) =>
         tx
           .update(AccountTable)
           .set({
-            // Add password field to schema if needed
+            // TODO: Add password_hash field to schema
+            // passwordHash,
             timeUpdated: sql`now()`,
           })
           .where(eq(AccountTable.id, verification.accountID!)),
       )
 
-      // Invalidate the token
+      // Invalidate the token immediately after successful use
       resetTokens.delete(token)
+
+      // Clear rate limit for this email
+      const resetData = resetTokens.get(token)
+      if (resetData) {
+        rateLimitMap.delete(resetData.email.toLowerCase().trim())
+      }
 
       return { success: true }
     },

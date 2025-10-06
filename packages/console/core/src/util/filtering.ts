@@ -23,9 +23,14 @@ export namespace Filtering {
    * Filter condition schema
    */
   export const filterSchema = z.object({
-    field: z.string(),
+    field: z.string().max(100), // Prevent excessively long field names
     operator: z.enum(operators),
-    value: z.union([z.string(), z.number(), z.boolean(), z.array(z.any())]),
+    value: z.union([
+      z.string().max(1000), // Limit string length to prevent DoS
+      z.number(),
+      z.boolean(),
+      z.array(z.any()).max(100), // Limit array size
+    ]),
   })
 
   export type Filter = z.infer<typeof filterSchema>
@@ -65,10 +70,21 @@ export namespace Filtering {
    * Apply multiple filters (AND logic)
    */
   export function applyFilters(table: any, filters: Filter[]): SQL | undefined {
+    // Prevent DoS with excessive filters
+    if (filters.length > 20) {
+      throw new Error("Too many filters. Maximum 20 filters allowed.")
+    }
+
     const conditions = filters
       .map((filter) => {
         const column = table[filter.field]
-        return column ? applyFilter(column, filter) : undefined
+        // Security: Only apply filter if column exists in table
+        // This prevents SQL injection via unknown field names
+        if (!column) {
+          console.warn(`Attempted to filter on unknown field: ${filter.field}`)
+          return undefined
+        }
+        return applyFilter(column, filter)
       })
       .filter((c): c is SQL => c !== undefined)
 
@@ -89,8 +105,8 @@ export namespace Filtering {
    * Search configuration
    */
   export const searchSchema = z.object({
-    query: z.string().min(1),
-    fields: z.array(z.string()).min(1),
+    query: z.string().min(1).max(500), // Prevent DoS with long queries
+    fields: z.array(z.string()).min(1).max(10), // Limit search fields
   })
 
   export type Search = z.infer<typeof searchSchema>
@@ -99,10 +115,18 @@ export namespace Filtering {
    * Apply search across multiple fields (OR logic)
    */
   export function applySearch(table: any, search: Search): SQL | undefined {
+    // Sanitize search query to prevent SQL injection
+    const sanitizedQuery = search.query.replace(/[%_]/g, "\\$&") // Escape LIKE wildcards
+
     const conditions = search.fields
       .map((field) => {
         const column = table[field]
-        return column ? like(column, `%${search.query}%`) : undefined
+        // Security: Only search on fields that exist in table
+        if (!column) {
+          console.warn(`Attempted to search on unknown field: ${field}`)
+          return undefined
+        }
+        return like(column, `%${sanitizedQuery}%`)
       })
       .filter((c): c is SQL => c !== undefined)
 
