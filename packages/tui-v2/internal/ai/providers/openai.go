@@ -7,8 +7,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/aaronmrosenthal/rycode/packages/tui-v2/internal/ai"
 )
@@ -44,7 +46,21 @@ func NewOpenAIProvider(apiKey string, config *ai.Config) *OpenAIProvider {
 		maxTokens:   config.MaxTokens,
 		temperature: config.Temperature,
 		topP:        config.TopP,
-		httpClient:  &http.Client{},
+		httpClient: &http.Client{
+			Timeout: 120 * time.Second, // 2 minute total timeout
+			Transport: &http.Transport{
+				DialContext: (&net.Dialer{
+					Timeout:   10 * time.Second,
+					KeepAlive: 30 * time.Second,
+				}).DialContext,
+				TLSHandshakeTimeout:   10 * time.Second,
+				ResponseHeaderTimeout: 30 * time.Second,
+				ExpectContinueTimeout: 1 * time.Second,
+				IdleConnTimeout:       90 * time.Second,
+				MaxIdleConns:          10,
+				MaxIdleConnsPerHost:   2,
+			},
+		},
 	}
 }
 
@@ -60,7 +76,7 @@ func (o *OpenAIProvider) Model() string {
 
 // Stream sends a prompt and streams back response tokens
 func (o *OpenAIProvider) Stream(ctx context.Context, prompt string, messages []ai.Message) (<-chan ai.StreamEvent, error) {
-	eventCh := make(chan ai.StreamEvent, 100)
+	eventCh := make(chan ai.StreamEvent, 10) // Small buffer with backpressure
 
 	// Build request payload
 	reqMessages := make([]map[string]string, 0, len(messages)+1)
@@ -117,26 +133,37 @@ func (o *OpenAIProvider) Stream(ctx context.Context, prompt string, messages []a
 
 		resp, err := o.httpClient.Do(req)
 		if err != nil {
-			eventCh <- ai.StreamEvent{
-				Type:  ai.EventTypeError,
-				Error: fmt.Errorf("request failed: %w", err),
+			select {
+			case eventCh <- ai.StreamEvent{Type: ai.EventTypeError, Error: fmt.Errorf("request failed: %w", err)}:
+			case <-ctx.Done():
 			}
 			return
 		}
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			bodyBytes, _ := io.ReadAll(resp.Body)
-			eventCh <- ai.StreamEvent{
-				Type:  ai.EventTypeError,
-				Error: fmt.Errorf("API returned status %d: %s", resp.StatusCode, string(bodyBytes)),
+			bodyBytes, _ := io.ReadAll(io.LimitReader(resp.Body, 10*1024)) // Max 10KB error
+			select {
+			case eventCh <- ai.StreamEvent{Type: ai.EventTypeError, Error: fmt.Errorf("API returned status %d: %s", resp.StatusCode, string(bodyBytes))}:
+			case <-ctx.Done():
 			}
 			return
 		}
 
-		// Parse SSE stream
+		// Parse SSE stream with larger buffer
 		scanner := bufio.NewScanner(resp.Body)
+		buf := make([]byte, 1024*1024) // 1MB max line
+		scanner.Buffer(buf, len(buf))
+
+		malformedCount := 0
 		for scanner.Scan() {
+			// Check if context cancelled
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
+
 			line := scanner.Text()
 
 			// SSE format: "data: {...}"
@@ -148,9 +175,9 @@ func (o *OpenAIProvider) Stream(ctx context.Context, prompt string, messages []a
 
 			// Check for stream end marker
 			if data == "[DONE]" {
-				eventCh <- ai.StreamEvent{
-					Type: ai.EventTypeComplete,
-					Done: true,
+				select {
+				case eventCh <- ai.StreamEvent{Type: ai.EventTypeComplete, Done: true}:
+				case <-ctx.Done():
 				}
 				return
 			}
@@ -158,8 +185,17 @@ func (o *OpenAIProvider) Stream(ctx context.Context, prompt string, messages []a
 			// Parse JSON event
 			var event openAIStreamEvent
 			if err := json.Unmarshal([]byte(data), &event); err != nil {
-				// Skip malformed events
-				continue
+				malformedCount++
+				// Log first few errors, then fail if too many
+				if malformedCount <= 3 {
+					// Skip malformed events but track them
+					continue
+				}
+				select {
+				case eventCh <- ai.StreamEvent{Type: ai.EventTypeError, Error: fmt.Errorf("too many malformed events (%d): %w", malformedCount, err)}:
+				case <-ctx.Done():
+				}
+				return
 			}
 
 			// Extract content from delta
@@ -168,27 +204,28 @@ func (o *OpenAIProvider) Stream(ctx context.Context, prompt string, messages []a
 
 				// Check for finish reason
 				if choice.FinishReason != "" && choice.FinishReason != "null" {
-					eventCh <- ai.StreamEvent{
-						Type: ai.EventTypeComplete,
-						Done: true,
+					select {
+					case eventCh <- ai.StreamEvent{Type: ai.EventTypeComplete, Done: true}:
+					case <-ctx.Done():
 					}
 					return
 				}
 
 				// Send content delta
 				if choice.Delta.Content != "" {
-					eventCh <- ai.StreamEvent{
-						Type:    ai.EventTypeChunk,
-						Content: choice.Delta.Content,
+					select {
+					case eventCh <- ai.StreamEvent{Type: ai.EventTypeChunk, Content: choice.Delta.Content}:
+					case <-ctx.Done():
+						return
 					}
 				}
 			}
 		}
 
 		if err := scanner.Err(); err != nil {
-			eventCh <- ai.StreamEvent{
-				Type:  ai.EventTypeError,
-				Error: fmt.Errorf("stream read error: %w", err),
+			select {
+			case eventCh <- ai.StreamEvent{Type: ai.EventTypeError, Error: fmt.Errorf("stream read error: %w", err)}:
+			case <-ctx.Done():
 			}
 		}
 	}()
