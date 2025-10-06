@@ -52,6 +52,8 @@ type ChatModel struct {
 	sessionTokens   int // Total tokens used this session
 	lastPromptTokens int // Tokens in last prompt
 	lastResponseTokens int // Tokens in last response
+	activeCtx       context.Context    // Context for active AI request
+	cancelRequest   context.CancelFunc // Cancel function for active request
 }
 
 // NewChatModel creates a new chat model
@@ -116,6 +118,14 @@ func (m ChatModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.streaming = false
 		m.streamActive = false
 		m.streamChan = nil
+
+		// Clean up context and cancel function
+		if m.cancelRequest != nil {
+			m.cancelRequest()
+			m.cancelRequest = nil
+		}
+		m.activeCtx = nil
+
 		if len(m.messages.Messages) > 0 {
 			m.messages.SetLastMessageStatus(components.Sent)
 		}
@@ -131,6 +141,10 @@ func (m ChatModel) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	// Global shortcuts
 	switch msg.String() {
 	case "ctrl+c", "esc":
+		// Cancel active AI request if streaming
+		if m.cancelRequest != nil {
+			m.cancelRequest()
+		}
 		return m, tea.Quit
 
 	case "ctrl+l":
@@ -280,8 +294,12 @@ func (m *ChatModel) streamRealAI(prompt string) tea.Cmd {
 		estimatedPromptTokens := ai.EstimateConversationTokens(history) + ai.EstimateTokens(prompt)
 		m.lastPromptTokens = estimatedPromptTokens
 
+		// Create cancellable context with 2 minute timeout
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+		m.activeCtx = ctx
+		m.cancelRequest = cancel
+
 		// Start streaming from AI provider
-		ctx := context.Background()
 		eventCh, err := m.aiProvider.Stream(ctx, prompt, history)
 		if err != nil {
 			return StreamChunkMsg{Chunk: fmt.Sprintf("❌ Error: %v", err)}
