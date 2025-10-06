@@ -6,6 +6,7 @@ import { AccountTable } from "./schema/account.sql"
 import { Identifier } from "./identifier"
 import { render } from "@jsx-email/render"
 import { AWS } from "./aws"
+import { Password } from "./util/password"
 import crypto from "crypto"
 
 export namespace PasswordReset {
@@ -151,7 +152,7 @@ export namespace PasswordReset {
   export const resetPassword = fn(
     z.object({
       token: z.string(),
-      newPassword: z.string().min(8).max(128), // Max length to prevent DoS
+      newPassword: Password.schema, // Uses comprehensive password validation
     }),
     async ({ token, newPassword }) => {
       const verification = verifyToken(token)
@@ -160,24 +161,10 @@ export namespace PasswordReset {
         throw new Error(verification.reason || "Invalid token")
       }
 
-      // Password strength validation
-      const hasUpperCase = /[A-Z]/.test(newPassword)
-      const hasLowerCase = /[a-z]/.test(newPassword)
-      const hasNumber = /[0-9]/.test(newPassword)
-      const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(newPassword)
+      // Hash the password using bcrypt (12 rounds)
+      const passwordHash = await Password.hash(newPassword)
 
-      if (!hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecialChar) {
-        throw new Error(
-          "Password must contain at least one uppercase letter, lowercase letter, number, and special character",
-        )
-      }
-
-      // TODO: Implement password hashing with bcrypt/argon2
-      // Example: const passwordHash = await bcrypt.hash(newPassword, 12)
-      // For now, storing plaintext (INSECURE - only for development)
-      const passwordHash = newPassword // TODO: Replace with actual hash
-
-      // Update account with new password
+      // Update account with hashed password
       await Database.use((tx) =>
         tx
           .update(AccountTable)

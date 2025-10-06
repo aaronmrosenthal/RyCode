@@ -7,10 +7,11 @@
   "dependencies": {
     "@aws-sdk/client-sts": "3.782.0",
     "@jsx-email/render": "1.1.1",
+    "@planetscale/database": "1.19.0",
     "@rycode-ai/console-mail": "workspace:*",
     "@rycode-ai/console-resource": "workspace:*",
-    "@planetscale/database": "1.19.0",
     "aws4fetch": "1.0.20",
+    "bcrypt": "6.0.0",
     "drizzle-orm": "0.41.0",
     "postgres": "3.4.7",
     "stripe": "18.0.0",
@@ -29,6 +30,7 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "@types/bcrypt": "6.0.0",
     "drizzle-kit": "0.30.5",
     "mysql2": "3.14.4"
   }
