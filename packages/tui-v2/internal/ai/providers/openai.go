@@ -21,7 +21,7 @@ const (
 
 // OpenAIProvider implements the AI Provider interface for OpenAI's GPT models
 type OpenAIProvider struct {
-	apiKey      string
+	apiKey      *ai.SecureString // Encrypted in memory to prevent key extraction
 	model       string
 	maxTokens   int
 	temperature float64
@@ -30,10 +30,19 @@ type OpenAIProvider struct {
 }
 
 // NewOpenAIProvider creates a new OpenAI provider
-func NewOpenAIProvider(apiKey string, config *ai.Config) *OpenAIProvider {
+func NewOpenAIProvider(apiKey string, config *ai.Config) (*OpenAIProvider, error) {
 	if config == nil {
 		config = ai.DefaultConfig()
 	}
+
+	// Encrypt API key in memory
+	secureKey, err := ai.NewSecureString(apiKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to secure API key: %w", err)
+	}
+
+	// Zero out the plaintext parameter (best effort)
+	ai.ZeroString(apiKey)
 
 	model := config.OpenAIModel
 	if model == "" {
@@ -41,7 +50,7 @@ func NewOpenAIProvider(apiKey string, config *ai.Config) *OpenAIProvider {
 	}
 
 	return &OpenAIProvider{
-		apiKey:      apiKey,
+		apiKey:      secureKey,
 		model:       model,
 		maxTokens:   config.MaxTokens,
 		temperature: config.Temperature,
@@ -61,7 +70,7 @@ func NewOpenAIProvider(apiKey string, config *ai.Config) *OpenAIProvider {
 				MaxIdleConnsPerHost:   2,
 			},
 		},
-	}
+	}, nil
 }
 
 // Name returns the provider name
@@ -117,6 +126,15 @@ func (o *OpenAIProvider) Stream(ctx context.Context, prompt string, messages []a
 		return eventCh, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
+	// Decrypt API key temporarily for HTTP request
+	apiKey, err := o.apiKey.Reveal()
+	if err != nil {
+		close(eventCh)
+		return eventCh, fmt.Errorf("failed to access API key: %w", err)
+	}
+	// Ensure key is zeroed after this function
+	defer ai.ZeroString(apiKey)
+
 	// Create HTTP request
 	req, err := http.NewRequestWithContext(ctx, "POST", openAIAPIURL, bytes.NewReader(payloadBytes))
 	if err != nil {
@@ -125,7 +143,7 @@ func (o *OpenAIProvider) Stream(ctx context.Context, prompt string, messages []a
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+o.apiKey)
+	req.Header.Set("Authorization", "Bearer "+apiKey)
 
 	// Send request
 	go func() {

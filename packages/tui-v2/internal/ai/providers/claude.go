@@ -22,7 +22,7 @@ const (
 
 // ClaudeProvider implements the AI Provider interface for Anthropic's Claude API
 type ClaudeProvider struct {
-	apiKey      string
+	apiKey      *ai.SecureString // Encrypted in memory to prevent key extraction
 	model       string
 	maxTokens   int
 	temperature float64
@@ -31,10 +31,19 @@ type ClaudeProvider struct {
 }
 
 // NewClaudeProvider creates a new Claude AI provider
-func NewClaudeProvider(apiKey string, config *ai.Config) *ClaudeProvider {
+func NewClaudeProvider(apiKey string, config *ai.Config) (*ClaudeProvider, error) {
 	if config == nil {
 		config = ai.DefaultConfig()
 	}
+
+	// Encrypt API key in memory
+	secureKey, err := ai.NewSecureString(apiKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to secure API key: %w", err)
+	}
+
+	// Zero out the plaintext parameter (best effort)
+	ai.ZeroString(apiKey)
 
 	model := config.ClaudeModel
 	if model == "" {
@@ -42,7 +51,7 @@ func NewClaudeProvider(apiKey string, config *ai.Config) *ClaudeProvider {
 	}
 
 	return &ClaudeProvider{
-		apiKey:      apiKey,
+		apiKey:      secureKey,
 		model:       model,
 		maxTokens:   config.MaxTokens,
 		temperature: config.Temperature,
@@ -62,7 +71,7 @@ func NewClaudeProvider(apiKey string, config *ai.Config) *ClaudeProvider {
 				MaxIdleConnsPerHost:   2,
 			},
 		},
-	}
+	}, nil
 }
 
 // Name returns the provider name
@@ -116,6 +125,15 @@ func (c *ClaudeProvider) Stream(ctx context.Context, prompt string, messages []a
 		return eventCh, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
+	// Decrypt API key temporarily for HTTP request
+	apiKey, err := c.apiKey.Reveal()
+	if err != nil {
+		close(eventCh)
+		return eventCh, fmt.Errorf("failed to access API key: %w", err)
+	}
+	// Ensure key is zeroed after this function
+	defer ai.ZeroString(apiKey)
+
 	// Create HTTP request
 	req, err := http.NewRequestWithContext(ctx, "POST", claudeAPIURL, bytes.NewReader(payloadBytes))
 	if err != nil {
@@ -125,7 +143,7 @@ func (c *ClaudeProvider) Stream(ctx context.Context, prompt string, messages []a
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("anthropic-version", claudeAPIVersion)
-	req.Header.Set("x-api-key", c.apiKey)
+	req.Header.Set("x-api-key", apiKey)
 
 	// Send request
 	go func() {

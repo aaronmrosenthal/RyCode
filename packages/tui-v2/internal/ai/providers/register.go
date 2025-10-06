@@ -6,10 +6,10 @@ func init() {
 	// Register provider constructors with the factory
 	ai.RegisterProviders(
 		func(apiKey string, config *ai.Config) (ai.Provider, error) {
-			return NewClaudeProvider(apiKey, config), nil
+			return NewClaudeProvider(apiKey, config)
 		},
 		func(apiKey string, config *ai.Config) (ai.Provider, error) {
-			return NewOpenAIProvider(apiKey, config), nil
+			return NewOpenAIProvider(apiKey, config)
 		},
 	)
 }

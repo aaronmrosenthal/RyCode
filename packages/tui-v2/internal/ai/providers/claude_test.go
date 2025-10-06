@@ -11,7 +11,10 @@ import (
 
 func TestClaudeProvider_Name(t *testing.T) {
 	config := ai.DefaultConfig()
-	provider := NewClaudeProvider("test-key", config)
+	provider, err := NewClaudeProvider("test-key", config)
+	if err != nil {
+		t.Fatalf("NewClaudeProvider() error = %v", err)
+	}
 
 	if provider.Name() != "Claude" {
 		t.Errorf("Name() = %v, want Claude", provider.Name())
@@ -21,7 +24,10 @@ func TestClaudeProvider_Name(t *testing.T) {
 func TestClaudeProvider_Model(t *testing.T) {
 	t.Run("Default model", func(t *testing.T) {
 		config := ai.DefaultConfig()
-		provider := NewClaudeProvider("test-key", config)
+		provider, err := NewClaudeProvider("test-key", config)
+		if err != nil {
+			t.Fatalf("NewClaudeProvider() error = %v", err)
+		}
 
 		if provider.Model() != "claude-opus-4-20250514" {
 			t.Errorf("Model() = %v, want claude-opus-4-20250514", provider.Model())
@@ -31,7 +37,10 @@ func TestClaudeProvider_Model(t *testing.T) {
 	t.Run("Custom model", func(t *testing.T) {
 		config := ai.DefaultConfig()
 		config.ClaudeModel = "claude-sonnet-4-20250514"
-		provider := NewClaudeProvider("test-key", config)
+		provider, err := NewClaudeProvider("test-key", config)
+		if err != nil {
+			t.Fatalf("NewClaudeProvider() error = %v", err)
+		}
 
 		if provider.Model() != "claude-sonnet-4-20250514" {
 			t.Errorf("Model() = %v, want claude-sonnet-4-20250514", provider.Model())
@@ -72,7 +81,10 @@ func TestClaudeProvider_Stream_Success(t *testing.T) {
 
 	// Create provider with custom HTTP client
 	config := ai.DefaultConfig()
-	provider := NewClaudeProvider("test-key", config)
+	provider, err := NewClaudeProvider("test-key", config)
+	if err != nil {
+		t.Fatalf("NewClaudeProvider() error = %v", err)
+	}
 	provider.httpClient = server.Client()
 
 	// Note: Can't override const claudeAPIURL for testing
@@ -82,9 +94,9 @@ func TestClaudeProvider_Stream_Success(t *testing.T) {
 		t.Fatal("NewClaudeProvider() returned nil")
 	}
 
-	// Verify provider fields
-	if provider.apiKey != "test-key" {
-		t.Errorf("apiKey = %v, want test-key", provider.apiKey)
+	// Verify provider fields (skip apiKey since it's encrypted)
+	if provider.apiKey == nil || provider.apiKey.IsEmpty() {
+		t.Error("apiKey should not be empty")
 	}
 	if provider.model != config.ClaudeModel {
 		t.Errorf("model = %v, want %v", provider.model, config.ClaudeModel)
@@ -110,7 +122,10 @@ func TestClaudeProvider_Stream_Error(t *testing.T) {
 		defer server.Close()
 
 		config := ai.DefaultConfig()
-		provider := NewClaudeProvider("invalid-key", config)
+		provider, err := NewClaudeProvider("invalid-key", config)
+		if err != nil {
+			t.Fatalf("NewClaudeProvider() error = %v", err)
+		}
 		provider.httpClient = server.Client()
 
 		// Note: Can't easily test Stream() without mocking the URL
@@ -123,7 +138,10 @@ func TestClaudeProvider_Stream_Error(t *testing.T) {
 }
 
 func TestClaudeProvider_NilConfig(t *testing.T) {
-	provider := NewClaudeProvider("test-key", nil)
+	provider, err := NewClaudeProvider("test-key", nil)
+	if err != nil {
+		t.Fatalf("NewClaudeProvider() error = %v", err)
+	}
 
 	if provider == nil {
 		t.Fatal("NewClaudeProvider() returned nil with nil config")
@@ -140,7 +158,10 @@ func TestClaudeProvider_NilConfig(t *testing.T) {
 
 func TestClaudeProvider_Stream_Context(t *testing.T) {
 	config := ai.DefaultConfig()
-	provider := NewClaudeProvider("test-key", config)
+	provider, err := NewClaudeProvider("test-key", config)
+	if err != nil {
+		t.Fatalf("NewClaudeProvider() error = %v", err)
+	}
 
 	// Test with canceled context
 	ctx, cancel := context.WithCancel(context.Background())
@@ -152,11 +173,11 @@ func TestClaudeProvider_Stream_Context(t *testing.T) {
 
 	// Note: This will fail to connect since we canceled context
 	// In a real test with dependency injection, we'd verify the context is passed through
-	_, err := provider.Stream(ctx, "Test", messages)
+	_, streamErr := provider.Stream(ctx, "Test", messages)
 
 	// We expect an error due to canceled context
-	if err != nil {
+	if streamErr != nil {
 		// This is expected - context was canceled
-		t.Logf("Expected error with canceled context: %v", err)
+		t.Logf("Expected error with canceled context: %v", streamErr)
 	}
 }
