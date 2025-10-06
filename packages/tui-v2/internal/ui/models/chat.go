@@ -24,6 +24,12 @@ const (
 	InputBarHeight = 6
 	// BorderHeight is the height of borders
 	BorderHeight = 2
+
+	// Default dimensions (overwritten by WindowSizeMsg)
+	DefaultWidth         = 80
+	DefaultHeight        = 24
+	DefaultMessageHeight = 20
+	DefaultMaxTokens     = 4096
 )
 
 // StreamChunkMsg is sent when a new chunk of streaming text arrives
@@ -98,14 +104,13 @@ func NewChatModel() ChatModel {
 		8*time.Second,
 	)
 
-	// Create token meter
-	maxTokens := 4096 // Default max tokens
-	tokenMeter := components.NewTokenMeter(0, 0, maxTokens, 80)
+	// Create token meter with default dimensions
+	tokenMeter := components.NewTokenMeter(0, 0, DefaultMaxTokens, DefaultWidth)
 
 	return ChatModel{
-		messages:         components.NewMessageList([]components.Message{}, 80, 20),
-		input:            components.NewInputBar(80),
-		layoutMgr:        layout.NewLayoutManager(80, 24),
+		messages:         components.NewMessageList([]components.Message{}, DefaultWidth, DefaultMessageHeight),
+		input:            components.NewInputBar(DefaultWidth),
+		layoutMgr:        layout.NewLayoutManager(DefaultWidth, DefaultHeight),
 		streaming:        false,
 		theme:            theme.MatrixTheme,
 		ready:            false,
@@ -124,8 +129,8 @@ func NewChatModel() ChatModel {
 
 // Init initializes the chat model
 func (m ChatModel) Init() tea.Cmd {
-	// Start animation ticker at 30fps
-	return tea.Tick(time.Second/30, func(t time.Time) tea.Msg {
+	// Start animation ticker
+	return tea.Tick(theme.AnimationFrameDuration, func(t time.Time) tea.Msg {
 		return TickMsg(t)
 	})
 }
@@ -210,7 +215,7 @@ func (m ChatModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		// Continue animation ticker
-		return m, tea.Tick(time.Second/30, func(t time.Time) tea.Msg {
+		return m, tea.Tick(theme.AnimationFrameDuration, func(t time.Time) tea.Msg {
 			return TickMsg(t)
 		})
 	}
@@ -550,7 +555,7 @@ func (m ChatModel) View() string {
 func (m ChatModel) renderHeader(deviceClass layout.DeviceClass) string {
 	var headerContent string
 
-	if m.showLogo && m.width >= 60 {
+	if m.showLogo && m.width >= theme.MinLogoWidth {
 		// Show ASCII logo for larger screens
 		logo := theme.RenderLogoWithTagline(true, m.animFrame, m.width)
 		headerContent = logo
@@ -581,7 +586,8 @@ func (m ChatModel) renderHeader(deviceClass layout.DeviceClass) string {
 	// Breathing border effect when streaming
 	var borderColor lipgloss.Color
 	if m.streaming {
-		borderColor = theme.InterpolateBrightness(theme.NeonCyan, 0.6+0.4*(float64(m.animFrame%30)/30.0))
+		intensity := theme.CalculatePulseIntensity(m.animFrame, 0.6, 0.4)
+		borderColor = theme.InterpolateBrightness(theme.NeonCyan, intensity)
 	} else {
 		borderColor = theme.MatrixGreen
 	}

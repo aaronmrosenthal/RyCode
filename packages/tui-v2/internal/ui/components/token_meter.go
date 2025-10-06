@@ -60,7 +60,7 @@ func (tm TokenMeter) Render() string {
 
 	// Add pulse animation if enabled and in warning state
 	if tm.Animated && percentage > 0.85 {
-		intensity := 0.6 + 0.4*(float64(tm.Frame%30)/30.0)
+		intensity := theme.CalculatePulseIntensity(tm.Frame, 0.6, 0.4)
 		barColor = theme.InterpolateBrightness(barColor, intensity)
 	}
 

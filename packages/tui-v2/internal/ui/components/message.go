@@ -197,7 +197,7 @@ func (mb MessageBubble) renderStreamingIndicator() string {
 
 	// Pulsing "AI is thinking" text
 	thinkingText := "AI is thinking"
-	intensity := 0.5 + 0.5*(float64(mb.AnimFrame%30)/30.0)
+	intensity := theme.CalculatePulseIntensity(mb.AnimFrame, 0.5, 0.5)
 	thinkingColor := theme.InterpolateBrightness(theme.NeonCyan, intensity)
 	thinkingStyle := lipgloss.NewStyle().Foreground(thinkingColor)
 
