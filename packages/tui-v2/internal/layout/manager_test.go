@@ -16,8 +16,8 @@ func TestNewLayoutManager(t *testing.T) {
 		t.Errorf("Expected height 50, got %d", lm.GetHeight())
 	}
 
-	if lm.GetDeviceClass() != TabletLandscape {
-		t.Errorf("Expected TabletLandscape, got %s", lm.GetDeviceClass())
+	if lm.GetDeviceClass() != TabletLarge {
+		t.Errorf("Expected TabletLarge, got %s", lm.GetDeviceClass())
 	}
 }
 
@@ -28,11 +28,14 @@ func TestLayoutManager_DetectDevice(t *testing.T) {
 		height int
 		want   DeviceClass
 	}{
-		{"Phone portrait", 40, 80, PhonePortrait},
-		{"Phone landscape", 70, 40, PhoneLandscape},
-		{"Tablet portrait", 90, 100, TabletPortrait},
-		{"Tablet landscape", 110, 60, TabletLandscape},
-		{"Desktop small", 140, 60, DesktopSmall},
+		{"Phone tiny", 35, 80, PhoneTiny},
+		{"Phone compact", 45, 80, PhoneCompact},
+		{"Phone standard", 60, 80, PhoneStandard},
+		{"Tablet small", 75, 100, TabletSmall},
+		{"Tablet medium", 90, 100, TabletMedium},
+		{"Tablet large", 110, 60, TabletLarge},
+		{"Laptop small", 130, 60, LaptopSmall},
+		{"Laptop standard", 150, 60, LaptopStandard},
 		{"Desktop large", 180, 60, DesktopLarge},
 	}
 
@@ -47,10 +50,10 @@ func TestLayoutManager_DetectDevice(t *testing.T) {
 }
 
 func TestLayoutManager_Update(t *testing.T) {
-	lm := NewLayoutManager(40, 80)
+	lm := NewLayoutManager(35, 80)
 
-	if lm.GetDeviceClass() != PhonePortrait {
-		t.Errorf("Initial device class should be PhonePortrait")
+	if lm.GetDeviceClass() != PhoneTiny {
+		t.Errorf("Initial device class should be PhoneTiny")
 	}
 
 	// Update to desktop size
@@ -67,7 +70,7 @@ func TestLayoutManager_Update(t *testing.T) {
 }
 
 func TestLayoutManager_OnChange(t *testing.T) {
-	lm := NewLayoutManager(40, 80)
+	lm := NewLayoutManager(35, 80)
 
 	callbackCalled := false
 	var receivedClass DeviceClass
@@ -90,7 +93,7 @@ func TestLayoutManager_OnChange(t *testing.T) {
 }
 
 func TestLayoutManager_OnChangeNotCalledSameClass(t *testing.T) {
-	lm := NewLayoutManager(40, 80)
+	lm := NewLayoutManager(45, 80)
 
 	callbackCalled := false
 
@@ -98,7 +101,7 @@ func TestLayoutManager_OnChangeNotCalledSameClass(t *testing.T) {
 		callbackCalled = true
 	})
 
-	// Update to same device class (still phone portrait)
+	// Update to same device class (still phone compact)
 	lm.Update(50, 90)
 
 	if callbackCalled {
@@ -111,18 +114,22 @@ func TestLayoutManager_ShouldUseStackLayout(t *testing.T) {
 		width int
 		want  bool
 	}{
-		{40, true},   // Phone portrait
-		{70, true},   // Phone landscape
-		{90, false},  // Tablet portrait
-		{110, false}, // Tablet landscape
-		{140, false}, // Desktop small
+		{35, true},   // Phone tiny
+		{45, true},   // Phone compact
+		{60, true},   // Phone standard
+		{75, false},  // Tablet small
+		{90, false},  // Tablet medium
+		{110, false}, // Tablet large
+		{130, false}, // Laptop small
+		{150, false}, // Laptop standard
 		{180, false}, // Desktop large
 	}
 
 	for _, tt := range tests {
 		lm := NewLayoutManager(tt.width, 60)
 		if got := lm.ShouldUseStackLayout(); got != tt.want {
-			t.Errorf("Width %d: ShouldUseStackLayout() = %v, want %v", tt.width, got, tt.want)
+			t.Errorf("Width %d: ShouldUseStackLayout() = %v, want %v (class=%s)",
+				tt.width, got, tt.want, lm.GetDeviceClass())
 		}
 	}
 }
@@ -132,18 +139,22 @@ func TestLayoutManager_ShouldUseSplitLayout(t *testing.T) {
 		width int
 		want  bool
 	}{
-		{40, false},  // Phone portrait
-		{70, false},  // Phone landscape
-		{90, true},   // Tablet portrait
-		{110, true},  // Tablet landscape
-		{140, false}, // Desktop small
+		{35, false},  // Phone tiny
+		{45, false},  // Phone compact
+		{60, false},  // Phone standard
+		{75, true},   // Tablet small
+		{90, true},   // Tablet medium
+		{110, true},  // Tablet large
+		{130, false}, // Laptop small (uses desktop layout)
+		{150, false}, // Laptop standard (uses desktop layout)
 		{180, false}, // Desktop large
 	}
 
 	for _, tt := range tests {
 		lm := NewLayoutManager(tt.width, 60)
 		if got := lm.ShouldUseSplitLayout(); got != tt.want {
-			t.Errorf("Width %d: ShouldUseSplitLayout() = %v, want %v", tt.width, got, tt.want)
+			t.Errorf("Width %d: ShouldUseSplitLayout() = %v, want %v (class=%s)",
+				tt.width, got, tt.want, lm.GetDeviceClass())
 		}
 	}
 }
@@ -153,18 +164,22 @@ func TestLayoutManager_ShouldUseMultiPaneLayout(t *testing.T) {
 		width int
 		want  bool
 	}{
-		{40, false},  // Phone portrait
-		{70, false},  // Phone landscape
-		{90, false},  // Tablet portrait
-		{110, false}, // Tablet landscape
-		{140, true},  // Desktop small
+		{35, false},  // Phone tiny
+		{45, false},  // Phone compact
+		{60, false},  // Phone standard
+		{75, false},  // Tablet small
+		{90, false},  // Tablet medium
+		{110, false}, // Tablet large
+		{130, true},  // Laptop small
+		{150, true},  // Laptop standard
 		{180, true},  // Desktop large
 	}
 
 	for _, tt := range tests {
 		lm := NewLayoutManager(tt.width, 60)
 		if got := lm.ShouldUseMultiPaneLayout(); got != tt.want {
-			t.Errorf("Width %d: ShouldUseMultiPaneLayout() = %v, want %v", tt.width, got, tt.want)
+			t.Errorf("Width %d: ShouldUseMultiPaneLayout() = %v, want %v (class=%s)",
+				tt.width, got, tt.want, lm.GetDeviceClass())
 		}
 	}
 }
@@ -174,18 +189,93 @@ func TestLayoutManager_GetRecommendedSplitRatio(t *testing.T) {
 		class DeviceClass
 		want  float64
 	}{
-		{PhonePortrait, 0.5},
-		{PhoneLandscape, 0.5},
-		{TabletPortrait, 0.5},
-		{TabletLandscape, 0.6},
-		{DesktopSmall, 0.7},
-		{DesktopLarge, 0.7},
+		{PhoneTiny, 1.0},
+		{PhoneCompact, 1.0},
+		{PhoneStandard, 1.0},
+		{TabletSmall, 0.75},
+		{TabletMedium, 0.70},
+		{TabletLarge, 0.72},
+		{LaptopSmall, 0.75},
+		{LaptopStandard, 0.75},
+		{DesktopLarge, 0.75},
 	}
 
 	for _, tt := range tests {
 		lm := NewLayoutManager(tt.class.MinWidth()+10, 60)
 		if got := lm.GetRecommendedSplitRatio(); got != tt.want {
 			t.Errorf("%s: GetRecommendedSplitRatio() = %v, want %v", tt.class, got, tt.want)
+		}
+	}
+}
+
+func TestLayoutManager_ShouldShowFileTree(t *testing.T) {
+	tests := []struct {
+		class DeviceClass
+		want  bool
+	}{
+		{PhoneTiny, false},
+		{PhoneCompact, false},
+		{PhoneStandard, false},
+		{TabletSmall, true},
+		{TabletMedium, true},
+		{TabletLarge, true},
+		{LaptopSmall, true},
+		{LaptopStandard, true},
+		{DesktopLarge, true},
+	}
+
+	for _, tt := range tests {
+		lm := NewLayoutManager(tt.class.MinWidth()+10, 60)
+		if got := lm.ShouldShowFileTree(); got != tt.want {
+			t.Errorf("%s: ShouldShowFileTree() = %v, want %v", tt.class, got, tt.want)
+		}
+	}
+}
+
+func TestLayoutManager_ShouldUseFileTreeOverlay(t *testing.T) {
+	tests := []struct {
+		class DeviceClass
+		want  bool
+	}{
+		{PhoneTiny, true},
+		{PhoneCompact, true},
+		{PhoneStandard, true},
+		{TabletSmall, false},
+		{TabletMedium, false},
+		{TabletLarge, false},
+		{LaptopSmall, false},
+		{LaptopStandard, false},
+		{DesktopLarge, false},
+	}
+
+	for _, tt := range tests {
+		lm := NewLayoutManager(tt.class.MinWidth()+10, 60)
+		if got := lm.ShouldUseFileTreeOverlay(); got != tt.want {
+			t.Errorf("%s: ShouldUseFileTreeOverlay() = %v, want %v", tt.class, got, tt.want)
+		}
+	}
+}
+
+func TestLayoutManager_GetFileTreeWidthForDevice(t *testing.T) {
+	tests := []struct {
+		class DeviceClass
+		want  int
+	}{
+		{PhoneTiny, 0},
+		{PhoneCompact, 0},
+		{PhoneStandard, 0},
+		{TabletSmall, 20},
+		{TabletMedium, 25},
+		{TabletLarge, 28},
+		{LaptopSmall, 30},
+		{LaptopStandard, 35},
+		{DesktopLarge, 35},
+	}
+
+	for _, tt := range tests {
+		lm := NewLayoutManager(tt.class.MinWidth()+10, 60)
+		if got := lm.GetFileTreeWidthForDevice(); got != tt.want {
+			t.Errorf("%s: GetFileTreeWidthForDevice() = %v, want %v", tt.class, got, tt.want)
 		}
 	}
 }

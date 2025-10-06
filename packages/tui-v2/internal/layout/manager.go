@@ -30,22 +30,29 @@ func (lm *LayoutManager) OnChange(callback func(DeviceClass)) {
 }
 
 // detectDevice determines the device class based on terminal dimensions
+// Optimized for education: fine-grained breakpoints for iPhone and iPad devices
 func (lm *LayoutManager) detectDevice() {
 	oldClass := lm.class
 
 	switch {
 	case lm.width >= 160:
 		lm.class = DesktopLarge
+	case lm.width >= 140:
+		lm.class = LaptopStandard
 	case lm.width >= 120:
-		lm.class = DesktopSmall
+		lm.class = LaptopSmall
 	case lm.width >= 100:
-		lm.class = TabletLandscape
-	case lm.width >= 80:
-		lm.class = TabletPortrait
-	case lm.width >= 60:
-		lm.class = PhoneLandscape
+		lm.class = TabletLarge // iPad landscape, iPad Pro portrait
+	case lm.width >= 85:
+		lm.class = TabletMedium // iPad portrait
+	case lm.width >= 70:
+		lm.class = TabletSmall // iPad Mini portrait
+	case lm.width >= 55:
+		lm.class = PhoneStandard // iPhone 12-14 portrait
+	case lm.width >= 40:
+		lm.class = PhoneCompact // iPhone SE, Mini portrait
 	default:
-		lm.class = PhonePortrait
+		lm.class = PhoneTiny // Very small or large accessibility font
 	}
 
 	// Trigger callback if device class changed
@@ -103,17 +110,39 @@ func (lm *LayoutManager) ShouldUseMultiPaneLayout() bool {
 }
 
 // GetRecommendedSplitRatio returns the recommended split ratio for current device
+// Returns the fraction of width for main pane (chat) vs file tree
 func (lm *LayoutManager) GetRecommendedSplitRatio() float64 {
 	switch lm.class {
-	case TabletPortrait:
-		return 0.5 // 50/50 split
-	case TabletLandscape:
-		return 0.6 // 60/40 split
-	case DesktopSmall, DesktopLarge:
-		return 0.7 // 70/30 split
+	case PhoneTiny, PhoneCompact, PhoneStandard:
+		return 1.0 // 100% chat (no file tree by default)
+	case TabletSmall:
+		return 0.75 // 75% chat / 25% file tree (iPad Mini)
+	case TabletMedium:
+		return 0.70 // 70% chat / 30% file tree (iPad)
+	case TabletLarge:
+		return 0.72 // 72% chat / 28% file tree (iPad landscape)
+	case LaptopSmall:
+		return 0.75 // 75% chat / 25% file tree (Chromebook)
+	case LaptopStandard, DesktopLarge:
+		return 0.75 // 75% chat / 25% file tree (Desktop)
 	default:
-		return 0.5
+		return 0.7
 	}
+}
+
+// GetFileTreeWidthForDevice returns the recommended file tree width
+func (lm *LayoutManager) GetFileTreeWidthForDevice() int {
+	return lm.class.GetFileTreeWidth()
+}
+
+// ShouldShowFileTree returns true if file tree should be visible by default
+func (lm *LayoutManager) ShouldShowFileTree() bool {
+	return lm.class.SupportsFileTree()
+}
+
+// ShouldUseFileTreeOverlay returns true if file tree should be an overlay/drawer
+func (lm *LayoutManager) ShouldUseFileTreeOverlay() bool {
+	return lm.class.ShouldShowFileTreeOverlay()
 }
 
 // CanFitWidth returns true if the given width can fit in current dimensions
