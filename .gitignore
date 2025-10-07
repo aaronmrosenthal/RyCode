@@ -10,3 +10,10 @@ playground
 tmp
 dist
 .turbo
+
+# Test domains (not part of RyCode)
+buyoptimus.com/
+optimusdealer.com/
+usedoptimus.com/
+optim usforsale.com/
+packages/tui-v2/.vercel/
