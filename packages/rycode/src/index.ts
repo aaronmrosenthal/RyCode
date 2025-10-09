@@ -39,6 +39,8 @@ import {
   PluginVerifySignatureCommand,
   PluginKeygenCommand,
 } from "./cli/cmd/plugin-signature"
+import { ToolkitCommand } from "./cli/cmd/toolkit"
+import { InstallToolkitCommand } from "./cli/cmd/install-toolkit"
 
 const cancel = new AbortController()
 
@@ -115,6 +117,8 @@ const cli = yargs(hideBin(process.argv))
   .command(PluginSignCommand)
   .command(PluginVerifySignatureCommand)
   .command(PluginKeygenCommand)
+  .command(ToolkitCommand)
+  .command(InstallToolkitCommand)
   .fail((msg) => {
     if (
       msg.startsWith("Unknown argument") ||
