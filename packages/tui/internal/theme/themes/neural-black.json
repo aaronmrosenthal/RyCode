@@ -1,0 +1,64 @@
+{
+  "name": "neural-black",
+  "displayName": "Neural Black",
+  "type": "dark",
+  "colors": {
+    "background": "#0B0C10",
+    "backgroundPanel": "#1F1F1F",
+    "backgroundElement": "#2A2A2A",
+
+    "borderSubtle": "#2A2A2A",
+    "border": "#3A3A3A",
+    "borderActive": "#00AEEF",
+
+    "primary": "#00FF88",
+    "secondary": "#00AEEF",
+    "accent": "#B26FFF",
+
+    "text": "#E0E0E0",
+    "textMuted": "#7B7F8B",
+
+    "error": "#FF5555",
+    "warning": "#FFD166",
+    "success": "#00FF88",
+    "info": "#00AEEF",
+
+    "diffAdded": "#00FF88",
+    "diffRemoved": "#FF4C6A",
+    "diffContext": "#E0E0E0",
+    "diffHunkHeader": "#00AEEF",
+    "diffHighlightAdded": "#000000",
+    "diffHighlightRemoved": "#000000",
+    "diffAddedBg": "#00FF88",
+    "diffRemovedBg": "#FF4C6A",
+    "diffContextBg": "#0B0C10",
+    "diffLineNumber": "#7B7F8B",
+    "diffAddedLineNumberBg": "#003320",
+    "diffRemovedLineNumberBg": "#330011",
+
+    "markdownText": "#E0E0E0",
+    "markdownHeading": "#00AEEF",
+    "markdownLink": "#00FF88",
+    "markdownLinkText": "#00AEEF",
+    "markdownCode": "#B26FFF",
+    "markdownBlockQuote": "#7B7F8B",
+    "markdownEmph": "#FFD166",
+    "markdownStrong": "#00FF88",
+    "markdownHorizontalRule": "#3A3A3A",
+    "markdownListItem": "#00AEEF",
+    "markdownListEnumeration": "#00AEEF",
+    "markdownImage": "#B26FFF",
+    "markdownImageText": "#7B7F8B",
+    "markdownCodeBlock": "#B26FFF",
+
+    "syntaxComment": "#7B7F8B",
+    "syntaxKeyword": "#00AEEF",
+    "syntaxFunction": "#00FF88",
+    "syntaxVariable": "#E0E0E0",
+    "syntaxString": "#FFD166",
+    "syntaxNumber": "#B26FFF",
+    "syntaxType": "#00AEEF",
+    "syntaxOperator": "#00FF88",
+    "syntaxPunctuation": "#7B7F8B"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "Neural Black",
+  "background": "#0B0C10",
+  "foreground": "#E0E0E0",
+  "black": "#0B0C10",
+  "red": "#FF5555",
+  "green": "#00FF88",
+  "yellow": "#FFD166",
+  "blue": "#00AEEF",
+  "purple": "#B26FFF",
+  "cyan": "#00AEEF",
+  "white": "#E0E0E0",
+  "brightBlack": "#7B7F8B",
+  "brightRed": "#FF4C6A",
+  "brightGreen": "#00FF88",
+  "brightYellow": "#FFD166",
+  "brightBlue": "#00AEEF",
+  "brightPurple": "#B26FFF",
+  "brightCyan": "#00AEEF",
+  "brightWhite": "#FFFFFF",
+  "cursorColor": "#00FF88",
+  "selectionBackground": "#1F1F1F"
+}
