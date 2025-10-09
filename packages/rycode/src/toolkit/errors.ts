@@ -2,7 +2,7 @@
  * Error classes for toolkit-cli client
  */
 
-import { ErrorCode } from './types';
+import type { ErrorCode } from './types';
 
 export class ToolkitError extends Error {
   public readonly code: ErrorCode;

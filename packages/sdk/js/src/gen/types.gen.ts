@@ -338,6 +338,39 @@ export type Config = {
     ignore?: Array<string>
   }
   plugin?: Array<string>
+  /**
+   * Plugin security configuration
+   */
+  plugin_security?: {
+    mode?: "strict" | "warn" | "permissive"
+    trustedPlugins?: Array<{
+      name: string
+      versions?: Array<string>
+      capabilities: {
+        fileSystemRead?: boolean
+        fileSystemWrite?: boolean
+        network?: boolean
+        shell?: boolean
+        env?: boolean
+        projectMetadata?: boolean
+        aiClient?: boolean
+      }
+      hash?: string
+      signature?: string
+      official?: boolean
+    }>
+    defaultCapabilities: {
+      fileSystemRead?: boolean
+      fileSystemWrite?: boolean
+      network?: boolean
+      shell?: boolean
+      env?: boolean
+      projectMetadata?: boolean
+      aiClient?: boolean
+    }
+    requireApproval?: boolean
+    verifyIntegrity?: boolean
+  }
   snapshot?: boolean
   /**
    * Control sharing behavior:'manual' allows manual sharing via commands, 'auto' enables automatic sharing, 'disabled' disables all sharing
@@ -483,6 +516,36 @@ export type Config = {
   tools?: {
     [key: string]: boolean
   }
+  /**
+   * Server security and performance settings
+   */
+  server?: {
+    /**
+     * Enable API key authentication for server endpoints
+     */
+    require_auth?: boolean
+    /**
+     * List of valid API keys for authentication
+     */
+    api_keys?: Array<string>
+    /**
+     * Rate limiting configuration
+     */
+    rate_limit?: {
+      /**
+       * Enable rate limiting
+       */
+      enabled?: boolean
+      /**
+       * Maximum requests per window
+       */
+      limit?: number
+      /**
+       * Rate limit window in milliseconds
+       */
+      window_ms?: number
+    }
+  }
   experimental?: {
     hook?: {
       file_edited?: {
@@ -507,6 +570,35 @@ export type Config = {
 export type _Error = {
   data: {
     [key: string]: unknown
+  }
+}
+
+export type UnauthorizedError = {
+  data: {
+    message: string
+  }
+}
+
+export type ForbiddenError = {
+  data: {
+    message: string
+    requestedPath?: string
+  }
+}
+
+export type RequestTooLargeError = {
+  data: {
+    message: string
+    size: number
+    maxSize: number
+  }
+}
+
+export type RateLimitError = {
+  data: {
+    message: string
+    retryAfter: number
+    limit: number
   }
 }
 
@@ -941,6 +1033,13 @@ export type FileContent = {
   }
 }
 
+export type PathValidationError = {
+  data: {
+    requestedPath: string
+    message: string
+  }
+}
+
 export type File = {
   path: string
   added: number
@@ -1122,6 +1221,30 @@ export type EventSessionError = {
   }
 }
 
+export type EventDebugStopped = {
+  type: "debug.stopped"
+  properties: {
+    sessionId: string
+    file: string
+    line: number
+    reason: string
+  }
+}
+
+export type EventDebugContinued = {
+  type: "debug.continued"
+  properties: {
+    sessionId: string
+  }
+}
+
+export type EventDebugTerminated = {
+  type: "debug.terminated"
+  properties: {
+    sessionId: string
+  }
+}
+
 export type EventServerConnected = {
   type: "server.connected"
   properties: {
@@ -1152,6 +1275,9 @@ export type Event =
   | EventSessionUpdated
   | EventSessionDeleted
   | EventSessionError
+  | EventDebugStopped
+  | EventDebugContinued
+  | EventDebugTerminated
   | EventServerConnected
   | EventIdeInstalled
 
@@ -1191,6 +1317,413 @@ export type ProjectCurrentResponses = {
 
 export type ProjectCurrentResponse = ProjectCurrentResponses[keyof ProjectCurrentResponses]
 
+export type DebugContinueData = {
+  body?: {
+    threadId?: number
+  }
+  path: {
+    sessionId: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/debug/{sessionId}/continue"
+}
+
+export type DebugContinueErrors = {
+  /**
+   * Bad request
+   */
+  400: {
+    data: {
+      [key: string]: unknown
+    }
+  }
+  /**
+   * Debug session not found
+   */
+  404: {
+    data: {
+      message: string
+    }
+  }
+}
+
+export type DebugContinueError = DebugContinueErrors[keyof DebugContinueErrors]
+
+export type DebugContinueResponses = {
+  /**
+   * Execution continued
+   */
+  200: boolean
+}
+
+export type DebugContinueResponse = DebugContinueResponses[keyof DebugContinueResponses]
+
+export type DebugStepOverData = {
+  body?: {
+    threadId?: number
+  }
+  path: {
+    sessionId: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/debug/{sessionId}/step-over"
+}
+
+export type DebugStepOverErrors = {
+  /**
+   * Bad request
+   */
+  400: {
+    data: {
+      [key: string]: unknown
+    }
+  }
+  /**
+   * Debug session not found
+   */
+  404: {
+    data: {
+      message: string
+    }
+  }
+}
+
+export type DebugStepOverError = DebugStepOverErrors[keyof DebugStepOverErrors]
+
+export type DebugStepOverResponses = {
+  /**
+   * Stepped over
+   */
+  200: boolean
+}
+
+export type DebugStepOverResponse = DebugStepOverResponses[keyof DebugStepOverResponses]
+
+export type DebugStepIntoData = {
+  body?: {
+    threadId?: number
+  }
+  path: {
+    sessionId: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/debug/{sessionId}/step-into"
+}
+
+export type DebugStepIntoErrors = {
+  /**
+   * Bad request
+   */
+  400: {
+    data: {
+      [key: string]: unknown
+    }
+  }
+  /**
+   * Debug session not found
+   */
+  404: {
+    data: {
+      message: string
+    }
+  }
+}
+
+export type DebugStepIntoError = DebugStepIntoErrors[keyof DebugStepIntoErrors]
+
+export type DebugStepIntoResponses = {
+  /**
+   * Stepped into
+   */
+  200: boolean
+}
+
+export type DebugStepIntoResponse = DebugStepIntoResponses[keyof DebugStepIntoResponses]
+
+export type DebugStepOutData = {
+  body?: {
+    threadId?: number
+  }
+  path: {
+    sessionId: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/debug/{sessionId}/step-out"
+}
+
+export type DebugStepOutErrors = {
+  /**
+   * Bad request
+   */
+  400: {
+    data: {
+      [key: string]: unknown
+    }
+  }
+  /**
+   * Debug session not found
+   */
+  404: {
+    data: {
+      message: string
+    }
+  }
+}
+
+export type DebugStepOutError = DebugStepOutErrors[keyof DebugStepOutErrors]
+
+export type DebugStepOutResponses = {
+  /**
+   * Stepped out
+   */
+  200: boolean
+}
+
+export type DebugStepOutResponse = DebugStepOutResponses[keyof DebugStepOutResponses]
+
+export type DebugDisconnectData = {
+  body?: never
+  path: {
+    sessionId: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/debug/{sessionId}/disconnect"
+}
+
+export type DebugDisconnectErrors = {
+  /**
+   * Bad request
+   */
+  400: {
+    data: {
+      [key: string]: unknown
+    }
+  }
+  /**
+   * Debug session not found
+   */
+  404: {
+    data: {
+      message: string
+    }
+  }
+}
+
+export type DebugDisconnectError = DebugDisconnectErrors[keyof DebugDisconnectErrors]
+
+export type DebugDisconnectResponses = {
+  /**
+   * Disconnected
+   */
+  200: boolean
+}
+
+export type DebugDisconnectResponse = DebugDisconnectResponses[keyof DebugDisconnectResponses]
+
+export type DebugStackTraceData = {
+  body?: {
+    threadId?: number
+  }
+  path: {
+    sessionId: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/debug/{sessionId}/stack-trace"
+}
+
+export type DebugStackTraceErrors = {
+  /**
+   * Bad request
+   */
+  400: {
+    data: {
+      [key: string]: unknown
+    }
+  }
+  /**
+   * Debug session not found
+   */
+  404: {
+    data: {
+      message: string
+    }
+  }
+}
+
+export type DebugStackTraceError = DebugStackTraceErrors[keyof DebugStackTraceErrors]
+
+export type DebugStackTraceResponses = {
+  /**
+   * Stack trace
+   */
+  200: Array<{
+    id: number
+    name: string
+    source?: {
+      path?: string
+    }
+    line: number
+    column: number
+  }>
+}
+
+export type DebugStackTraceResponse = DebugStackTraceResponses[keyof DebugStackTraceResponses]
+
+export type DebugVariablesData = {
+  body?: {
+    variablesReference: number
+  }
+  path: {
+    sessionId: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/debug/{sessionId}/variables"
+}
+
+export type DebugVariablesErrors = {
+  /**
+   * Bad request
+   */
+  400: {
+    data: {
+      [key: string]: unknown
+    }
+  }
+  /**
+   * Debug session not found
+   */
+  404: {
+    data: {
+      message: string
+    }
+  }
+}
+
+export type DebugVariablesError = DebugVariablesErrors[keyof DebugVariablesErrors]
+
+export type DebugVariablesResponses = {
+  /**
+   * Variables
+   */
+  200: Array<{
+    name: string
+    value: string
+    type?: string
+    variablesReference?: number
+  }>
+}
+
+export type DebugVariablesResponse = DebugVariablesResponses[keyof DebugVariablesResponses]
+
+export type DebugScopesData = {
+  body?: {
+    frameId: number
+  }
+  path: {
+    sessionId: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/debug/{sessionId}/scopes"
+}
+
+export type DebugScopesErrors = {
+  /**
+   * Bad request
+   */
+  400: {
+    data: {
+      [key: string]: unknown
+    }
+  }
+  /**
+   * Debug session not found
+   */
+  404: {
+    data: {
+      message: string
+    }
+  }
+}
+
+export type DebugScopesError = DebugScopesErrors[keyof DebugScopesErrors]
+
+export type DebugScopesResponses = {
+  /**
+   * Scopes
+   */
+  200: Array<{
+    name: string
+    variablesReference: number
+    expensive?: boolean
+  }>
+}
+
+export type DebugScopesResponse = DebugScopesResponses[keyof DebugScopesResponses]
+
+export type DebugStatusData = {
+  body?: never
+  path: {
+    sessionId: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/debug/{sessionId}/status"
+}
+
+export type DebugStatusErrors = {
+  /**
+   * Bad request
+   */
+  400: {
+    data: {
+      [key: string]: unknown
+    }
+  }
+  /**
+   * Debug session not found
+   */
+  404: {
+    data: {
+      message: string
+    }
+  }
+}
+
+export type DebugStatusError = DebugStatusErrors[keyof DebugStatusErrors]
+
+export type DebugStatusResponses = {
+  /**
+   * Session status
+   */
+  200: {
+    id: string
+    language: string
+    program: string
+    status: "initializing" | "running" | "paused" | "stopped"
+    port?: number
+    pid?: number
+  }
+}
+
+export type DebugStatusResponse = DebugStatusResponses[keyof DebugStatusResponses]
+
 export type ConfigGetData = {
   body?: never
   path?: never
@@ -1223,6 +1756,22 @@ export type ConfigUpdateErrors = {
    * Bad request
    */
   400: _Error
+  /**
+   * Unauthorized
+   */
+  401: UnauthorizedError
+  /**
+   * Forbidden
+   */
+  403: ForbiddenError
+  /**
+   * Request too large
+   */
+  413: RequestTooLargeError
+  /**
+   * Rate limit exceeded
+   */
+  429: RateLimitError
 }
 
 export type ConfigUpdateError = ConfigUpdateErrors[keyof ConfigUpdateErrors]
@@ -1250,6 +1799,22 @@ export type ToolIdsErrors = {
    * Bad request
    */
   400: _Error
+  /**
+   * Unauthorized
+   */
+  401: UnauthorizedError
+  /**
+   * Forbidden
+   */
+  403: ForbiddenError
+  /**
+   * Request too large
+   */
+  413: RequestTooLargeError
+  /**
+   * Rate limit exceeded
+   */
+  429: RateLimitError
 }
 
 export type ToolIdsError = ToolIdsErrors[keyof ToolIdsErrors]
@@ -1279,6 +1844,22 @@ export type ToolListErrors = {
    * Bad request
    */
   400: _Error
+  /**
+   * Unauthorized
+   */
+  401: UnauthorizedError
+  /**
+   * Forbidden
+   */
+  403: ForbiddenError
+  /**
+   * Request too large
+   */
+  413: RequestTooLargeError
+  /**
+   * Rate limit exceeded
+   */
+  429: RateLimitError
 }
 
 export type ToolListError = ToolListErrors[keyof ToolListErrors]
@@ -1345,6 +1926,22 @@ export type SessionCreateErrors = {
    * Bad request
    */
   400: _Error
+  /**
+   * Unauthorized
+   */
+  401: UnauthorizedError
+  /**
+   * Forbidden
+   */
+  403: ForbiddenError
+  /**
+   * Request too large
+   */
+  413: RequestTooLargeError
+  /**
+   * Rate limit exceeded
+   */
+  429: RateLimitError
 }
 
 export type SessionCreateError = SessionCreateErrors[keyof SessionCreateErrors]
@@ -1915,6 +2512,15 @@ export type FileReadData = {
   url: "/file/content"
 }
 
+export type FileReadErrors = {
+  /**
+   * Forbidden - path validation failed
+   */
+  403: PathValidationError
+}
+
+export type FileReadError = FileReadErrors[keyof FileReadErrors]
+
 export type FileReadResponses = {
   /**
    * File content
@@ -2183,6 +2789,22 @@ export type AuthSetErrors = {
    * Bad request
    */
   400: _Error
+  /**
+   * Unauthorized
+   */
+  401: UnauthorizedError
+  /**
+   * Forbidden
+   */
+  403: ForbiddenError
+  /**
+   * Request too large
+   */
+  413: RequestTooLargeError
+  /**
+   * Rate limit exceeded
+   */
+  429: RateLimitError
 }
 
 export type AuthSetError = AuthSetErrors[keyof AuthSetErrors]

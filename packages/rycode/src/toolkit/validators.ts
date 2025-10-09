@@ -2,7 +2,7 @@
  * Input validation utilities
  */
 
-import { AgentType, ComplexityLevel } from './types';
+import type { AgentType, ComplexityLevel } from './types';
 import { ValidationError } from './errors';
 
 const VALID_AGENTS: AgentType[] = [

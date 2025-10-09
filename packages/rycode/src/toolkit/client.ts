@@ -2,8 +2,8 @@
  * Main ToolkitClient class for invoking toolkit-cli commands
  */
 
-import { spawn, ChildProcess } from 'child_process';
-import {
+import { spawn, type ChildProcess } from 'child_process';
+import type {
   ToolkitConfig,
   CommandResult,
   HealthStatus,
@@ -27,7 +27,6 @@ import {
 } from './types';
 import { Validators } from './validators';
 import {
-  ToolkitError,
   NotFoundError,
   TimeoutError,
   PythonError,
@@ -322,25 +321,25 @@ export class ToolkitClient {
 
     // Map config API keys to environment variables
     if (this.config.apiKeys?.anthropic) {
-      env.ANTHROPIC_API_KEY = this.config.apiKeys.anthropic;
+      env['ANTHROPIC_API_KEY'] = this.config.apiKeys.anthropic;
     }
     if (this.config.apiKeys?.openai) {
-      env.OPENAI_API_KEY = this.config.apiKeys.openai;
+      env['OPENAI_API_KEY'] = this.config.apiKeys.openai;
     }
     if (this.config.apiKeys?.google) {
-      env.GOOGLE_API_KEY = this.config.apiKeys.google;
+      env['GOOGLE_API_KEY'] = this.config.apiKeys.google;
     }
     if (this.config.apiKeys?.qwen) {
-      env.QWEN_API_KEY = this.config.apiKeys.qwen;
+      env['QWEN_API_KEY'] = this.config.apiKeys.qwen;
     }
     if (this.config.apiKeys?.deepseek) {
-      env.DEEPSEEK_API_KEY = this.config.apiKeys.deepseek;
+      env['DEEPSEEK_API_KEY'] = this.config.apiKeys.deepseek;
     }
     if (this.config.apiKeys?.together) {
-      env.TOGETHER_API_KEY = this.config.apiKeys.together;
+      env['TOGETHER_API_KEY'] = this.config.apiKeys.together;
     }
     if (this.config.apiKeys?.rycode) {
-      env.RYCODE_API_KEY = this.config.apiKeys.rycode;
+      env['RYCODE_API_KEY'] = this.config.apiKeys.rycode;
     }
 
     return env;

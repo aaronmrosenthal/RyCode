@@ -6,6 +6,33 @@ import type {
   ProjectListResponses,
   ProjectCurrentData,
   ProjectCurrentResponses,
+  DebugContinueData,
+  DebugContinueResponses,
+  DebugContinueErrors,
+  DebugStepOverData,
+  DebugStepOverResponses,
+  DebugStepOverErrors,
+  DebugStepIntoData,
+  DebugStepIntoResponses,
+  DebugStepIntoErrors,
+  DebugStepOutData,
+  DebugStepOutResponses,
+  DebugStepOutErrors,
+  DebugDisconnectData,
+  DebugDisconnectResponses,
+  DebugDisconnectErrors,
+  DebugStackTraceData,
+  DebugStackTraceResponses,
+  DebugStackTraceErrors,
+  DebugVariablesData,
+  DebugVariablesResponses,
+  DebugVariablesErrors,
+  DebugScopesData,
+  DebugScopesResponses,
+  DebugScopesErrors,
+  DebugStatusData,
+  DebugStatusResponses,
+  DebugStatusErrors,
   ConfigGetData,
   ConfigGetResponses,
   ConfigUpdateData,
@@ -72,6 +99,7 @@ import type {
   FileListResponses,
   FileReadData,
   FileReadResponses,
+  FileReadErrors,
   FileStatusData,
   FileStatusResponses,
   AppLogData,
@@ -148,6 +176,126 @@ class Project extends _HeyApiClient {
   public current<ThrowOnError extends boolean = false>(options?: Options<ProjectCurrentData, ThrowOnError>) {
     return (options?.client ?? this._client).get<ProjectCurrentResponses, unknown, ThrowOnError>({
       url: "/project/current",
+      ...options,
+    })
+  }
+}
+
+class Debug extends _HeyApiClient {
+  /**
+   * Continue execution
+   */
+  public continue<ThrowOnError extends boolean = false>(options: Options<DebugContinueData, ThrowOnError>) {
+    return (options.client ?? this._client).post<DebugContinueResponses, DebugContinueErrors, ThrowOnError>({
+      url: "/debug/{sessionId}/continue",
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...options.headers,
+      },
+    })
+  }
+
+  /**
+   * Step over (execute next line)
+   */
+  public stepOver<ThrowOnError extends boolean = false>(options: Options<DebugStepOverData, ThrowOnError>) {
+    return (options.client ?? this._client).post<DebugStepOverResponses, DebugStepOverErrors, ThrowOnError>({
+      url: "/debug/{sessionId}/step-over",
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...options.headers,
+      },
+    })
+  }
+
+  /**
+   * Step into (enter function)
+   */
+  public stepInto<ThrowOnError extends boolean = false>(options: Options<DebugStepIntoData, ThrowOnError>) {
+    return (options.client ?? this._client).post<DebugStepIntoResponses, DebugStepIntoErrors, ThrowOnError>({
+      url: "/debug/{sessionId}/step-into",
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...options.headers,
+      },
+    })
+  }
+
+  /**
+   * Step out (exit current function)
+   */
+  public stepOut<ThrowOnError extends boolean = false>(options: Options<DebugStepOutData, ThrowOnError>) {
+    return (options.client ?? this._client).post<DebugStepOutResponses, DebugStepOutErrors, ThrowOnError>({
+      url: "/debug/{sessionId}/step-out",
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...options.headers,
+      },
+    })
+  }
+
+  /**
+   * Disconnect from debug session
+   */
+  public disconnect<ThrowOnError extends boolean = false>(options: Options<DebugDisconnectData, ThrowOnError>) {
+    return (options.client ?? this._client).post<DebugDisconnectResponses, DebugDisconnectErrors, ThrowOnError>({
+      url: "/debug/{sessionId}/disconnect",
+      ...options,
+    })
+  }
+
+  /**
+   * Get stack trace for current execution point
+   */
+  public stackTrace<ThrowOnError extends boolean = false>(options: Options<DebugStackTraceData, ThrowOnError>) {
+    return (options.client ?? this._client).post<DebugStackTraceResponses, DebugStackTraceErrors, ThrowOnError>({
+      url: "/debug/{sessionId}/stack-trace",
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...options.headers,
+      },
+    })
+  }
+
+  /**
+   * Get variables for a stack frame
+   */
+  public variables<ThrowOnError extends boolean = false>(options: Options<DebugVariablesData, ThrowOnError>) {
+    return (options.client ?? this._client).post<DebugVariablesResponses, DebugVariablesErrors, ThrowOnError>({
+      url: "/debug/{sessionId}/variables",
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...options.headers,
+      },
+    })
+  }
+
+  /**
+   * Get scopes for a stack frame
+   */
+  public scopes<ThrowOnError extends boolean = false>(options: Options<DebugScopesData, ThrowOnError>) {
+    return (options.client ?? this._client).post<DebugScopesResponses, DebugScopesErrors, ThrowOnError>({
+      url: "/debug/{sessionId}/scopes",
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...options.headers,
+      },
+    })
+  }
+
+  /**
+   * Get debug session status
+   */
+  public status<ThrowOnError extends boolean = false>(options: Options<DebugStatusData, ThrowOnError>) {
+    return (options.client ?? this._client).get<DebugStatusResponses, DebugStatusErrors, ThrowOnError>({
+      url: "/debug/{sessionId}/status",
       ...options,
     })
   }
@@ -496,7 +644,7 @@ class File extends _HeyApiClient {
    * Read a file
    */
   public read<ThrowOnError extends boolean = false>(options: Options<FileReadData, ThrowOnError>) {
-    return (options.client ?? this._client).get<FileReadResponses, unknown, ThrowOnError>({
+    return (options.client ?? this._client).get<FileReadResponses, FileReadErrors, ThrowOnError>({
       url: "/file/content",
       ...options,
     })
@@ -688,6 +836,7 @@ export class OpencodeClient extends _HeyApiClient {
     })
   }
   project = new Project({ client: this._client })
+  debug = new Debug({ client: this._client })
   config = new Config({ client: this._client })
   tool = new Tool({ client: this._client })
   path = new Path({ client: this._client })
