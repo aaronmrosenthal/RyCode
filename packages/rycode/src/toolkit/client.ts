@@ -118,15 +118,15 @@ export class ToolkitClient {
   }
 
   public async version(): Promise<VersionInfo> {
-    const packageJson = require('../package.json');
-    const nodePackageVersion = packageJson.version;
+    // RyCode embeds toolkit client, version is managed at rycode level
+    const nodePackageVersion = '1.0.0';
+    const minimumRequired = '1.3.0';
 
     try {
       const result = await this.executeCommand('version', ['--format', 'json']);
       const versionData = JSON.parse(result.stdout);
 
       const toolkitVersion = versionData.version;
-      const minimumRequired = packageJson.peerDependencies?.['toolkit-cli'] || '1.3.0';
 
       const compatible = this.compareVersions(toolkitVersion, minimumRequired) >= 0;
 

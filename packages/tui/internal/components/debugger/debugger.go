@@ -7,6 +7,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/charmbracelet/lipgloss/v2"
+	"github.com/charmbracelet/lipgloss/v2/compat"
 	"github.com/aaronmrosenthal/rycode-sdk-go"
 	"github.com/aaronmrosenthal/rycode/internal/styles"
 	"github.com/aaronmrosenthal/rycode/internal/theme"
@@ -187,7 +188,7 @@ func (m Model) renderHeader() string {
 
 	// Status indicator
 	var statusText string
-	var statusColor lipgloss.AdaptiveColor
+	var statusColor compat.AdaptiveColor
 
 	switch m.state {
 	case StateInitializing:

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/lipgloss/v2"
 	"github.com/aaronmrosenthal/rycode/internal/styles"
 	"github.com/aaronmrosenthal/rycode/internal/theme"
 )
