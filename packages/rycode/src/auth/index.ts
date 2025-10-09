@@ -184,7 +184,7 @@ export namespace Auth {
    * @returns Number of credentials migrated
    */
   export async function migrateToEncrypted(): Promise<number> {
-    if (!process.env.RYCODE_ENCRYPTION_KEY) {
+    if (!process.env['RYCODE_ENCRYPTION_KEY']) {
       throw new Error("RYCODE_ENCRYPTION_KEY must be set to migrate to encrypted storage")
     }
 

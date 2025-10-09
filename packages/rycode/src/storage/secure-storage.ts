@@ -52,7 +52,7 @@ export namespace SecureStorage {
    */
   export async function encrypt(data: string, masterKey?: string): Promise<string> {
     if (!masterKey) {
-      masterKey = process.env.RYCODE_ENCRYPTION_KEY
+      masterKey = process.env['RYCODE_ENCRYPTION_KEY']
     }
 
     // If no encryption key configured, return plaintext with warning
@@ -110,7 +110,7 @@ export namespace SecureStorage {
     }
 
     if (!masterKey) {
-      masterKey = process.env.RYCODE_ENCRYPTION_KEY
+      masterKey = process.env['RYCODE_ENCRYPTION_KEY']
     }
 
     if (!masterKey) {

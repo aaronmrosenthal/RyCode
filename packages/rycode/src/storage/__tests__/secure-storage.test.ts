@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach } from "bun:test"
+import { describe, test, expect } from "bun:test"
 import { SecureStorage } from "../secure-storage"
 
 describe("SecureStorage", () => {
@@ -63,13 +63,13 @@ describe("SecureStorage", () => {
       const encrypted = await SecureStorage.encrypt(testData, testKey)
 
       // Clear environment variable for this test
-      const originalKey = process.env.RYCODE_ENCRYPTION_KEY
-      delete process.env.RYCODE_ENCRYPTION_KEY
+      const originalKey = process.env['RYCODE_ENCRYPTION_KEY']
+      delete process.env['RYCODE_ENCRYPTION_KEY']
 
       await expect(SecureStorage.decrypt(encrypted)).rejects.toThrow("RYCODE_ENCRYPTION_KEY")
 
       // Restore
-      if (originalKey) process.env.RYCODE_ENCRYPTION_KEY = originalKey
+      if (originalKey) process.env['RYCODE_ENCRYPTION_KEY'] = originalKey
     })
   })
 
@@ -98,8 +98,8 @@ describe("SecureStorage", () => {
 
     test("encrypts without key creates plaintext", async () => {
       // Clear environment variable
-      const originalKey = process.env.RYCODE_ENCRYPTION_KEY
-      delete process.env.RYCODE_ENCRYPTION_KEY
+      const originalKey = process.env['RYCODE_ENCRYPTION_KEY']
+      delete process.env['RYCODE_ENCRYPTION_KEY']
 
       const encrypted = await SecureStorage.encrypt(testData)
 
@@ -107,7 +107,7 @@ describe("SecureStorage", () => {
       expect(SecureStorage.isEncrypted(encrypted)).toBe(false)
 
       // Restore
-      if (originalKey) process.env.RYCODE_ENCRYPTION_KEY = originalKey
+      if (originalKey) process.env['RYCODE_ENCRYPTION_KEY'] = originalKey
     })
   })
 
