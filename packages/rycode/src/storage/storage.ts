@@ -149,7 +149,15 @@ export namespace Storage {
     }
   }
 
-  export async function remove(key: string[]) {
+  /**
+   * Deletes a value from storage.
+   *
+   * Fails silently if the key doesn't exist.
+   *
+   * @param key - Storage key path (e.g., ["session", projectId, sessionId])
+   * @throws Error if key validation fails
+   */
+  export async function remove(key: string[]): Promise<void> {
     validateKey(key)
     const dir = await state().then((x) => x.dir)
     const target = path.join(dir, ...key) + ".json"
@@ -158,7 +166,14 @@ export namespace Storage {
     })
   }
 
-  export async function read<T>(key: string[]) {
+  /**
+   * Reads a value from storage with file-level read locking.
+   *
+   * @param key - Storage key path (e.g., ["session", projectId, sessionId])
+   * @returns Deserialized value of type T
+   * @throws Error if key validation fails or file doesn't exist
+   */
+  export async function read<T>(key: string[]): Promise<T> {
     validateKey(key)
     const dir = await state().then((x) => x.dir)
     const target = path.join(dir, ...key) + ".json"
@@ -167,7 +182,17 @@ export namespace Storage {
     return Bun.file(target).json() as Promise<T>
   }
 
-  export async function update<T>(key: string[], fn: (draft: T) => void) {
+  /**
+   * Updates a value in storage using a mutation function.
+   *
+   * Uses file-level write locking to prevent race conditions.
+   *
+   * @param key - Storage key path
+   * @param fn - Mutation function to modify the value in-place
+   * @returns Updated value of type T
+   * @throws Error if key validation fails or file doesn't exist
+   */
+  export async function update<T>(key: string[], fn: (draft: T) => void): Promise<T> {
     validateKey(key)
     const dir = await state().then((x) => x.dir)
     const target = path.join(dir, ...key) + ".json"
@@ -184,7 +209,16 @@ export namespace Storage {
   // BUG FIX: Validate content size (max 10MB)
   const MAX_CONTENT_SIZE = 10 * 1024 * 1024 // 10MB
 
-  export async function write<T>(key: string[], content: T) {
+  /**
+   * Writes a value to storage with file-level write locking.
+   *
+   * Creates parent directories as needed. Validates content size (max 10MB).
+   *
+   * @param key - Storage key path
+   * @param content - Value to serialize and write
+   * @throws Error if key validation fails or content exceeds size limit
+   */
+  export async function write<T>(key: string[], content: T): Promise<void> {
     validateKey(key)
 
     // Validate content size
@@ -205,7 +239,14 @@ export namespace Storage {
   }
 
   const glob = new Bun.Glob("**/*")
-  export async function list(prefix: string[]) {
+
+  /**
+   * Lists all storage keys with a given prefix.
+   *
+   * @param prefix - Key prefix to filter by (e.g., ["session", projectId])
+   * @returns Array of matching key paths
+   */
+  export async function list(prefix: string[]): Promise<string[][]> {
     const dir = await state().then((x) => x.dir)
     try {
       const result = await Array.fromAsync(
@@ -291,7 +332,23 @@ export namespace Storage {
     }
   }
 
-  export function transaction() {
+  /**
+   * Creates a new atomic transaction for multi-file operations.
+   *
+   * Transactions ensure that either all operations succeed or none do.
+   * Uses sorted locking to prevent deadlocks.
+   *
+   * @returns New transaction instance
+   *
+   * @example
+   * ```typescript
+   * const tx = Storage.transaction()
+   * await tx.write(["session", id], sessionData)
+   * await tx.remove(["share", id])
+   * await tx.commit() // Or tx.rollback() to cancel
+   * ```
+   */
+  export function transaction(): Transaction {
     return new Transaction()
   }
 }

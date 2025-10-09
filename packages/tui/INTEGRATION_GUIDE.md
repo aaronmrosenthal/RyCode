@@ -21,7 +21,7 @@ The new TUI components provide enhanced user experience features:
 **Integration**:
 
 ```go
-import "github.com/sst/opencode/internal/components/ghost"
+import "github.com/sst/rycode/internal/components/ghost"
 
 // In your chat input component
 type ChatInput struct {
@@ -78,7 +78,7 @@ func (c *ChatInput) OnTab() {
 **Integration**:
 
 ```go
-import "github.com/sst/opencode/internal/components/reactions"
+import "github.com/sst/rycode/internal/components/reactions"
 
 // In your chat component
 type Chat struct {
@@ -146,7 +146,7 @@ func (c *Chat) View() string {
 **Integration**:
 
 ```go
-import "github.com/sst/opencode/internal/components/smarthistory"
+import "github.com/sst/rycode/internal/components/smarthistory"
 
 // In your chat component
 type Chat struct {
@@ -228,7 +228,7 @@ func (c *Chat) View() string {
 **Integration**:
 
 ```go
-import "github.com/sst/opencode/internal/components/timeline"
+import "github.com/sst/rycode/internal/components/timeline"
 
 // In your chat component
 type Chat struct {
@@ -300,7 +300,7 @@ func (c *Chat) RenderSidebar() string {
 
 ```go
 import (
-    "github.com/sst/opencode/internal/components/replay"
+    "github.com/sst/rycode/internal/components/replay"
     tea "github.com/charmbracelet/bubbletea/v2"
 )
 
@@ -424,12 +424,12 @@ import (
     "time"
 
     tea "github.com/charmbracelet/bubbletea/v2"
-    "github.com/sst/opencode/internal/components/ghost"
-    "github.com/sst/opencode/internal/components/reactions"
-    "github.com/sst/opencode/internal/components/smarthistory"
-    "github.com/sst/opencode/internal/components/timeline"
-    "github.com/sst/opencode/internal/components/replay"
-    "github.com/sst/opencode/internal/theme"
+    "github.com/sst/rycode/internal/components/ghost"
+    "github.com/sst/rycode/internal/components/reactions"
+    "github.com/sst/rycode/internal/components/smarthistory"
+    "github.com/sst/rycode/internal/components/timeline"
+    "github.com/sst/rycode/internal/components/replay"
+    "github.com/sst/rycode/internal/theme"
 )
 
 type ChatModel struct {

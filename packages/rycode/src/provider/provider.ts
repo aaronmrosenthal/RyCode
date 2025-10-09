@@ -363,7 +363,14 @@ export namespace Provider {
     }
   })
 
-  export async function list() {
+  /**
+   * Lists all available LLM providers with their configurations.
+   *
+   * Providers are loaded from environment variables, config files, and auth storage.
+   *
+   * @returns Record of provider ID to provider configuration
+   */
+  export async function list(): Promise<Record<string, { source: Source; info: ModelsDev.Provider; getModel?: (sdk: any, modelID: string) => Promise<any>; options: Record<string, any> }>> {
     return state().then((state) => state.providers)
   }
 
@@ -432,11 +439,28 @@ export namespace Provider {
     })
   }
 
-  export async function getProvider(providerID: string) {
+  /**
+   * Retrieves a specific provider configuration.
+   *
+   * @param providerID - Provider identifier (e.g., "anthropic", "openai")
+   * @returns Provider configuration or undefined if not found
+   */
+  export async function getProvider(providerID: string): Promise<{ source: Source; info: ModelsDev.Provider; getModel?: (sdk: any, modelID: string) => Promise<any>; options: Record<string, any> } | undefined> {
     return state().then((s) => s.providers[providerID])
   }
 
-  export async function getModel(providerID: string, modelID: string) {
+  /**
+   * Retrieves and initializes a specific model from a provider.
+   *
+   * Models are cached after first retrieval. Handles provider-specific
+   * initialization logic (e.g., region prefixes for Bedrock).
+   *
+   * @param providerID - Provider identifier (e.g., "anthropic", "openai")
+   * @param modelID - Model identifier (e.g., "claude-sonnet-4", "gpt-5")
+   * @returns Model object with language model SDK and metadata
+   * @throws ModelNotFoundError if provider or model doesn't exist
+   */
+  export async function getModel(providerID: string, modelID: string): Promise<{ providerID: string; modelID: string; info: ModelsDev.Model; language: LanguageModel; npm?: string }> {
     const key = `${providerID}/${modelID}`
     const s = await state()
     if (s.models.has(key)) return s.models.get(key)!
@@ -482,7 +506,16 @@ export namespace Provider {
     }
   }
 
-  export async function getSmallModel(providerID: string) {
+  /**
+   * Retrieves a small/fast model from a provider for utility tasks.
+   *
+   * Small models are used for quick operations like code generation,
+   * analysis, and tool planning. Prioritizes haiku and flash variants.
+   *
+   * @param providerID - Provider identifier
+   * @returns Small model configuration or undefined if none available
+   */
+  export async function getSmallModel(providerID: string): Promise<{ providerID: string; modelID: string; info: ModelsDev.Model; language: LanguageModel; npm?: string } | undefined> {
     const cfg = await Config.get()
 
     if (cfg.small_model) {
@@ -501,7 +534,16 @@ export namespace Provider {
   }
 
   const priority = ["gemini-2.5-pro-preview", "gpt-5", "claude-sonnet-4"]
-  export function sort(models: ModelsDev.Model[]) {
+
+  /**
+   * Sorts models by priority, preferring latest flagship models.
+   *
+   * Sort order: Priority models > Latest versions > Alphabetically by ID
+   *
+   * @param models - Array of models to sort
+   * @returns Sorted array of models
+   */
+  export function sort(models: ModelsDev.Model[]): ModelsDev.Model[] {
     return sortBy(
       models,
       [(model) => priority.findIndex((filter) => model.id.includes(filter)), "desc"],
@@ -510,7 +552,18 @@ export namespace Provider {
     )
   }
 
-  export async function defaultModel() {
+  /**
+   * Determines the default model to use for AI operations.
+   *
+   * Selection priority:
+   * 1. Model from config file
+   * 2. Last used model from TUI state
+   * 3. Best available model from configured providers
+   *
+   * @returns Object with providerID and modelID
+   * @throws Error if no providers or models are available
+   */
+  export async function defaultModel(): Promise<{ providerID: string; modelID: string }> {
     const cfg = await Config.get()
     if (cfg.model) return parseModel(cfg.model)
 
@@ -562,7 +615,19 @@ export namespace Provider {
     }
   }
 
-  export function parseModel(model: string) {
+  /**
+   * Parses a model string in "provider/model" format.
+   *
+   * @param model - Model string (e.g., "anthropic/claude-sonnet-4")
+   * @returns Object with separated providerID and modelID
+   *
+   * @example
+   * ```typescript
+   * parseModel("anthropic/claude-sonnet-4")
+   * // Returns: { providerID: "anthropic", modelID: "claude-sonnet-4" }
+   * ```
+   */
+  export function parseModel(model: string): { providerID: string; modelID: string } {
     const [providerID, ...rest] = model.split("/")
     return {
       providerID: providerID,

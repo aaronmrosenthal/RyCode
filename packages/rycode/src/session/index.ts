@@ -92,7 +92,26 @@ export namespace Session {
     ),
   }
 
-  export async function create(parentID?: string, title?: string) {
+  /**
+   * Creates a new AI coding session in the current project.
+   *
+   * Sessions represent individual conversations with the AI. Child sessions
+   * are used for subagents that work on specific subtasks.
+   *
+   * @param parentID - Optional parent session ID for creating child sessions (subagents)
+   * @param title - Optional human-readable session title (auto-generated if not provided)
+   * @returns Session.Info with unique identifier and metadata
+   *
+   * @example
+   * ```typescript
+   * // Create root session
+   * const session = await Session.create()
+   *
+   * // Create child session for subagent
+   * const child = await Session.create(session.id, "Refactoring Task")
+   * ```
+   */
+  export async function create(parentID?: string, title?: string): Promise<Info> {
     return createNext({
       parentID,
       directory: Instance.directory,
@@ -100,13 +119,29 @@ export namespace Session {
     })
   }
 
-  export async function touch(sessionID: string) {
+  /**
+   * Updates the session's last-modified timestamp.
+   *
+   * Used to track session activity and sort by recency.
+   *
+   * @param sessionID - Unique session identifier
+   */
+  export async function touch(sessionID: string): Promise<void> {
     await update(sessionID, (draft) => {
       draft.time.updated = Date.now()
     })
   }
 
-  export async function createNext(input: { id?: string; title?: string; parentID?: string; directory: string }) {
+  /**
+   * Internal helper to create a session with custom directory.
+   *
+   * Used internally and by migration code. Most callers should use `create()` instead.
+   *
+   * @param input - Session creation parameters including optional custom directory
+   * @returns Session.Info with unique identifier and metadata
+   * @internal
+   */
+  export async function createNext(input: { id?: string; title?: string; parentID?: string; directory: string }): Promise<Info> {
     const result: Info = {
       id: Identifier.descending("session", input.id),
       version: Installation.VERSION,
@@ -138,23 +173,51 @@ export namespace Session {
     return result
   }
 
-  export async function get(id: string) {
+  /**
+   * Retrieves session information by ID.
+   *
+   * @param id - Unique session identifier
+   * @returns Session.Info containing session metadata
+   * @throws Error if session not found
+   */
+  export async function get(id: string): Promise<Info> {
     const read = await Storage.read<Info>(["session", Instance.project.id, id])
     return read as Info
   }
 
-  export async function getShare(id: string) {
+  /**
+   * Retrieves sharing information for a session.
+   *
+   * @param id - Unique session identifier
+   * @returns ShareInfo containing secret and public URL
+   * @throws Error if session is not shared
+   */
+  export async function getShare(id: string): Promise<ShareInfo> {
     return Storage.read<ShareInfo>(["share", id])
   }
 
-  export async function share(id: string) {
+  /**
+   * Creates or retrieves a shareable URL for a session.
+   *
+   * Synchronizes session data to remote share service if not already shared.
+   * Automatically syncs all messages and parts to the share service.
+   *
+   * @param id - Unique session identifier
+   * @returns ShareInfo with secret and public URL
+   * @throws Error if sharing is disabled in configuration
+   */
+  export async function share(id: string): Promise<ShareInfo> {
     const cfg = await Config.get()
     if (cfg.share === "disabled") {
       throw new Error("Sharing is disabled in configuration")
     }
 
     const session = await get(id)
-    if (session.share) return session.share
+    if (session.share) {
+      // Session already shared, retrieve the secret from storage
+      const shareInfo = await getShare(id)
+      return shareInfo
+    }
     const share = await Share.create(id)
     await update(id, (draft) => {
       draft.share = {
@@ -172,7 +235,16 @@ export namespace Session {
     return share
   }
 
-  export async function unshare(id: string) {
+  /**
+   * Removes sharing for a session, deleting the public URL.
+   *
+   * Uses atomic transactions to ensure data consistency during unshare.
+   * Remote deletion is best-effort and won't fail the operation if it errors.
+   *
+   * @param id - Unique session identifier
+   * @throws Error if unshare transaction fails
+   */
+  export async function unshare(id: string): Promise<void> {
     const share = await getShare(id).catch(() => undefined)
     if (!share) return
 
@@ -213,7 +285,24 @@ export namespace Session {
     }
   }
 
-  export async function update(id: string, editor: (session: Info) => void) {
+  /**
+   * Updates session metadata using a mutation function.
+   *
+   * Automatically updates the last-modified timestamp and publishes update events.
+   *
+   * @param id - Unique session identifier
+   * @param editor - Mutation function to modify session data
+   * @returns Updated Session.Info
+   *
+   * @example
+   * ```typescript
+   * await Session.update(sessionId, (draft) => {
+   *   draft.title = "New Title"
+   *   draft.share = { url: "https://..." }
+   * })
+   * ```
+   */
+  export async function update(id: string, editor: (session: Info) => void): Promise<Info> {
     const project = Instance.project
     const result = await Storage.update<Info>(["session", project.id, id], (draft) => {
       editor(draft)
@@ -225,7 +314,15 @@ export namespace Session {
     return result
   }
 
-  export async function messages(sessionID: string) {
+  /**
+   * Retrieves all messages in a session, sorted chronologically.
+   *
+   * Each message includes its parts (tool calls, text blocks, etc.).
+   *
+   * @param sessionID - Unique session identifier
+   * @returns Array of messages with their parts, sorted by creation time
+   */
+  export async function messages(sessionID: string): Promise<MessageV2.WithParts[]> {
     const result = [] as MessageV2.WithParts[]
     for (const p of await Storage.list(["message", sessionID])) {
       const read = await Storage.read<MessageV2.Info>(p)
@@ -238,14 +335,30 @@ export namespace Session {
     return result
   }
 
-  export async function getMessage(sessionID: string, messageID: string) {
+  /**
+   * Retrieves a specific message with its parts.
+   *
+   * @param sessionID - Unique session identifier
+   * @param messageID - Unique message identifier
+   * @returns Message with all its parts
+   * @throws Error if message not found
+   */
+  export async function getMessage(sessionID: string, messageID: string): Promise<MessageV2.WithParts> {
     return {
       info: await Storage.read<MessageV2.Info>(["message", sessionID, messageID]),
       parts: await getParts(messageID),
     }
   }
 
-  export async function getParts(messageID: string) {
+  /**
+   * Retrieves all parts of a message, sorted by creation order.
+   *
+   * Parts include tool calls, text blocks, errors, and other message components.
+   *
+   * @param messageID - Unique message identifier
+   * @returns Array of message parts, sorted chronologically
+   */
+  export async function getParts(messageID: string): Promise<MessageV2.Part[]> {
     const result = [] as MessageV2.Part[]
     for (const item of await Storage.list(["part", messageID])) {
       const read = await Storage.read<MessageV2.Part>(item)
@@ -262,7 +375,15 @@ export namespace Session {
     }
   }
 
-  export async function children(parentID: string) {
+  /**
+   * Retrieves all child sessions of a parent session.
+   *
+   * Child sessions are created by subagents working on specific subtasks.
+   *
+   * @param parentID - Unique parent session identifier
+   * @returns Array of child session info objects
+   */
+  export async function children(parentID: string): Promise<Session.Info[]> {
     const project = Instance.project
     const result = [] as Session.Info[]
     for (const item of await Storage.list(["session", project.id])) {
@@ -273,7 +394,17 @@ export namespace Session {
     return result
   }
 
-  export async function remove(sessionID: string, emitEvent = true) {
+  /**
+   * Deletes a session and all its descendants recursively.
+   *
+   * Uses atomic transactions to ensure data consistency. Automatically unshares
+   * the session and removes all messages, parts, and child sessions.
+   *
+   * @param sessionID - Unique session identifier
+   * @param emitEvent - Whether to publish deletion event (default: true)
+   * @throws Error if session deletion transaction fails
+   */
+  export async function remove(sessionID: string, emitEvent = true): Promise<void> {
     const project = Instance.project
     let session: Info | undefined
 
@@ -339,7 +470,13 @@ export namespace Session {
     return result
   }
 
-  export async function updateMessage(msg: MessageV2.Info) {
+  /**
+   * Updates a message and publishes update event.
+   *
+   * @param msg - Message info object with updated data
+   * @returns Updated message info
+   */
+  export async function updateMessage(msg: MessageV2.Info): Promise<MessageV2.Info> {
     await Storage.write(["message", msg.sessionID, msg.id], msg)
     Bus.publish(MessageV2.Event.Updated, {
       info: msg,
@@ -347,7 +484,14 @@ export namespace Session {
     return msg
   }
 
-  export async function removeMessage(sessionID: string, messageID: string) {
+  /**
+   * Deletes a message from a session.
+   *
+   * @param sessionID - Unique session identifier
+   * @param messageID - Unique message identifier to delete
+   * @returns The deleted message ID
+   */
+  export async function removeMessage(sessionID: string, messageID: string): Promise<string> {
     await Storage.remove(["message", sessionID, messageID])
     Bus.publish(MessageV2.Event.Removed, {
       sessionID,
@@ -356,7 +500,13 @@ export namespace Session {
     return messageID
   }
 
-  export async function updatePart(part: MessageV2.Part) {
+  /**
+   * Updates a message part and publishes update event.
+   *
+   * @param part - Message part object with updated data
+   * @returns Updated message part
+   */
+  export async function updatePart(part: MessageV2.Part): Promise<MessageV2.Part> {
     await Storage.write(["part", part.messageID, part.id], part)
     Bus.publish(MessageV2.Event.PartUpdated, {
       part,
@@ -364,7 +514,22 @@ export namespace Session {
     return part
   }
 
-  export function getUsage(model: ModelsDev.Model, usage: LanguageModelUsage, metadata?: ProviderMetadata) {
+  /**
+   * Calculates token usage and cost for a model invocation.
+   *
+   * Handles cache tokens and reasoning tokens where applicable.
+   * Costs are calculated based on per-million-token pricing.
+   *
+   * @param model - Model configuration with pricing info
+   * @param usage - Token usage from the LLM response
+   * @param metadata - Optional provider-specific metadata (e.g., Anthropic cache tokens)
+   * @returns Object containing cost in dollars and detailed token breakdown
+   */
+  export function getUsage(
+    model: ModelsDev.Model,
+    usage: LanguageModelUsage,
+    metadata?: ProviderMetadata
+  ): { cost: number; tokens: { input: number; output: number; reasoning: number; cache: { write: number; read: number } } } {
     const tokens = {
       input: usage.inputTokens ?? 0,
       output: usage.outputTokens ?? 0,
@@ -394,12 +559,20 @@ export namespace Session {
     }
   }
 
+  /**
+   * Initializes a session with the system prompt.
+   *
+   * Sends the initial prompt that sets up the AI's context and capabilities.
+   * Marks the project as initialized after completion.
+   *
+   * @param input - Initialization parameters including session, model, and message IDs
+   */
   export async function initialize(input: {
     sessionID: string
     modelID: string
     providerID: string
     messageID: string
-  }) {
+  }): Promise<void> {
     await SessionPrompt.prompt({
       sessionID: input.sessionID,
       messageID: input.messageID,

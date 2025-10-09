@@ -14,6 +14,7 @@ import (
 	"github.com/charmbracelet/bubbles/v2/key"
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/charmbracelet/lipgloss/v2"
+	"github.com/charmbracelet/lipgloss/v2/compat"
 
 	"github.com/aaronmrosenthal/rycode-sdk-go"
 	"github.com/aaronmrosenthal/rycode/internal/api"
@@ -22,8 +23,10 @@ import (
 	"github.com/aaronmrosenthal/rycode/internal/completions"
 	"github.com/aaronmrosenthal/rycode/internal/components/chat"
 	cmdcomp "github.com/aaronmrosenthal/rycode/internal/components/commands"
+	"github.com/aaronmrosenthal/rycode/internal/components/debugger"
 	"github.com/aaronmrosenthal/rycode/internal/components/dialog"
 	"github.com/aaronmrosenthal/rycode/internal/components/modal"
+	"github.com/aaronmrosenthal/rycode/internal/components/splash"
 	"github.com/aaronmrosenthal/rycode/internal/components/status"
 	"github.com/aaronmrosenthal/rycode/internal/components/toast"
 	"github.com/aaronmrosenthal/rycode/internal/layout"
@@ -77,6 +80,9 @@ type Model struct {
 	interruptKeyState    InterruptKeyState
 	exitKeyState         ExitKeyState
 	messagesRight        bool
+	splashScreen         *splash.Model
+	showSplash           bool
+	debugger             debugger.Model
 }
 
 func (a Model) Init() tea.Cmd {
@@ -92,6 +98,12 @@ func (a Model) Init() tea.Cmd {
 	cmds = append(cmds, a.status.Init())
 	cmds = append(cmds, a.completions.Init())
 	cmds = append(cmds, a.toastManager.Init())
+	cmds = append(cmds, a.debugger.Init())
+
+	// Initialize splash screen
+	if a.showSplash && a.splashScreen != nil {
+		cmds = append(cmds, a.splashScreen.Init())
+	}
 
 	return tea.Batch(cmds...)
 }
@@ -759,6 +771,10 @@ func (a Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Reset exit key state after timeout
 		a.exitKeyState = ExitKeyIdle
 		a.editor.SetExitKeyInDebounce(false)
+	case splash.SplashFinishedMsg:
+		// Splash screen animation finished
+		a.showSplash = false
+		a.splashScreen = nil
 	case tea.PasteMsg, tea.ClipboardMsg:
 		// Paste events: prioritize modal if active, otherwise editor
 		if a.modal != nil {
@@ -899,11 +915,59 @@ func (a Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, cmd)
 	}
 
+	// Update splash screen if active
+	if a.showSplash && a.splashScreen != nil {
+		updated, cmd := a.splashScreen.Update(msg)
+		if splashModel, ok := updated.(splash.Model); ok {
+			a.splashScreen = &splashModel
+		}
+		cmds = append(cmds, cmd)
+	}
+
+	// Update debugger component
+	updatedDebugger, cmd := a.debugger.Update(msg)
+	a.debugger = updatedDebugger
+	cmds = append(cmds, cmd)
+
 	return a, tea.Batch(cmds...)
 }
 
 func (a Model) View() (string, *tea.Cursor) {
 	t := theme.CurrentTheme()
+
+	// Show splash screen if active
+	if a.showSplash && a.splashScreen != nil {
+		splashView := a.splashScreen.View()
+		return splashView + "\n" + a.status.View(), nil
+	}
+
+	// Show debugger if active
+	if a.debugger.IsActive() {
+		debuggerView := a.debugger.View()
+		mainLayout := styles.NewStyle().
+			Background(t.Background()).
+			Padding(0, 2).
+			Render(debuggerView)
+		mainLayout = lipgloss.PlaceHorizontal(
+			a.width,
+			lipgloss.Center,
+			mainLayout,
+			styles.WhitespaceStyle(t.Background()),
+		)
+		mainStyle := styles.NewStyle().Background(t.Background())
+		mainLayout = mainStyle.Render(mainLayout)
+
+		if a.modal != nil {
+			mainLayout = a.modal.Render(mainLayout)
+		}
+		mainLayout = a.toastManager.RenderOverlay(mainLayout)
+
+		if theme.CurrentThemeUsesAnsiColors() {
+			mainLayout = util.ConvertRGBToAnsi16Colors(mainLayout)
+		}
+
+		return mainLayout + "\n" + a.status.View(), nil
+	}
 
 	var mainLayout string
 
@@ -952,26 +1016,38 @@ func (a Model) home() (string, int, int) {
 	t := theme.CurrentTheme()
 	effectiveWidth := a.width - 4
 	baseStyle := styles.NewStyle().Foreground(t.Text()).Background(t.Background())
-	base := baseStyle.Render
-	muted := styles.NewStyle().Foreground(t.TextMuted()).Background(t.Background()).Render
 
-	open := `
-                    
-█▀▀█ █▀▀█ █▀▀█ █▀▀▄ 
-█░░█ █░░█ █▀▀▀ █░░█ 
-▀▀▀▀ █▀▀▀ ▀▀▀▀ ▀  ▀ `
+	// RyCode ASCII logo - toolkit-cli style with bright green
+	rycode := `
+________               _________     _________
+___  __ \____  __      __  ____/___________  /____
+__  /_/ /_  / / /_______  /    _  __ \  __  /_  _ \
+_  _, _/_  /_/ /_/_____/ /___  / /_/ / /_/ / /  __/
+/_/ |_| _\__, /        \____/  \____/\__,_/  \___/
+        /____/`
 
-	code := `
-             ▄
-█▀▀▀ █▀▀█ █▀▀█ █▀▀█
-█░░░ █░░█ █░░█ █▀▀▀
-▀▀▀▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀`
+	tagline := "> Where Code Writes Itself"
 
-	logo := lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		muted(open),
-		base(code),
-	)
+	// Render logo with bright toolkit-cli green
+	brightGreen := styles.NewStyle().
+		Foreground(compat.AdaptiveColor{
+			Dark:  lipgloss.Color("#00FFAA"),
+			Light: lipgloss.Color("#00CC88"),
+		}).
+		Background(t.Background()).
+		Bold(true)
+
+	logo := brightGreen.Render(rycode)
+
+	// Render tagline with medium green
+	mediumGreen := styles.NewStyle().
+		Foreground(compat.AdaptiveColor{
+			Dark:  lipgloss.Color("#00CC88"),
+			Light: lipgloss.Color("#008866"),
+		}).
+		Background(t.Background())
+
+	taglineRendered := mediumGreen.Render(tagline)
 	// cwd := app.Info.Path.Cwd
 	// config := app.Info.Path.Config
 
@@ -987,6 +1063,13 @@ func (a Model) home() (string, int, int) {
 		effectiveWidth,
 		lipgloss.Center,
 		logoAndVersion,
+		styles.WhitespaceStyle(t.Background()),
+	)
+
+	taglineCentered := lipgloss.PlaceHorizontal(
+		effectiveWidth,
+		lipgloss.Center,
+		taglineRendered,
 		styles.WhitespaceStyle(t.Background()),
 	)
 
@@ -1013,6 +1096,7 @@ func (a Model) home() (string, int, int) {
 	lines := []string{}
 	lines = append(lines, "")
 	lines = append(lines, logoAndVersion)
+	lines = append(lines, taglineCentered)
 	lines = append(lines, "")
 	lines = append(lines, cmds)
 	lines = append(lines, "")
@@ -1547,6 +1631,9 @@ func NewModel(app *app.App) tea.Model {
 		leaderBinding = &binding
 	}
 
+	// Initialize splash screen with default dimensions (will be updated on first WindowSizeMsg)
+	splashModel := splash.New(80, 24)
+
 	model := &Model{
 		status:               status.NewStatusCmp(app),
 		app:                  app,
@@ -1562,6 +1649,9 @@ func NewModel(app *app.App) tea.Model {
 		toastManager:         toast.NewToastManager(),
 		interruptKeyState:    InterruptKeyIdle,
 		exitKeyState:         ExitKeyIdle,
+		splashScreen:         &splashModel,
+		showSplash:           true,                      // Enable splash screen on startup
+		debugger:             debugger.New(80, 24, app.Client), // Will be updated on first WindowSizeMsg
 	}
 
 	return model

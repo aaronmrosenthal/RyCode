@@ -37,7 +37,18 @@
     "/re-context",
     "/tutorial",
     "/init",
-    "/version"
+    "/version",
+    "/ship",
+    "/quick-win",
+    "/ai-native",
+    "/clone",
+    "/diff",
+    "/interactive",
+    "/seo",
+    "/costs",
+    "/deploy",
+    "/optimize",
+    "/verify"
   ],
   "installation_date": "/Users/aaron/Code/RyCode/RyCode",
   "format": "claude-code"

@@ -60,18 +60,37 @@ func (m *statusComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *statusComponent) logo() string {
 	t := theme.CurrentTheme()
-	base := styles.NewStyle().Foreground(t.TextMuted()).Background(t.BackgroundElement()).Render
-	emphasis := styles.NewStyle().
-		Foreground(t.Text()).
+
+	// Bright neon green for "Ry"
+	ryStyle := styles.NewStyle().
+		Foreground(compat.AdaptiveColor{
+			Dark:  lipgloss.Color("#00FFAA"),
+			Light: lipgloss.Color("#00CC88"),
+		}).
 		Background(t.BackgroundElement()).
 		Bold(true).
 		Render
 
-	open := base("open")
-	code := emphasis("code")
-	version := base(" " + m.app.Version)
+	// Medium neon green for "Code"
+	codeStyle := styles.NewStyle().
+		Foreground(compat.AdaptiveColor{
+			Dark:  lipgloss.Color("#00CC88"),
+			Light: lipgloss.Color("#008866"),
+		}).
+		Background(t.BackgroundElement()).
+		Bold(true).
+		Render
 
-	content := open + code
+	versionStyle := styles.NewStyle().
+		Foreground(t.TextMuted()).
+		Background(t.BackgroundElement()).
+		Render
+
+	ry := ryStyle("Ry")
+	code := codeStyle("Code")
+	version := versionStyle(" " + m.app.Version)
+
+	content := ry + code
 	if m.width > 40 {
 		content += version
 	}

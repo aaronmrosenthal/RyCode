@@ -136,15 +136,46 @@ export namespace Agent {
     return result
   })
 
-  export async function get(agent: string) {
+  /**
+   * Retrieves a specific agent configuration by name.
+   *
+   * @param agent - Agent identifier (e.g., "general", "plan", "build")
+   * @returns Agent configuration or undefined if not found
+   */
+  export async function get(agent: string): Promise<Info | undefined> {
     return state().then((x) => x[agent])
   }
 
-  export async function list() {
+  /**
+   * Lists all available agent configurations.
+   *
+   * Includes both built-in agents (general, plan, build) and custom agents
+   * defined in the config file.
+   *
+   * @returns Array of agent configurations
+   */
+  export async function list(): Promise<Info[]> {
     return state().then((x) => Object.values(x))
   }
 
-  export async function generate(input: { description: string }) {
+  /**
+   * Generates a new agent configuration from a natural language description.
+   *
+   * Uses AI to create an agent with appropriate tools, permissions, and prompts
+   * based on the user's description. Ensures unique identifiers.
+   *
+   * @param input - Object with description of desired agent behavior
+   * @returns Generated agent configuration (identifier, whenToUse, systemPrompt)
+   *
+   * @example
+   * ```typescript
+   * const config = await Agent.generate({
+   *   description: "Create an agent that specializes in writing tests"
+   * })
+   * // Returns: { identifier: "test-writer", whenToUse: "...", systemPrompt: "..." }
+   * ```
+   */
+  export async function generate(input: { description: string }): Promise<{ identifier: string; whenToUse: string; systemPrompt: string }> {
     const defaultModel = await Provider.defaultModel()
     const model = await Provider.getModel(defaultModel.providerID, defaultModel.modelID)
     const system = SystemPrompt.header(defaultModel.providerID)

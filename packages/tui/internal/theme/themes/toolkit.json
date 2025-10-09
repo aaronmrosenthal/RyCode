@@ -1,5 +1,5 @@
 {
-  "$schema": "https://opencode.ai/theme.json",
+  "$schema": "https://ry-code.com/theme.json",
   "defs": {
     "darkBg": "#1a1b26",
     "darkBgPanel": "#16161e",

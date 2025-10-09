@@ -40,6 +40,17 @@ This directory contains slash commands for multi-agent development collaboration
 - `/tutorial` - Interactive onboarding tutorial
 - `/init` - Initialize multi-agent development environment
 - `/version` - System status and feature availability check
+- `/ship` - Pre-deployment readiness checker - validates code is production-ready
+- `/quick-win` - Detect and apply safe, high-confidence code improvements automatically
+- `/ai-native` - Transform code to AI-optimized format with semantic names and type hints
+- `/clone` - Clone git repositories or download websites with intelligent analysis
+- `/diff` - AI-powered git diff analysis and explanation
+- `/interactive` - Interactive command mode with keyboard shortcuts - hold arrows to trigger commands
+- `/seo` - SEO guru - analyze content and generate optimized meta tags, schema markup, and traffic-driving recommendations
+- `/costs` - Track and analyze AI API costs across commands
+- `/deploy` - Deployment automation with multi-platform support
+- `/optimize` - Performance optimization analysis and recommendations
+- `/verify` - Verification and validation of implementations
 
 ## Usage in Claude Code
 These commands are automatically available when Claude Code detects this configuration.

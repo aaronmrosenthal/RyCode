@@ -28,12 +28,12 @@ if (typeof OPENCODE_TUI_PATH !== "undefined") {
 
 export const TuiCommand = cmd({
   command: "$0 [project]",
-  describe: "start opencode tui",
+  describe: "start rycode tui",
   builder: (yargs) =>
     yargs
       .positional("project", {
         type: "string",
-        describe: "path to start opencode in",
+        describe: "path to start rycode in",
       })
       .option("model", {
         type: "string",

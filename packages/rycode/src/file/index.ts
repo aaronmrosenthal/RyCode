@@ -114,11 +114,25 @@ export namespace File {
     }
   })
 
-  export function init() {
+  /**
+   * Initializes the file system cache.
+   *
+   * Begins background indexing of files in the project directory.
+   * Called automatically during system startup.
+   */
+  export function init(): void {
     state()
   }
 
-  export async function status() {
+  /**
+   * Retrieves git status information for the project.
+   *
+   * Returns information about modified, added, and deleted files.
+   * Only works for git-based projects.
+   *
+   * @returns Array of file changes with line counts and status
+   */
+  export async function status(): Promise<Info[]> {
     const project = Instance.project
     if (project.vcs !== "git") return []
 
@@ -188,7 +202,16 @@ export namespace File {
     }))
   }
 
-  export async function read(file: string) {
+  /**
+   * Reads a file with optional git diff information.
+   *
+   * For modified files in git repositories, includes structured patch data
+   * showing the differences from the committed version.
+   *
+   * @param file - Relative path to file from project root
+   * @returns Object with file content and optional diff/patch data
+   */
+  export async function read(file: string): Promise<Content> {
     using _ = log.time("read", { file })
     const project = Instance.project
     const full = path.join(Instance.directory, file)
@@ -212,7 +235,16 @@ export namespace File {
     return { content }
   }
 
-  export async function list(dir?: string) {
+  /**
+   * Lists files and directories at a given path.
+   *
+   * Respects .gitignore rules for git projects. Excludes .git and .DS_Store.
+   * Results are sorted with directories first, then files alphabetically.
+   *
+   * @param dir - Optional directory path relative to project root (defaults to root)
+   * @returns Array of file/directory nodes with metadata
+   */
+  export async function list(dir?: string): Promise<Node[]> {
     const exclude = [".git", ".DS_Store"]
     const project = Instance.project
     let ignored = (_: string) => false
@@ -246,7 +278,15 @@ export namespace File {
     })
   }
 
-  export async function search(input: { query: string; limit?: number }) {
+  /**
+   * Fuzzy searches for files and directories by name.
+   *
+   * Uses fuzzysort for intelligent matching. Results are ranked by relevance.
+   *
+   * @param input - Search parameters (query string and optional result limit)
+   * @returns Array of matching file/directory paths, limited to specified count
+   */
+  export async function search(input: { query: string; limit?: number }): Promise<string[]> {
     log.info("search", { query: input.query })
     const limit = input.limit ?? 100
     const result = await state().then((x) => x.files())

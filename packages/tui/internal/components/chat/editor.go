@@ -347,18 +347,27 @@ func (m *editorComponent) Content() string {
 	base := styles.NewStyle().Foreground(t.Text()).Background(t.Background()).Render
 	muted := styles.NewStyle().Foreground(t.TextMuted()).Background(t.Background()).Render
 
-	promptStyle := styles.NewStyle().Foreground(t.Primary()).
-		Padding(0, 0, 0, 1).
+	// Claude Code style prompt
+	promptIconStyle := styles.NewStyle().
+		Foreground(t.Primary()).
 		Bold(true)
-	prompt := promptStyle.Render(">")
-	borderForeground := t.Border()
+	promptTextStyle := styles.NewStyle().
+		Foreground(t.TextMuted())
+
+	promptIcon := "▸"
+	promptText := ""
+	borderForeground := t.Primary()
+
 	if m.app.IsLeaderSequence {
 		borderForeground = t.Accent()
 	}
 	if m.app.IsBashMode {
 		borderForeground = t.Secondary()
-		prompt = promptStyle.Render("!")
+		promptIcon = "!"
 	}
+
+	prompt := promptIconStyle.Render(promptIcon) + promptTextStyle.Render(promptText)
+	prompt = styles.NewStyle().Padding(0, 1).Render(prompt)
 
 	m.textarea.SetWidth(width - 6)
 	textarea := lipgloss.JoinHorizontal(

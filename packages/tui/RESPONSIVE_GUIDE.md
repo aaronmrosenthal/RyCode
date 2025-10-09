@@ -156,7 +156,7 @@ Traditional three-column layout with all features.
 ### Implementation
 
 ```go
-import "github.com/sst/opencode/internal/responsive"
+import "github.com/sst/rycode/internal/responsive"
 
 // Initialize gesture recognizer
 gestureRec := responsive.NewGestureRecognizer()
@@ -200,7 +200,7 @@ Since terminals can't actually vibrate, we provide **visual haptic feedback** th
 ### Usage
 
 ```go
-import "github.com/sst/opencode/internal/responsive"
+import "github.com/sst/rycode/internal/responsive"
 
 // Create haptic engine
 haptic := responsive.NewHapticEngine(true)
@@ -241,7 +241,7 @@ Just speak naturally!
 ### Implementation
 
 ```go
-import "github.com/sst/opencode/internal/responsive"
+import "github.com/sst/rycode/internal/responsive"
 
 // Create voice input
 voice := responsive.NewVoiceInput()
@@ -301,7 +301,7 @@ Press 1-3 • ESC to cancel
 ### Implementation
 
 ```go
-import "github.com/sst/opencode/internal/responsive"
+import "github.com/sst/rycode/internal/responsive"
 
 // Render AI picker
 picker := responsive.AIProviderPicker(
@@ -372,8 +372,8 @@ package main
 
 import (
     tea "github.com/charmbracelet/bubbletea/v2"
-    "github.com/sst/opencode/internal/responsive"
-    "github.com/sst/opencode/internal/theme"
+    "github.com/sst/rycode/internal/responsive"
+    "github.com/sst/rycode/internal/theme"
 )
 
 type ResponsiveChatModel struct {

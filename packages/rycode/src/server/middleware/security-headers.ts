@@ -97,6 +97,13 @@ export namespace SecurityHeadersMiddleware {
     c.header("Referrer-Policy", "strict-origin-when-cross-origin")
     c.header("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
 
+    // HSTS - Force HTTPS for 1 year including subdomains
+    // Only set if connection is already HTTPS to avoid breaking HTTP development
+    const proto = c.req.header("x-forwarded-proto") || (c.req.url.startsWith("https") ? "https" : "http")
+    if (proto === "https") {
+      c.header("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload")
+    }
+
     // Remove server header to avoid version disclosure
     c.header("Server", "")
 

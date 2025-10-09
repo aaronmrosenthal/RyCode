@@ -71,7 +71,7 @@ Esc           → Cancel
 ### Implementation
 
 ```go
-import "github.com/sst/opencode/internal/responsive"
+import "github.com/sst/rycode/internal/responsive"
 
 // Create focus manager
 focusManager := responsive.NewFocusManager()
@@ -134,7 +134,7 @@ style := responsive.FocusRing(
 ### Touch Zones
 
 ```go
-import "github.com/sst/opencode/internal/responsive"
+import "github.com/sst/rycode/internal/responsive"
 
 // Create touch target
 target := responsive.NewTouchTarget(
@@ -520,8 +520,8 @@ package main
 
 import (
     tea "github.com/charmbracelet/bubbletea/v2"
-    "github.com/sst/opencode/internal/responsive"
-    "github.com/sst/opencode/internal/theme"
+    "github.com/sst/rycode/internal/responsive"
+    "github.com/sst/rycode/internal/theme"
 )
 
 type PerfectUXModel struct {

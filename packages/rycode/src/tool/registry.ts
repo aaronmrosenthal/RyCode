@@ -1,4 +1,5 @@
 import { BashTool } from "./bash"
+import { DebugTool } from "./debug"
 import { EditTool } from "./edit"
 import { GlobTool } from "./glob"
 import { GrepTool } from "./grep"
@@ -77,6 +78,7 @@ export namespace ToolRegistry {
     return [
       InvalidTool,
       BashTool,
+      DebugTool,
       EditTool,
       WebFetchTool,
       GlobTool,
