@@ -28,6 +28,9 @@ export const WriteTool = Tool.define("write", {
     if (exists) await FileTime.assert(ctx.sessionID, filepath)
 
     const agent = await Agent.get(ctx.agent)
+    if (!agent) {
+      throw new Error(`Agent "${ctx.agent}" not found`)
+    }
     if (agent.permission.edit === "ask")
       await Permission.ask({
         type: "write",

@@ -35,7 +35,7 @@ export const DebugTool = Tool.define("debug", {
       .describe("Expressions to watch during debugging"),
     cwd: z.string().optional().describe("Working directory for the debugger"),
   }),
-  async execute(params, ctx) {
+  async execute(params) {
     log.info("starting debug session", {
       language: params.language,
       program: params.program,

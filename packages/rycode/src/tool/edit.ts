@@ -40,6 +40,9 @@ export const EditTool = Tool.define("edit", {
     }
 
     const agent = await Agent.get(ctx.agent)
+    if (!agent) {
+      throw new Error(`Agent "${ctx.agent}" not found`)
+    }
     let diff = ""
     let contentOld = ""
     let contentNew = ""

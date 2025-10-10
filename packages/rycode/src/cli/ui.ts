@@ -379,4 +379,20 @@ export namespace UI {
   export function styledFileLink(path: string, displayText?: string): string {
     return styledLink(displayText || path, "file://" + path, "📄")
   }
+
+  /**
+   * Display a styled header
+   */
+  export function header(title: string) {
+    println()
+    println(glow(`▶ ${title}`, Style.CLAUDE_BLUE))
+    println(Style.MATRIX_GREEN_DIM + "─".repeat(Math.min(60, title.length + 4)) + Style.RESET)
+  }
+
+  /**
+   * Display a success message
+   */
+  export function success(message: string) {
+    println(Style.TEXT_SUCCESS_BOLD + "✓ " + Style.TEXT_SUCCESS + message + Style.RESET)
+  }
 }

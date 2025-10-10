@@ -163,6 +163,9 @@ export namespace SessionPrompt {
       })
     }
     const agent = await Agent.get(input.agent ?? "build")
+    if (!agent) {
+      throw new Error(`Agent "${input.agent ?? "build"}" not found`)
+    }
     const model = await resolveModel({
       agent,
       model: input.model,
@@ -312,7 +315,7 @@ export namespace SessionPrompt {
         ],
         tools: model.info.tool_call === false ? undefined : tools,
         model: wrapLanguageModel({
-          model: model.language,
+          model: model.language as any,
           middleware: [
             {
               async transformParams(args) {
@@ -1464,7 +1467,7 @@ export namespace SessionPrompt {
       }
       if (command.agent) {
         const cmdAgent = await Agent.get(command.agent)
-        if (cmdAgent.model) {
+        if (cmdAgent?.model) {
           return cmdAgent.model
         }
       }
@@ -1475,6 +1478,9 @@ export namespace SessionPrompt {
     })()
 
     const agent = await Agent.get(agentName)
+    if (!agent) {
+      throw new Error(`Agent "${agentName}" not found`)
+    }
     if ((agent.mode === "subagent" && command.subtask !== false) || command.subtask === true) {
       using abort = lock(input.sessionID)
 

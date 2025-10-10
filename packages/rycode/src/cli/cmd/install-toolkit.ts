@@ -51,15 +51,15 @@ export const InstallToolkitCommand: CommandModule = {
     // Build pip install command
     const args = ['install', '--quiet']
 
-    if (argv.upgrade) {
+    if (argv['upgrade']) {
       args.push('--upgrade')
       process.stdout.write('📦 Upgrading toolkit-cli... ')
     } else {
       process.stdout.write('📦 Installing toolkit-cli... ')
     }
 
-    if (argv.version) {
-      args.push(`toolkit-cli==${argv.version}`)
+    if (argv['version']) {
+      args.push(`toolkit-cli==${argv['version']}`)
     } else {
       args.push('toolkit-cli')
     }

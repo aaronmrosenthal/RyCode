@@ -135,6 +135,10 @@ export const RunCommand = cmd({
         return Agent.list().then((x) => x[0])
       })()
 
+      if (!agent) {
+        throw new Error("No agent found. Please create an agent first.")
+      }
+
       const { providerID, modelID } = await (async () => {
         if (args.model) return Provider.parseModel(args.model)
         if (agent.model) return agent.model

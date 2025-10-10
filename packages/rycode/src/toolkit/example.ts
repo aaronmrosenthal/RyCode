@@ -195,7 +195,7 @@ export class RyCodeToolkitHandler {
  *
  * This shows how to integrate with RyCode's session management
  */
-export async function integrateWithRyCodeSession(sessionId: string) {
+export async function integrateWithRyCodeSession() {
   const toolkit = new ToolkitClient({
     agents: ['claude', 'rycode'],
   })

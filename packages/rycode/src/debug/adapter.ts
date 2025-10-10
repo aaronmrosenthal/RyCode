@@ -1,8 +1,9 @@
-import { spawn, type ChildProcess } from "child_process"
+import type { ChildProcess } from "child_process"
 import { EventEmitter } from "events"
 import type { DAP, DebugSession, DebugAdapterConfig } from "./types"
 import { Log } from "../util/log"
 import { Bus } from "../bus"
+import { DebugEvent } from "../server/debug"
 
 const log = Log.create({ service: "debug-adapter" })
 
@@ -147,7 +148,7 @@ export abstract class DebugAdapter extends EventEmitter {
 
         // Emit Bus event for TUI
         if (event.body?.source?.path && event.body?.line !== undefined) {
-          Bus.emit("debug.stopped", {
+          Bus.publish(DebugEvent.Stopped, {
             sessionId: this.session.id,
             file: event.body.source.path,
             line: event.body.line,
@@ -161,7 +162,7 @@ export abstract class DebugAdapter extends EventEmitter {
         this.emit("continued", event.body)
 
         // Emit Bus event for TUI
-        Bus.emit("debug.continued", {
+        Bus.publish(DebugEvent.Continued, {
           sessionId: this.session.id,
         })
         break
@@ -183,7 +184,7 @@ export abstract class DebugAdapter extends EventEmitter {
         this.emit("terminated", event.body)
 
         // Emit Bus event for TUI
-        Bus.emit("debug.terminated", {
+        Bus.publish(DebugEvent.Terminated, {
           sessionId: this.session.id,
         })
         break

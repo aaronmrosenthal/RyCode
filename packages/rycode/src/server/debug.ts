@@ -98,7 +98,7 @@ export const DebugRoute = new Hono()
     ),
     async (c) => {
       const { sessionId } = c.req.valid("param")
-      const body = c.req.valid("json") ?? {}
+      const body = c.req.valid("json") as { threadId?: number } | undefined
 
       const adapter = getDebugSession(sessionId)
       if (!adapter) {
@@ -106,7 +106,7 @@ export const DebugRoute = new Hono()
       }
 
       log.info("continuing execution", { sessionId })
-      await adapter.continue(body.threadId)
+      await adapter.continue(body?.threadId ?? 1)
 
       return c.json(true)
     },
@@ -146,7 +146,7 @@ export const DebugRoute = new Hono()
     ),
     async (c) => {
       const { sessionId } = c.req.valid("param")
-      const body = c.req.valid("json") ?? {}
+      const body = c.req.valid("json") as { threadId?: number } | undefined
 
       const adapter = getDebugSession(sessionId)
       if (!adapter) {
@@ -154,7 +154,7 @@ export const DebugRoute = new Hono()
       }
 
       log.info("stepping over", { sessionId })
-      await adapter.stepOver(body.threadId)
+      await adapter.stepOver(body?.threadId ?? 1)
 
       return c.json(true)
     },
@@ -194,7 +194,7 @@ export const DebugRoute = new Hono()
     ),
     async (c) => {
       const { sessionId } = c.req.valid("param")
-      const body = c.req.valid("json") ?? {}
+      const body = c.req.valid("json") as { threadId?: number } | undefined
 
       const adapter = getDebugSession(sessionId)
       if (!adapter) {
@@ -202,7 +202,7 @@ export const DebugRoute = new Hono()
       }
 
       log.info("stepping into", { sessionId })
-      await adapter.stepInto(body.threadId)
+      await adapter.stepInto(body?.threadId ?? 1)
 
       return c.json(true)
     },
@@ -242,7 +242,7 @@ export const DebugRoute = new Hono()
     ),
     async (c) => {
       const { sessionId } = c.req.valid("param")
-      const body = c.req.valid("json") ?? {}
+      const body = c.req.valid("json") as { threadId?: number } | undefined
 
       const adapter = getDebugSession(sessionId)
       if (!adapter) {
@@ -250,7 +250,7 @@ export const DebugRoute = new Hono()
       }
 
       log.info("stepping out", { sessionId })
-      await adapter.stepOut(body.threadId)
+      await adapter.stepOut(body?.threadId ?? 1)
 
       return c.json(true)
     },
@@ -287,7 +287,7 @@ export const DebugRoute = new Hono()
       await closeDebugSession(sessionId)
 
       // Emit terminated event
-      Bus.emit(DebugEvent.Terminated, { sessionId })
+      await Bus.publish(DebugEvent.Terminated, { sessionId })
 
       return c.json(true)
     },
@@ -339,7 +339,8 @@ export const DebugRoute = new Hono()
     ),
     async (c) => {
       const { sessionId } = c.req.valid("param")
-      const { threadId } = c.req.valid("json")
+      const body = c.req.valid("json") as { threadId?: number }
+      const threadId = body?.threadId ?? 1
 
       const adapter = getDebugSession(sessionId)
       if (!adapter) {
