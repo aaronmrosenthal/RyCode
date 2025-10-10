@@ -35,7 +35,10 @@ func main() {
 	var sessionID *string = flag.String("session", "", "session ID")
 	flag.Parse()
 
-	url := os.Getenv("OPENCODE_SERVER")
+	url := os.Getenv("RYCODE_SERVER")
+	if url == "" {
+		url = "http://127.0.0.1:4096"
+	}
 
 	stat, err := os.Stdin.Stat()
 	if err != nil {
