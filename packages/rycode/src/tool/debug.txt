@@ -1,0 +1,27 @@
+Start an interactive debugging session with AI-powered assistance.
+
+The Debug tool launches a debugger for your code with intelligent features:
+- Set breakpoints at specific lines or let AI suggest optimal locations
+- Step through code execution (over, into, out)
+- Inspect variables with AI explanations of unexpected values
+- Get AI analysis of why code is failing
+- Time-travel through execution history
+- Multi-language support (Node.js, Python, Go, Rust)
+
+The debugger integrates with the Debug Adapter Protocol (DAP) to support multiple languages and provides a rich terminal UI with:
+- Source code view showing current execution point
+- AI assistant chat for conversational debugging
+- Variable inspection with type checking
+- Call stack navigation
+- Watch expressions
+- Execution timeline
+
+Example usage:
+- Debug a Node.js script: { "language": "node", "program": "app.js" }
+- Set conditional breakpoint: { "language": "node", "program": "app.js", "breakpoints": [{"file": "app.js", "line": 45, "condition": "user.email === undefined"}] }
+- Watch specific variables: { "language": "python", "program": "main.py", "watch": ["balance", "transactions"] }
+
+The AI assistant can answer questions like:
+- "Why is this variable undefined?"
+- "Show me when balance became negative"
+- "What's causing this to be slow?"
