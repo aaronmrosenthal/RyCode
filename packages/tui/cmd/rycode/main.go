@@ -34,6 +34,8 @@ func main() {
 	var prompt *string = flag.String("prompt", "", "prompt to begin with")
 	var agent *string = flag.String("agent", "", "agent to begin with")
 	var sessionID *string = flag.String("session", "", "session ID")
+	var showSplashFlag *bool = flag.Bool("splash", false, "force show splash screen")
+	var noSplashFlag *bool = flag.Bool("no-splash", false, "skip splash screen")
 	flag.Parse()
 
 	// Easter egg: /donut command - infinite cortex animation
@@ -128,14 +130,22 @@ func main() {
 		}
 	}()
 
-	// Show splash screen on first run
+	// Show splash screen (with command-line overrides)
 	showSplash := func() {
+		// Command-line flag overrides
+		if *noSplashFlag {
+			return // Skip splash
+		}
+
 		config, err := splash.LoadConfig()
 		if err != nil {
 			config = splash.DefaultConfig()
 		}
 
-		if splash.ShouldShowSplash(config) {
+		// Force show with --splash flag
+		shouldShow := *showSplashFlag || splash.ShouldShowSplash(config)
+
+		if shouldShow {
 			defer func() {
 				if r := recover(); r != nil {
 					slog.Warn("Splash screen crashed, continuing to TUI", "error", r)
@@ -148,10 +158,15 @@ func main() {
 				slog.Warn("Splash screen failed, continuing to TUI", "error", err)
 			}
 
-			// Mark splash as shown
-			if err := splash.MarkAsShown(); err != nil {
-				slog.Warn("Failed to mark splash as shown", "error", err)
+			// Mark splash as shown (unless forced with --splash)
+			if !*showSplashFlag {
+				if err := splash.MarkAsShown(); err != nil {
+					slog.Warn("Failed to mark splash as shown", "error", err)
+				}
 			}
+
+			// Clear screen after splash for clean transition
+			clearScreen()
 		}
 	}
 
@@ -213,4 +228,10 @@ func runDonutMode() {
 	if _, err := program.Run(); err != nil {
 		slog.Error("Donut mode error", "error", err)
 	}
+}
+
+// clearScreen clears the terminal screen for clean transition
+func clearScreen() {
+	// ANSI escape code to clear screen and move cursor to top-left
+	os.Stdout.WriteString("\033[2J\033[H")
 }

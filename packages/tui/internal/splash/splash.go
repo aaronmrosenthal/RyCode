@@ -134,7 +134,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "esc":
 			// Skip and disable forever
 			if !m.donutMode {
-				// TODO: Save config to disable splash
+				// Disable splash permanently
+				if err := DisableSplashPermanently(); err != nil {
+					// Log error but don't block
+					// User can still skip, just config won't save
+				}
 				m.done = true
 				return m, tea.Quit
 			}
@@ -220,6 +224,11 @@ func (m Model) View() string {
 	case 3:
 		// Closer screen
 		content = m.closer.Render()
+
+	case 4:
+		// Simplified mode (for small terminals)
+		caps := DetectTerminalCapabilities()
+		content = m.RenderSimplified(caps)
 
 	default:
 		content = ""

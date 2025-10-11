@@ -2,9 +2,16 @@ package splash
 
 import (
 	"encoding/json"
+	"math/rand"
 	"os"
 	"path/filepath"
+	"time"
 )
+
+func init() {
+	// Seed random number generator
+	rand.Seed(time.Now().UnixNano())
+}
 
 // Config represents splash screen configuration
 type Config struct {
@@ -112,11 +119,6 @@ func (c *Config) Save() error {
 
 // ShouldShowSplash determines whether to show the splash screen
 func ShouldShowSplash(config *Config) bool {
-	// First run always shows
-	if IsFirstRun() {
-		return true
-	}
-
 	// User disabled splash
 	if !config.SplashEnabled {
 		return false
@@ -125,6 +127,11 @@ func ShouldShowSplash(config *Config) bool {
 	// Respect reduced motion preference
 	if config.ReducedMotion {
 		return false
+	}
+
+	// First run always shows (unless explicitly disabled)
+	if IsFirstRun() {
+		return true
 	}
 
 	// Check frequency setting
@@ -136,9 +143,21 @@ func ShouldShowSplash(config *Config) bool {
 	case "first":
 		return false // Already shown once
 	case "random":
-		// TODO: 10% random chance
-		return false
+		// 10% random chance
+		return rand.Float64() < 0.1
 	default:
+		// Default to "first" behavior
 		return false
 	}
+}
+
+// DisableSplashPermanently disables the splash screen in config
+func DisableSplashPermanently() error {
+	config, err := LoadConfig()
+	if err != nil {
+		config = DefaultConfig()
+	}
+
+	config.SplashEnabled = false
+	return config.Save()
 }
