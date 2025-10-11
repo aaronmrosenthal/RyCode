@@ -13,6 +13,7 @@ RyCode isn't just another TUI tool. It's what happens when AI designs software *
 
 ### 🚀 The "Can't Compete" Checklist
 
+- ✅ **Epic 3D splash screen** - Real donut algorithm with 30 FPS animation
 - ✅ **60fps rendering** with <100ns monitoring overhead
 - ✅ **19MB binary** (stripped) - smaller than most cat photos
 - ✅ **9 accessibility modes** - inclusive by default
@@ -21,7 +22,7 @@ RyCode isn't just another TUI tool. It's what happens when AI designs software *
 - ✅ **Real-time cost tracking** down to the penny
 - ✅ **Zero-configuration** auth with auto-detect
 - ✅ **100% keyboard accessible** - zero mouse required
-- ✅ **10+ hidden easter eggs** - because software should delight
+- ✅ **15+ hidden easter eggs** - because software should delight
 - ✅ **Comprehensive help system** - guidance exactly when needed
 - ✅ **Beautiful error handling** - failures become learning moments
 - ✅ **Multi-provider support** - Anthropic, OpenAI, Google, Grok, Qwen
@@ -124,6 +125,31 @@ RyCode isn't just another TUI tool. It's what happens when AI designs software *
 - Focus history for back navigation
 - Configurable focus indicator sizes
 - Tab order management
+
+### 🌀 Epic Splash Screen
+
+**3D ASCII Neural Cortex Animation:**
+- Real donut algorithm math (torus parametric equations)
+- 30 FPS smooth animation with z-buffer depth sorting
+- Cyberpunk cyan-magenta gradient colors
+- 3-act sequence: Boot → Cortex → Closer (5 seconds)
+- Adaptive frame rate (drops to 15 FPS on slow systems)
+
+**Easter Eggs in Splash:**
+1. **Infinite Donut Mode**: Run `./rycode donut` for endless cortex 🍩
+2. **Konami Code**: ↑↑↓↓←→←→BA for rainbow mode 🌈
+3. **Math Reveal**: Press `?` to see the torus equations 🧮
+4. **Hidden Message**: "CLAUDE WAS HERE" appears randomly
+5. **Skip Controls**: Press `S` to skip, `ESC` to disable forever
+
+**Configuration:**
+- Command-line flags: `--splash`, `--no-splash`
+- Config file: `~/.rycode/config.json`
+- Frequency modes: first/always/random/never
+- Respects `PREFERS_REDUCED_MOTION` environment variable
+- Automatic fallback for small/limited terminals
+
+**See:** [SPLASH_USAGE.md](SPLASH_USAGE.md) · [EASTER_EGGS.md](EASTER_EGGS.md) · [SPLASH_TESTING.md](SPLASH_TESTING.md)
 
 ### 🎭 Delightful Polish
 
@@ -238,6 +264,7 @@ internal/
 ├── intelligence/     # AI features (2000+ lines)
 ├── performance/      # Monitoring system (700+ lines)
 ├── polish/           # Micro-interactions & easter eggs (900+ lines)
+├── splash/           # Epic 3D splash screen (1450+ lines)
 ├── styles/           # Styling system
 ├── theme/            # Theme management
 └── typography/       # Typography system
@@ -255,9 +282,9 @@ internal/
 ## 📊 Statistics
 
 ### Code Metrics
-- **~7,916 lines** of production code (Phase 3 alone)
-- **24 files** across 7 packages
-- **10/10 tests passing** with comprehensive coverage
+- **~9,366 lines** of production code (including splash)
+- **32 files** across 8 packages
+- **31/31 tests passing** with 54.2% coverage
 - **0 known bugs** at release
 - **100% keyboard accessible**
 
@@ -334,11 +361,18 @@ go build -ldflags="-s -w" -o rycode ./cmd/rycode
 
 ## 📚 Documentation
 
+### Core Guides
 - [Performance Guide](docs/PERFORMANCE.md) - Optimization details
 - [Accessibility Guide](docs/ACCESSIBILITY.md) - Inclusive design
 - [Keyboard Shortcuts](docs/SHORTCUTS.md) - Complete reference
-- [Easter Eggs Guide](docs/EASTER_EGGS.md) - Hidden features
 - [Architecture Overview](docs/ARCHITECTURE.md) - Code organization
+
+### Splash Screen
+- [SPLASH_USAGE.md](SPLASH_USAGE.md) - Usage guide and configuration
+- [EASTER_EGGS.md](EASTER_EGGS.md) - Hidden features in splash
+- [SPLASH_TESTING.md](SPLASH_TESTING.md) - Testing guide (54.2% coverage)
+- [SPLASH_IMPLEMENTATION_PLAN.md](SPLASH_IMPLEMENTATION_PLAN.md) - Design document
+- [WEEK_4_SUMMARY.md](WEEK_4_SUMMARY.md) - Week 4 testing progress
 
 ## 🤝 Contributing
 

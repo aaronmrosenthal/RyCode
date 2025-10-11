@@ -31,14 +31,14 @@ func DefaultConfig() *Config {
 	}
 }
 
-// getConfigPath returns the path to the config file
-func getConfigPath() string {
+// getConfigPath returns the path to the config file (variable for testing)
+var getConfigPath = func() string {
 	home, _ := os.UserHomeDir()
 	return filepath.Join(home, ".rycode", "config.json")
 }
 
-// getMarkerPath returns the path to the splash shown marker file
-func getMarkerPath() string {
+// getMarkerPath returns the path to the splash shown marker file (variable for testing)
+var getMarkerPath = func() string {
 	home, _ := os.UserHomeDir()
 	return filepath.Join(home, ".rycode", ".splash_shown")
 }
