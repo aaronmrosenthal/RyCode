@@ -1,0 +1,18 @@
+# robots.txt for https://ry-code.com
+
+# Allow all search engines
+User-agent: *
+Allow: /
+
+# Specific crawlers
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+# Sitemap location
+Sitemap: https://ry-code.com/sitemap.xml
+
+# Crawl-delay (optional, adjust if needed)
+Crawl-delay: 1

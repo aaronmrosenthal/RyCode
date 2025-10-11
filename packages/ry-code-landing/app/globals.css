@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gradient-to-br from-[#0a0a0f] via-[#0f0f1e] to-[#1a0a1f] text-white font-sans antialiased;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-neural-cyan via-neural-magenta to-matrix-green;
+  }
+
+  .glow-cyan {
+    text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+  }
+
+  .glow-magenta {
+    text-shadow: 0 0 20px rgba(255, 0, 255, 0.5);
+  }
+}
