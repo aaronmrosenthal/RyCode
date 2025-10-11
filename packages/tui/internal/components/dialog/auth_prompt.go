@@ -3,6 +3,7 @@ package dialog
 import (
 	"fmt"
 
+	"github.com/aaronmrosenthal/rycode/internal/components/spinner"
 	"github.com/aaronmrosenthal/rycode/internal/styles"
 	"github.com/aaronmrosenthal/rycode/internal/theme"
 	"github.com/charmbracelet/bubbles/v2/textinput"
@@ -12,12 +13,14 @@ import (
 
 // AuthPromptDialog is a dialog for entering provider API keys
 type AuthPromptDialog struct {
-	provider       string
-	input          textinput.Model
-	error          string
-	showAutoDetect bool
-	width          int
-	height         int
+	provider        string
+	input           textinput.Model
+	error           string
+	showAutoDetect  bool
+	width           int
+	height          int
+	loading         bool
+	loadingSpinner  *spinner.MultiStepLoading
 }
 
 // NewAuthPromptDialog creates a new authentication prompt dialog
@@ -29,11 +32,21 @@ func NewAuthPromptDialog(provider string) *AuthPromptDialog {
 	ti.SetWidth(60)
 	ti.EchoMode = textinput.EchoPassword // Hide API key
 
+	// Create loading spinner with steps
+	loadingSteps := []string{
+		"Verifying API key",
+		"Fetching available models",
+		"Checking provider health",
+	}
+	loadingSpinner := spinner.NewMultiStepLoading(loadingSteps)
+
 	return &AuthPromptDialog{
 		provider:       provider,
 		input:          ti,
 		showAutoDetect: true,
 		error:          "",
+		loading:        false,
+		loadingSpinner: loadingSpinner,
 	}
 }
 
@@ -55,6 +68,10 @@ func (a *AuthPromptDialog) SetSize(width, height int) {
 // SetError sets an error message to display
 func (a *AuthPromptDialog) SetError(err string) {
 	a.error = err
+	a.loading = false
+	if a.loadingSpinner != nil {
+		a.loadingSpinner.FailCurrentStep()
+	}
 }
 
 // GetValue returns the current input value
@@ -62,11 +79,44 @@ func (a *AuthPromptDialog) GetValue() string {
 	return a.input.Value()
 }
 
+// StartLoading starts the loading animation
+func (a *AuthPromptDialog) StartLoading() {
+	a.loading = true
+	a.error = ""
+	if a.loadingSpinner != nil {
+		a.loadingSpinner.Start()
+	}
+}
+
+// StopLoading stops the loading animation
+func (a *AuthPromptDialog) StopLoading(success bool) {
+	a.loading = false
+	if a.loadingSpinner != nil {
+		if success {
+			a.loadingSpinner.Complete()
+		} else {
+			a.loadingSpinner.FailCurrentStep()
+		}
+	}
+}
+
 // Update handles messages for the auth prompt
 func (a *AuthPromptDialog) Update(msg tea.Msg) (*AuthPromptDialog, tea.Cmd) {
-	var cmd tea.Cmd
-	a.input, cmd = a.input.Update(msg)
-	return a, cmd
+	var cmds []tea.Cmd
+
+	// Update input
+	var inputCmd tea.Cmd
+	a.input, inputCmd = a.input.Update(msg)
+	cmds = append(cmds, inputCmd)
+
+	// Update loading spinner
+	if a.loading && a.loadingSpinner != nil {
+		model, spinnerCmd := a.loadingSpinner.Update(msg)
+		a.loadingSpinner = model.(*spinner.MultiStepLoading)
+		cmds = append(cmds, spinnerCmd)
+	}
+
+	return a, tea.Batch(cmds...)
 }
 
 // View renders the auth prompt dialog
@@ -95,33 +145,49 @@ func (a *AuthPromptDialog) View() string {
 	// Title
 	title := titleStyle.Render(fmt.Sprintf("Authenticate with %s", a.provider))
 
-	// Input field
-	inputView := inputStyle.Render(a.input.View())
+	var content string
 
-	// Hints
-	hints := ""
-	if a.showAutoDetect {
-		hints = hintStyle.Render("Press Enter to submit | Ctrl+D for auto-detect | Esc to cancel")
+	if a.loading {
+		// Show loading animation
+		loadingView := ""
+		if a.loadingSpinner != nil {
+			loadingView = a.loadingSpinner.View()
+		}
+
+		content = lipgloss.JoinVertical(
+			lipgloss.Left,
+			title,
+			"",
+			loadingView,
+		)
 	} else {
-		hints = hintStyle.Render("Press Enter to submit | Esc to cancel")
-	}
+		// Show input form
+		inputView := inputStyle.Render(a.input.View())
 
-	// Error message
-	errorView := ""
-	if a.error != "" {
-		errorView = "\n" + errorStyle.Render("✗ " + a.error)
-	}
+		// Hints
+		hints := ""
+		if a.showAutoDetect {
+			hints = hintStyle.Render("Press Enter to submit | Ctrl+D for auto-detect | Esc to cancel")
+		} else {
+			hints = hintStyle.Render("Press Enter to submit | Esc to cancel")
+		}
 
-	// Combine all parts
-	content := lipgloss.JoinVertical(
-		lipgloss.Left,
-		title,
-		"",
-		inputView,
-		"",
-		hints,
-		errorView,
-	)
+		// Error message
+		errorView := ""
+		if a.error != "" {
+			errorView = "\n" + errorStyle.Render("✗ " + a.error)
+		}
+
+		content = lipgloss.JoinVertical(
+			lipgloss.Left,
+			title,
+			"",
+			inputView,
+			"",
+			hints,
+			errorView,
+		)
+	}
 
 	// Center the content
 	dialogStyle := styles.NewStyle().
