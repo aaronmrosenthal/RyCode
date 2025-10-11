@@ -54,6 +54,36 @@ func GradientColor(angle float64) RGB {
 	return lerpRGB(cyan, magenta, t)
 }
 
+// RainbowColor returns a color from the rainbow spectrum
+// based on angle (0 to 2π)
+func RainbowColor(angle float64) RGB {
+	// Rainbow colors: ROYGBIV
+	colors := []RGB{
+		{255, 0, 0},     // Red
+		{255, 127, 0},   // Orange
+		{255, 255, 0},   // Yellow
+		{0, 255, 0},     // Green
+		{0, 0, 255},     // Blue
+		{75, 0, 130},    // Indigo
+		{148, 0, 211},   // Violet
+	}
+
+	// Normalize angle to [0, 1]
+	t := math.Mod(angle, 2*math.Pi) / (2 * math.Pi)
+	if t < 0 {
+		t += 1.0
+	}
+
+	// Map to color index
+	numColors := len(colors)
+	segment := t * float64(numColors)
+	idx1 := int(segment) % numColors
+	idx2 := (idx1 + 1) % numColors
+	localT := segment - float64(int(segment))
+
+	return lerpRGB(colors[idx1], colors[idx2], localT)
+}
+
 // ColorMode represents terminal color capabilities
 type ColorMode int
 

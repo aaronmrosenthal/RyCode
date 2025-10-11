@@ -36,6 +36,12 @@ func main() {
 	var sessionID *string = flag.String("session", "", "session ID")
 	flag.Parse()
 
+	// Easter egg: /donut command - infinite cortex animation
+	if len(flag.Args()) > 0 && flag.Args()[0] == "donut" {
+		runDonutMode()
+		return
+	}
+
 	url := os.Getenv("RYCODE_SERVER")
 	if url == "" {
 		url = "http://127.0.0.1:4096"
@@ -198,4 +204,13 @@ func main() {
 
 	tuiModel.Cleanup()
 	slog.Info("TUI exited", "result", result)
+}
+
+// runDonutMode runs the infinite cortex animation (easter egg)
+func runDonutMode() {
+	model := splash.NewDonutMode()
+	program := tea.NewProgram(model, tea.WithAltScreen())
+	if _, err := program.Run(); err != nil {
+		slog.Error("Donut mode error", "error", err)
+	}
 }

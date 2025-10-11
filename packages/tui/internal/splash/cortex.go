@@ -7,13 +7,14 @@ import (
 
 // CortexRenderer renders a 3D rotating torus (neural cortex) in ASCII
 type CortexRenderer struct {
-	width   int       // Screen width
-	height  int       // Screen height
-	A       float64   // Rotation angle around X-axis
-	B       float64   // Rotation angle around Z-axis
-	screen  []rune    // Character buffer
-	zbuffer []float64 // Depth buffer for z-buffering
-	chars   []rune    // Character set for luminance mapping
+	width       int       // Screen width
+	height      int       // Screen height
+	A           float64   // Rotation angle around X-axis
+	B           float64   // Rotation angle around Z-axis
+	screen      []rune    // Character buffer
+	zbuffer     []float64 // Depth buffer for z-buffering
+	chars       []rune    // Character set for luminance mapping
+	rainbowMode bool      // Easter egg: rainbow colors
 }
 
 // NewCortexRenderer creates a new cortex renderer
@@ -100,6 +101,43 @@ func (r *CortexRenderer) RenderFrame() {
 	// Update rotation angles
 	r.A += 0.04 // Rotate around X-axis
 	r.B += 0.02 // Rotate around Z-axis
+
+	// Easter egg: hide secret message occasionally
+	r.renderSecretMessage()
+}
+
+// renderSecretMessage occasionally reveals a hidden message
+func (r *CortexRenderer) renderSecretMessage() {
+	// Only show every 300 frames (~10 seconds at 30 FPS)
+	// and only for 30 frames (1 second)
+	frameNumber := int(r.A*100) % 600 // Pseudo-frame based on rotation
+	if frameNumber < 300 || frameNumber >= 330 {
+		return
+	}
+
+	message := "CLAUDE WAS HERE"
+	startX := r.width/2 - len(message)/2
+	centerY := r.height / 2
+
+	if centerY < 0 || centerY >= r.height {
+		return
+	}
+
+	for i, char := range message {
+		x := startX + i
+		if x >= 0 && x < r.width {
+			idx := centerY*r.width + x
+			if idx >= 0 && idx < len(r.screen) {
+				r.screen[idx] = char
+				r.zbuffer[idx] = 999.0 // Always on top
+			}
+		}
+	}
+}
+
+// SetRainbowMode enables or disables rainbow mode
+func (r *CortexRenderer) SetRainbowMode(enabled bool) {
+	r.rainbowMode = enabled
 }
 
 // Render renders the torus with colors and returns the string
@@ -113,9 +151,16 @@ func (r *CortexRenderer) Render() string {
 			char := r.screen[idx]
 
 			if char != ' ' {
-				// Color based on angle (creates rotating gradient)
-				angle := math.Atan2(float64(y-r.height/2), float64(x-r.width/2))
-				color := GradientColor(angle + r.B) // Rotate gradient with torus
+				var color RGB
+				if r.rainbowMode {
+					// Rainbow mode: cycle through all colors
+					angle := math.Atan2(float64(y-r.height/2), float64(x-r.width/2))
+					color = RainbowColor(angle + r.B + r.A)
+				} else {
+					// Normal mode: cyan-magenta gradient
+					angle := math.Atan2(float64(y-r.height/2), float64(x-r.width/2))
+					color = GradientColor(angle + r.B) // Rotate gradient with torus
+				}
 				buf.WriteString(Colorize(string(char), color))
 			} else {
 				buf.WriteRune(' ')
