@@ -1,6 +1,7 @@
 package status
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -133,24 +134,118 @@ func (m *statusComponent) collapsePath(path string, maxWidth int) string {
 	return truncatedPath
 }
 
-func (m *statusComponent) View() string {
+// getProviderBrandColor returns the brand color for a given provider
+func getProviderBrandColor(providerName string) compat.AdaptiveColor {
+	// Normalize provider name to lowercase for comparison
+	provider := strings.ToLower(providerName)
+
+	switch {
+	case strings.Contains(provider, "anthropic") || strings.Contains(provider, "claude"):
+		// Anthropic Claude - Orange/Coral
+		return compat.AdaptiveColor{
+			Dark:  lipgloss.Color("#D97757"), // Warm coral
+			Light: lipgloss.Color("#B85C3C"),
+		}
+	case strings.Contains(provider, "openai") || strings.Contains(provider, "gpt"):
+		// OpenAI - Teal/Turquoise (like GPT branding)
+		return compat.AdaptiveColor{
+			Dark:  lipgloss.Color("#10A37F"), // OpenAI green
+			Light: lipgloss.Color("#0E8C6E"),
+		}
+	case strings.Contains(provider, "google") || strings.Contains(provider, "gemini"):
+		// Google Gemini - Blue/Purple gradient (using blue)
+		return compat.AdaptiveColor{
+			Dark:  lipgloss.Color("#4285F4"), // Google blue
+			Light: lipgloss.Color("#3367D6"),
+		}
+	case strings.Contains(provider, "grok") || strings.Contains(provider, "x.ai"):
+		// Grok (X.AI) - Dark gray/black (X branding)
+		return compat.AdaptiveColor{
+			Dark:  lipgloss.Color("#71767B"), // X gray
+			Light: lipgloss.Color("#536471"),
+		}
+	case strings.Contains(provider, "qwen") || strings.Contains(provider, "alibaba"):
+		// Qwen (Alibaba) - Orange
+		return compat.AdaptiveColor{
+			Dark:  lipgloss.Color("#FF6A00"), // Alibaba orange
+			Light: lipgloss.Color("#E65C00"),
+		}
+	default:
+		// Default - neutral gray
+		return compat.AdaptiveColor{
+			Dark:  lipgloss.Color("#6B7280"),
+			Light: lipgloss.Color("#4B5563"),
+		}
+	}
+}
+
+func (m *statusComponent) buildModelDisplay() string {
 	t := theme.CurrentTheme()
-	logo := m.logo()
-	logoWidth := lipgloss.Width(logo)
 
-	var modeBackground compat.AdaptiveColor
-	var modeForeground compat.AdaptiveColor
-
-	agentColor := util.GetAgentColor(m.app.AgentIndex)
-
-	if m.app.AgentIndex == 0 {
-		modeBackground = t.BackgroundElement()
-		modeForeground = agentColor
-	} else {
-		modeBackground = agentColor
-		modeForeground = t.BackgroundPanel()
+	// Check if we have a model selected
+	if m.app.Model == nil || m.app.Provider == nil {
+		faintStyle := styles.NewStyle().
+			Faint(true).
+			Background(t.BackgroundPanel()).
+			Foreground(t.TextMuted())
+		noModelStyle := styles.NewStyle().
+			Background(t.BackgroundElement()).
+			Padding(0, 1).
+			BorderLeft(true).
+			BorderStyle(lipgloss.ThickBorder()).
+			BorderForeground(t.BackgroundElement()).
+			BorderBackground(t.BackgroundPanel())
+		return faintStyle.Render("  ") + noModelStyle.Render("No model")
 	}
 
+	// Get provider brand color
+	brandColor := getProviderBrandColor(m.app.Provider.Name)
+
+	// Get cost (from cached value)
+	costStr := fmt.Sprintf("💰 $%.2f", m.app.CurrentCost)
+
+	// Check if cost data is stale (>10 seconds old)
+	if time.Since(m.app.LastCostUpdate) > 10*time.Second {
+		costStr = "💰 $--"
+	}
+
+	// Style definitions with brand color background
+	modelNameStyle := styles.NewStyle().
+		Background(brandColor).
+		Foreground(compat.AdaptiveColor{
+			Dark:  lipgloss.Color("#FFFFFF"), // White text on dark bg
+			Light: lipgloss.Color("#FFFFFF"), // White text on light bg
+		}).
+		Bold(true).
+		Render
+
+	costStyle := styles.NewStyle().
+		Background(brandColor).
+		Foreground(compat.AdaptiveColor{
+			Dark:  lipgloss.Color("#FFFFFF"),
+			Light: lipgloss.Color("#FFFFFF"),
+		}).
+		Render
+
+	hintStyle := styles.NewStyle().
+		Background(brandColor).
+		Foreground(compat.AdaptiveColor{
+			Dark:  lipgloss.Color("#E5E5E5"),
+			Light: lipgloss.Color("#F0F0F0"),
+		}).
+		Faint(true).
+		Render
+
+	separatorStyle := styles.NewStyle().
+		Background(brandColor).
+		Foreground(compat.AdaptiveColor{
+			Dark:  lipgloss.Color("#E5E5E5"),
+			Light: lipgloss.Color("#F0F0F0"),
+		}).
+		Faint(true).
+		Render
+
+	// Get keybinding for cycling
 	command := m.app.Commands[commands.AgentCycleCommand]
 	kb := command.Keybindings[0]
 	key := kb.Key
@@ -158,26 +253,51 @@ func (m *statusComponent) View() string {
 		key = m.app.Config.Keybinds.Leader + " " + kb.Key
 	}
 
-	agentStyle := styles.NewStyle().Background(modeBackground).Foreground(modeForeground)
-	agentNameStyle := agentStyle.Bold(true).Render
-	agentDescStyle := agentStyle.Render
-	agent := agentNameStyle(strings.ToUpper(m.app.Agent().Name)) + agentDescStyle(" AGENT")
-	agent = agentStyle.
-		Padding(0, 1).
-		BorderLeft(true).
-		BorderStyle(lipgloss.ThickBorder()).
-		BorderForeground(modeBackground).
-		BorderBackground(t.BackgroundPanel()).
-		Render(agent)
+	// Build display: "Model Name | 💰 $0.12 | tab→"
+	modelName := modelNameStyle(m.app.Model.Name)
+	cost := costStyle(costStr)
+	hint := hintStyle(key + "→")
+	separator := separatorStyle(" | ")
 
+	var content string
+	if m.width > 80 {
+		// Full display with all info
+		content = modelName + separator + cost + separator + hint
+	} else if m.width > 60 {
+		// Hide hint, show model and cost
+		content = modelName + separator + cost
+	} else {
+		// Just show model name
+		content = modelName
+	}
+
+	// Add border and padding with brand color
 	faintStyle := styles.NewStyle().
 		Faint(true).
 		Background(t.BackgroundPanel()).
 		Foreground(t.TextMuted())
-	agent = faintStyle.Render(key+" ") + agent
-	modeWidth := lipgloss.Width(agent)
 
-	availableWidth := m.width - logoWidth - modeWidth
+	displayStyle := styles.NewStyle().
+		Background(brandColor).
+		Padding(0, 1).
+		BorderLeft(true).
+		BorderStyle(lipgloss.ThickBorder()).
+		BorderForeground(brandColor).
+		BorderBackground(t.BackgroundPanel())
+
+	return faintStyle.Render(key+" ") + displayStyle.Render(content)
+}
+
+func (m *statusComponent) View() string {
+	t := theme.CurrentTheme()
+	logo := m.logo()
+	logoWidth := lipgloss.Width(logo)
+
+	// Build model display instead of agent display
+	modelDisplay := m.buildModelDisplay()
+	modelWidth := lipgloss.Width(modelDisplay)
+
+	availableWidth := m.width - logoWidth - modelWidth
 	branchSuffix := ""
 	if m.branch != "" {
 		branchSuffix = ":" + m.branch
@@ -185,6 +305,11 @@ func (m *statusComponent) View() string {
 
 	maxCwdWidth := availableWidth - lipgloss.Width(branchSuffix)
 	cwdDisplay := m.collapsePath(m.cwd, maxCwdWidth)
+
+	faintStyle := styles.NewStyle().
+		Faint(true).
+		Background(t.BackgroundPanel()).
+		Foreground(t.TextMuted())
 
 	if m.branch != "" && availableWidth > lipgloss.Width(cwdDisplay)+lipgloss.Width(branchSuffix) {
 		cwdDisplay += faintStyle.Render(branchSuffix)
@@ -209,7 +334,7 @@ func (m *statusComponent) View() string {
 			View: logo + cwd,
 		},
 		layout.FlexItem{
-			View: agent,
+			View: modelDisplay,
 		},
 	)
 
