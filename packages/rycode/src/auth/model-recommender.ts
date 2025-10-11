@@ -375,7 +375,7 @@ export class ModelRecommender {
   /**
    * Estimate cost for typical usage
    */
-  private estimateCost(model: ModelCapabilities, context: TaskContext): string {
+  private estimateCost(model: ModelCapabilities, _context: TaskContext): string {
     // Rough estimates per request
     const estimates: Record<string, string> = {
       'anthropic/claude-3-5-sonnet-20241022': '$0.01-0.05 per request',

@@ -39,7 +39,7 @@ export class CredentialStore {
 
       if (authResult.method === 'api-key' || authResult.method === 'api') {
         // API key authentication
-        const apiKey = authResult.apiKey || authResult.credential
+        const apiKey = authResult['apiKey'] || authResult['credential']
 
         if (!apiKey) {
           throw new Error('API key is required for api-key authentication')

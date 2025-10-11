@@ -86,9 +86,9 @@ async function main() {
           success: true,
           data: {
             todayCost: summary.today,
-            monthCost: summary.month,
+            monthCost: summary.thisMonth,
             projection: summary.projection,
-            savingsTip: savingsTips.length > 0 ? savingsTips[0].tip : undefined
+            savingsTip: savingsTips.length > 0 ? savingsTips[0].message : undefined
           }
         }
         break
@@ -178,8 +178,8 @@ async function main() {
             recommendations: recommendations.slice(0, 3).map(r => ({
               provider: r.provider,
               model: r.model,
-              score: r.score,
-              reasoning: r.reasoning
+              confidence: r.confidence,
+              reason: r.reason
             }))
           }
         }

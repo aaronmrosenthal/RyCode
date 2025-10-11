@@ -71,7 +71,7 @@ export class AuthManager {
     if (this.config.autoLog) {
       await auditLog.recordAuthAttempt(
         provider,
-        config.method || 'api-key',
+        config['method'] || 'api-key',
         { saveCredentials, testConnection }
       )
     }
@@ -119,7 +119,7 @@ export class AuthManager {
       if (this.config.autoLog && error instanceof AuthenticationError) {
         await auditLog.recordAuthFailure(
           provider,
-          config.method || 'api-key',
+          config['method'] || 'api-key',
           error.reason,
           { error: error.message }
         )

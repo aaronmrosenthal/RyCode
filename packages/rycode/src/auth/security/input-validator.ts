@@ -135,7 +135,7 @@ export class InputValidator {
   /**
    * Validate OAuth token format
    */
-  validateOAuthToken(provider: string, token: string): ValidationResult {
+  validateOAuthToken(_provider: string, token: string): ValidationResult {
     if (!token || typeof token !== 'string') {
       return {
         valid: false,

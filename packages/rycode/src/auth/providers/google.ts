@@ -44,7 +44,7 @@ export interface CSRFToken {
 const PROVIDER = 'google'
 const API_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta'
 const OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token'
-const OAUTH_REVOKE_URL = 'https://oauth2.googleapis.com/revoke'
+// const OAUTH_REVOKE_URL = 'https://oauth2.googleapis.com/revoke' // Reserved for future use
 
 export class GoogleProvider {
   private csrfTokens = new Map<string, Date>()
@@ -355,8 +355,8 @@ export class GoogleProvider {
         body: new URLSearchParams({
           grant_type: 'refresh_token',
           refresh_token: refreshToken,
-          client_id: process.env.GOOGLE_CLIENT_ID || '',
-          client_secret: process.env.GOOGLE_CLIENT_SECRET || ''
+          client_id: process.env['GOOGLE_CLIENT_ID'] || '',
+          client_secret: process.env['GOOGLE_CLIENT_SECRET'] || ''
         })
       })
 

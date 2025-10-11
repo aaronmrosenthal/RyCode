@@ -253,7 +253,7 @@ export class CostTracker {
     const providers = Object.keys(breakdown.byProvider)
 
     if (providers.length === 1 && providers[0] === 'openai') {
-      const openaiCost = breakdown.byProvider.openai
+      const openaiCost = breakdown.byProvider['openai']
       const potentialSaving = openaiCost * 0.5
 
       tips.push({

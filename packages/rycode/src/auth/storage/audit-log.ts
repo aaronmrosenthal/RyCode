@@ -9,6 +9,7 @@
 import { Log } from '../../util/log'
 import path from 'path'
 import { Global } from '../../global'
+import { appendFile } from 'fs/promises'
 
 const log = Log.create({ service: 'auth-audit' })
 
@@ -410,7 +411,7 @@ export class AuditLog {
   private async persistEvent(event: AuditEvent): Promise<void> {
     try {
       const line = JSON.stringify(event) + '\n'
-      await Bun.write(this.filepath, line, { append: true })
+      await appendFile(this.filepath, line, 'utf-8')
     } catch (error) {
       // Don't throw - logging failure shouldn't break auth
       log.error('Failed to persist audit event to disk', { error })
