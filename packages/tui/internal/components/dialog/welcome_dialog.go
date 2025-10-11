@@ -177,6 +177,10 @@ func (w *welcomeDialog) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				w.currentStep++
 			}
 
+		case "s", "S":
+			// Skip tutorial - jump to last step
+			w.currentStep = len(w.steps) - 1
+
 		case "a":
 			// Auto-detect (on step 2)
 			if w.currentStep == 2 {
@@ -288,6 +292,11 @@ func (w *welcomeDialog) View() string {
 
 	if w.currentStep < len(w.steps)-1 {
 		navParts = append(navParts, "→ Next")
+	}
+
+	// Add skip option on first few steps
+	if w.currentStep < len(w.steps)-2 {
+		navParts = append(navParts, "[S] Skip")
 	}
 
 	nav := navStyle.Render(strings.Join(navParts, "  |  "))
