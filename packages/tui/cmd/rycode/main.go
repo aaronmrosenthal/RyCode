@@ -16,6 +16,7 @@ import (
 	"github.com/aaronmrosenthal/rycode/internal/api"
 	"github.com/aaronmrosenthal/rycode/internal/app"
 	"github.com/aaronmrosenthal/rycode/internal/clipboard"
+	"github.com/aaronmrosenthal/rycode/internal/splash"
 	"github.com/aaronmrosenthal/rycode/internal/tui"
 	"github.com/aaronmrosenthal/rycode/internal/util"
 	"golang.org/x/sync/errgroup"
@@ -120,6 +121,35 @@ func main() {
 			slog.Error("Failed to initialize clipboard", "error", err)
 		}
 	}()
+
+	// Show splash screen on first run
+	showSplash := func() {
+		config, err := splash.LoadConfig()
+		if err != nil {
+			config = splash.DefaultConfig()
+		}
+
+		if splash.ShouldShowSplash(config) {
+			defer func() {
+				if r := recover(); r != nil {
+					slog.Warn("Splash screen crashed, continuing to TUI", "error", r)
+				}
+			}()
+
+			splashModel := splash.New()
+			splashProgram := tea.NewProgram(splashModel, tea.WithAltScreen())
+			if _, err := splashProgram.Run(); err != nil {
+				slog.Warn("Splash screen failed, continuing to TUI", "error", err)
+			}
+
+			// Mark splash as shown
+			if err := splash.MarkAsShown(); err != nil {
+				slog.Warn("Failed to mark splash as shown", "error", err)
+			}
+		}
+	}
+
+	showSplash()
 
 	// Create main context for the application
 	app_, err := app.New(ctx, version, project, path, agents, httpClient, model, prompt, agent, sessionID)
