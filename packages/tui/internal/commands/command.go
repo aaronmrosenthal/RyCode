@@ -296,12 +296,12 @@ func LoadFromConfig(config *opencode.Config, customCommands []opencode.Command) 
 		},
 		{
 			Name:        AgentCycleCommand,
-			Description: "next agent",
+			Description: "next model",
 			Keybindings: parseBindings("tab"),
 		},
 		{
 			Name:        AgentCycleReverseCommand,
-			Description: "previous agent",
+			Description: "previous model",
 			Keybindings: parseBindings("shift+tab"),
 		},
 		{

@@ -13,6 +13,7 @@ import (
 	"github.com/aaronmrosenthal/rycode/internal/app"
 	"github.com/aaronmrosenthal/rycode/internal/components/list"
 	"github.com/aaronmrosenthal/rycode/internal/components/modal"
+	"github.com/aaronmrosenthal/rycode/internal/components/toast"
 	"github.com/aaronmrosenthal/rycode/internal/layout"
 	"github.com/aaronmrosenthal/rycode/internal/styles"
 	"github.com/aaronmrosenthal/rycode/internal/theme"
@@ -32,13 +33,25 @@ type ModelDialog interface {
 }
 
 type modelDialog struct {
-	app          *app.App
-	allModels    []ModelWithProvider
-	width        int
-	height       int
-	modal        *modal.Modal
-	searchDialog *SearchDialog
-	dialogWidth  int
+	app                *app.App
+	allModels          []ModelWithProvider
+	width              int
+	height             int
+	modal              *modal.Modal
+	searchDialog       *SearchDialog
+	dialogWidth        int
+	providerAuthStatus map[string]*ProviderAuthStatus // Cached auth status per provider
+	authPrompt         *AuthPromptDialog              // Auth prompt dialog
+	showingAuthPrompt  bool                           // Whether auth prompt is visible
+	authingProvider    string                         // Provider being authenticated
+}
+
+// ProviderAuthStatus holds authentication and health information for a provider
+type ProviderAuthStatus struct {
+	IsAuthenticated bool
+	Health          string // "healthy", "degraded", "down", "unknown"
+	ModelsCount     int
+	LastChecked     time.Time
 }
 
 type ModelWithProvider struct {
@@ -48,7 +61,8 @@ type ModelWithProvider struct {
 
 // modelItem is a custom list item for model selections
 type modelItem struct {
-	model ModelWithProvider
+	model           ModelWithProvider
+	isAuthenticated bool // Whether the provider is authenticated
 }
 
 func (m modelItem) Render(
@@ -62,7 +76,10 @@ func (m modelItem) Render(
 		Background(t.BackgroundPanel()).
 		Foreground(t.Text())
 
-	if selected {
+	// Gray out locked models
+	if !m.isAuthenticated {
+		itemStyle = itemStyle.Foreground(t.TextMuted()).Faint(true)
+	} else if selected {
 		itemStyle = itemStyle.Foreground(t.Primary())
 	}
 
@@ -73,7 +90,13 @@ func (m modelItem) Render(
 	modelPart := itemStyle.Render(m.model.Model.Name)
 	providerPart := providerStyle.Render(fmt.Sprintf(" %s", m.model.Provider.Name))
 
-	combinedText := modelPart + providerPart
+	// Add lock indicator for unauthenticated providers
+	lockPart := ""
+	if !m.isAuthenticated {
+		lockPart = providerStyle.Render(" [locked]")
+	}
+
+	combinedText := modelPart + providerPart + lockPart
 	return baseStyle.
 		Background(t.BackgroundPanel()).
 		PaddingLeft(1).
@@ -81,7 +104,8 @@ func (m modelItem) Render(
 }
 
 func (m modelItem) Selectable() bool {
-	return true
+	// Only selectable if provider is authenticated
+	return m.isAuthenticated
 }
 
 type modelKeyMap struct {
@@ -106,10 +130,21 @@ func (m *modelDialog) Init() tea.Cmd {
 }
 
 func (m *modelDialog) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	// If showing auth prompt, route messages there
+	if m.showingAuthPrompt {
+		return m.handleAuthPromptUpdate(msg)
+	}
+
 	switch msg := msg.(type) {
 	case SearchSelectionMsg:
 		// Handle selection from search dialog
 		if item, ok := msg.Item.(modelItem); ok {
+			// If model is locked, show auth prompt
+			if !item.isAuthenticated {
+				m.showAuthPrompt(item.model.Provider.ID, item.model.Provider.Name)
+				return m, nil
+			}
+
 			return m, tea.Sequence(
 				util.CmdHandler(modal.CloseModalMsg{}),
 				util.CmdHandler(
@@ -145,6 +180,58 @@ func (m *modelDialog) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 		m.searchDialog.SetWidth(m.dialogWidth)
 		m.searchDialog.SetHeight(msg.Height)
+		if m.authPrompt != nil {
+			m.authPrompt.SetSize(msg.Width, msg.Height)
+		}
+
+	case tea.KeyPressMsg:
+		// Handle 'a' key to start authentication on focused provider
+		if msg.String() == "a" {
+			providerID, providerName := m.getFocusedProvider()
+			if providerID != "" {
+				authStatus := m.checkProviderAuth(providerID)
+				if !authStatus.IsAuthenticated {
+					m.showAuthPrompt(providerID, providerName)
+					return m, nil
+				}
+			}
+		}
+
+		// Handle 'd' key for auto-detect
+		if msg.String() == "d" {
+			return m, m.performAutoDetect()
+		}
+
+	case AuthSuccessMsg:
+		// Authentication succeeded
+		m.showingAuthPrompt = false
+		m.authPrompt = nil
+
+		// Invalidate cache for this provider
+		delete(m.providerAuthStatus, msg.Provider)
+
+		// Refresh display
+		items := m.buildDisplayList(m.searchDialog.GetQuery())
+		m.searchDialog.SetItems(items)
+
+		// Show success toast
+		return m, toast.NewSuccessToast(
+			fmt.Sprintf("✓ Authenticated with %s (%d models)", msg.Provider, msg.ModelsCount),
+		)
+
+	case AuthFailureMsg:
+		// Authentication failed - show error in prompt
+		if m.authPrompt != nil {
+			m.authPrompt.SetError(msg.Error)
+		}
+		return m, nil
+
+	case AuthStatusRefreshMsg:
+		// Refresh auth status for all providers
+		m.providerAuthStatus = make(map[string]*ProviderAuthStatus)
+		items := m.buildDisplayList(m.searchDialog.GetQuery())
+		m.searchDialog.SetItems(items)
+		return m, nil
 	}
 
 	updatedDialog, cmd := m.searchDialog.Update(msg)
@@ -153,7 +240,128 @@ func (m *modelDialog) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *modelDialog) View() string {
+	if m.showingAuthPrompt && m.authPrompt != nil {
+		return m.authPrompt.View()
+	}
 	return m.searchDialog.View()
+}
+
+// showAuthPrompt displays the authentication prompt for a provider
+func (m *modelDialog) showAuthPrompt(providerID, providerName string) {
+	m.authPrompt = NewAuthPromptDialog(providerName)
+	m.authPrompt.SetSize(m.width, m.height)
+	m.showingAuthPrompt = true
+	m.authingProvider = providerID
+}
+
+// handleAuthPromptUpdate handles messages when auth prompt is visible
+func (m *modelDialog) handleAuthPromptUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		switch msg.String() {
+		case "enter":
+			// Submit authentication
+			apiKey := m.authPrompt.GetValue()
+			if apiKey != "" {
+				return m, m.performAuthentication(m.authingProvider, apiKey)
+			}
+			return m, nil
+
+		case "ctrl+d":
+			// Auto-detect credentials
+			m.showingAuthPrompt = false
+			m.authPrompt = nil
+			return m, m.performAutoDetect()
+
+		case "esc":
+			// Cancel authentication
+			m.showingAuthPrompt = false
+			m.authPrompt = nil
+			return m, nil
+		}
+
+	case tea.WindowSizeMsg:
+		m.width = msg.Width
+		m.height = msg.Height
+		if m.authPrompt != nil {
+			m.authPrompt.SetSize(msg.Width, msg.Height)
+		}
+		return m, nil
+	}
+
+	// Pass message to auth prompt
+	var cmd tea.Cmd
+	m.authPrompt, cmd = m.authPrompt.Update(msg)
+	return m, cmd
+}
+
+// performAuthentication authenticates with a provider using an API key
+func (m *modelDialog) performAuthentication(providerID, apiKey string) tea.Cmd {
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		result, err := m.app.AuthBridge.Authenticate(ctx, providerID, apiKey)
+		if err != nil {
+			return AuthFailureMsg{
+				Provider: providerID,
+				Error:    err.Error(),
+			}
+		}
+
+		return AuthSuccessMsg{
+			Provider:    result.Provider,
+			ModelsCount: result.ModelsCount,
+		}
+	}
+}
+
+// performAutoDetect attempts to auto-detect credentials
+func (m *modelDialog) performAutoDetect() tea.Cmd {
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		result, err := m.app.AuthBridge.AutoDetect(ctx)
+		if err != nil {
+			return toast.NewErrorToast("Auto-detect failed: " + err.Error())()
+		}
+
+		if result.Found == 0 {
+			return toast.NewInfoToast("No credentials found. Please enter manually.")()
+		}
+
+		// Refresh auth status after auto-detect
+		return tea.Batch(
+			util.CmdHandler(AuthStatusRefreshMsg{}),
+			toast.NewSuccessToast(fmt.Sprintf("✓ Auto-detected %d credential(s)", result.Found)),
+		)
+	}
+}
+
+// getFocusedProvider returns the provider ID and name of the currently focused item
+func (m *modelDialog) getFocusedProvider() (string, string) {
+	// Get the selected item from search dialog's list
+	selectedItem, selectedIndex := m.searchDialog.list.GetSelectedItem()
+
+	if selectedIndex == -1 {
+		return "", ""
+	}
+
+	// Check if it's a model item
+	if item, ok := selectedItem.(modelItem); ok {
+		return item.model.Provider.ID, item.model.Provider.Name
+	}
+
+	// If it's a header, try to get the next item
+	items := m.buildDisplayList(m.searchDialog.GetQuery())
+	if selectedIndex+1 < len(items) {
+		if item, ok := items[selectedIndex+1].(modelItem); ok {
+			return item.model.Provider.ID, item.model.Provider.Name
+		}
+	}
+
+	return "", ""
 }
 
 func (m *modelDialog) calculateOptimalWidth(models []ModelWithProvider) int {
@@ -173,6 +381,64 @@ func (m *modelDialog) calculateOptimalWidth(models []ModelWithProvider) int {
 	}
 
 	return maxWidth
+}
+
+// buildProviderHeader creates a header string with authentication status indicators
+func (m *modelDialog) buildProviderHeader(providerName string, status *ProviderAuthStatus) string {
+	if status.IsAuthenticated {
+		// Authenticated provider - check health
+		switch status.Health {
+		case "healthy":
+			return providerName + " ✓"
+		case "degraded":
+			return providerName + " ⚠"
+		case "down":
+			return providerName + " ✗"
+		default:
+			return providerName + " ✓"
+		}
+	} else {
+		// Not authenticated
+		return providerName + " 🔒"
+	}
+}
+
+// checkProviderAuth checks and caches the authentication status for a provider
+func (m *modelDialog) checkProviderAuth(providerID string) *ProviderAuthStatus {
+	// Return cached status if available and fresh (< 30 seconds old)
+	if cached, ok := m.providerAuthStatus[providerID]; ok {
+		if time.Since(cached.LastChecked) < 30*time.Second {
+			return cached
+		}
+	}
+
+	// Create context with timeout to avoid blocking UI
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+
+	status := &ProviderAuthStatus{
+		IsAuthenticated: false,
+		Health:          "unknown",
+		ModelsCount:     0,
+		LastChecked:     time.Now(),
+	}
+
+	// Check authentication status via bridge
+	authStatus, err := m.app.AuthBridge.CheckAuthStatus(ctx, providerID)
+	if err == nil {
+		status.IsAuthenticated = authStatus.IsAuthenticated
+		status.ModelsCount = authStatus.ModelsCount
+	}
+
+	// Check provider health
+	health, err := m.app.AuthBridge.GetProviderHealth(ctx, providerID)
+	if err == nil {
+		status.Health = health.Status
+	}
+
+	// Cache the result
+	m.providerAuthStatus[providerID] = status
+	return status
 }
 
 func (m *modelDialog) setupAllModels() {
@@ -309,7 +575,13 @@ func (m *modelDialog) buildSearchResults(query string) []list.Item {
 			continue
 		}
 		seenModels[key] = true
-		items = append(items, modelItem{model: model})
+
+		// Check auth status for search results
+		authStatus := m.checkProviderAuth(model.Provider.ID)
+		items = append(items, modelItem{
+			model:           model,
+			isAuthenticated: authStatus.IsAuthenticated,
+		})
 	}
 
 	return items
@@ -324,7 +596,12 @@ func (m *modelDialog) buildGroupedResults() []list.Item {
 	if len(recentModels) > 0 {
 		items = append(items, list.HeaderItem("Recent"))
 		for _, model := range recentModels {
-			items = append(items, modelItem{model: model})
+			// Check auth status for recent models
+			authStatus := m.checkProviderAuth(model.Provider.ID)
+			items = append(items, modelItem{
+				model:           model,
+				isAuthenticated: authStatus.IsAuthenticated,
+			})
 		}
 	}
 
@@ -345,6 +622,10 @@ func (m *modelDialog) buildGroupedResults() []list.Item {
 	// Add provider groups
 	for _, providerName := range providerNames {
 		models := providerGroups[providerName]
+		providerID := models[0].Provider.ID
+
+		// Check auth status for this provider
+		authStatus := m.checkProviderAuth(providerID)
 
 		// Sort models within provider group
 		sort.Slice(models, func(i, j int) bool {
@@ -377,12 +658,16 @@ func (m *modelDialog) buildGroupedResults() []list.Item {
 			return modelA.Model.Name < modelB.Model.Name
 		})
 
-		// Add provider header
-		items = append(items, list.HeaderItem(providerName))
+		// Add provider header with auth status indicator
+		headerText := m.buildProviderHeader(providerName, authStatus)
+		items = append(items, list.HeaderItem(headerText))
 
 		// Add models in this provider group
 		for _, model := range models {
-			items = append(items, modelItem{model: model})
+			items = append(items, modelItem{
+				model:           model,
+				isAuthenticated: authStatus.IsAuthenticated,
+			})
 		}
 	}
 
@@ -444,7 +729,8 @@ func (s *modelDialog) Close() tea.Cmd {
 
 func NewModelDialog(app *app.App) ModelDialog {
 	dialog := &modelDialog{
-		app: app,
+		app:                app,
+		providerAuthStatus: make(map[string]*ProviderAuthStatus),
 	}
 
 	dialog.setupAllModels()

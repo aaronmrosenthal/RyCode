@@ -13,6 +13,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/aaronmrosenthal/rycode-sdk-go"
+	"github.com/aaronmrosenthal/rycode/internal/auth"
 	"github.com/aaronmrosenthal/rycode/internal/clipboard"
 	"github.com/aaronmrosenthal/rycode/internal/commands"
 	"github.com/aaronmrosenthal/rycode/internal/components/toast"
@@ -52,6 +53,9 @@ type App struct {
 	IsLeaderSequence  bool
 	IsBashMode        bool
 	ScrollSpeed       int
+	AuthBridge        *auth.Bridge // Auth system bridge
+	CurrentCost       float64      // Cached cost from auth system
+	LastCostUpdate    time.Time    // When cost was last fetched
 }
 
 func (a *App) Agent() *opencode.Agent {
@@ -81,6 +85,11 @@ type AgentSelectedMsg struct {
 
 type SessionClearedMsg struct{}
 type CompactSessionMsg struct{}
+
+// CostUpdatedMsg is sent when cost summary is updated
+type CostUpdatedMsg struct {
+	Cost float64
+}
 type SendPrompt = Prompt
 type SendShell = struct {
 	Command string
@@ -211,6 +220,9 @@ func New(
 		InitialAgent:   initialAgent,
 		InitialSession: initialSession,
 		ScrollSpeed:    int(configInfo.Tui.ScrollSpeed),
+		AuthBridge:     auth.NewBridge(project.Worktree),
+		CurrentCost:    0.0,
+		LastCostUpdate: time.Now(),
 	}
 
 	return app, nil
@@ -700,6 +712,22 @@ func (a *App) SaveState() tea.Cmd {
 			slog.Error("Failed to save state", "error", err)
 		}
 		return nil
+	}
+}
+
+// UpdateCost fetches the latest cost from the auth bridge
+func (a *App) UpdateCost() tea.Cmd {
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+
+		summary, err := a.AuthBridge.GetCostSummary(ctx)
+		if err != nil {
+			slog.Debug("Failed to get cost summary", "error", err)
+			return nil
+		}
+
+		return CostUpdatedMsg{Cost: summary.TodayCost}
 	}
 }
 

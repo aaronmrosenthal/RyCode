@@ -41,6 +41,9 @@ type InterruptDebounceTimeoutMsg struct{}
 // ExitDebounceTimeoutMsg is sent when the exit key debounce timeout expires
 type ExitDebounceTimeoutMsg struct{}
 
+// CostTickMsg is sent every 5 seconds to trigger cost update
+type CostTickMsg time.Time
+
 // InterruptKeyState tracks the state of interrupt key presses for debouncing
 type InterruptKeyState int
 
@@ -105,7 +108,16 @@ func (a Model) Init() tea.Cmd {
 		cmds = append(cmds, a.splashScreen.Init())
 	}
 
+	// Start background cost update ticker
+	cmds = append(cmds, tickEvery5Seconds())
+
 	return tea.Batch(cmds...)
+}
+
+func tickEvery5Seconds() tea.Cmd {
+	return tea.Tick(5*time.Second, func(t time.Time) tea.Msg {
+		return CostTickMsg(t)
+	})
 }
 
 func (a Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -775,6 +787,17 @@ func (a Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Splash screen animation finished
 		a.showSplash = false
 		a.splashScreen = nil
+	case CostTickMsg:
+		// Update cost in background and schedule next tick
+		return a, tea.Batch(
+			a.app.UpdateCost(),
+			tickEvery5Seconds(),
+		)
+	case app.CostUpdatedMsg:
+		// Update cached cost value
+		a.app.CurrentCost = msg.Cost
+		a.app.LastCostUpdate = time.Now()
+		return a, nil
 	case tea.PasteMsg, tea.ClipboardMsg:
 		// Paste events: prioritize modal if active, otherwise editor
 		if a.modal != nil {
@@ -1224,11 +1247,13 @@ func (a Model) executeCommand(command commands.Command) (tea.Model, tea.Cmd) {
 		helpDialog := dialog.NewHelpDialog(a.app)
 		a.modal = helpDialog
 	case commands.AgentCycleCommand:
-		updated, cmd := a.app.SwitchAgent()
+		// Cycle through recent models instead of agents
+		updated, cmd := a.app.CycleRecentModel()
 		a.app = updated
 		cmds = append(cmds, cmd)
 	case commands.AgentCycleReverseCommand:
-		updated, cmd := a.app.SwitchAgentReverse()
+		// Cycle through recent models in reverse instead of agents
+		updated, cmd := a.app.CycleRecentModelReverse()
 		a.app = updated
 		cmds = append(cmds, cmd)
 	case commands.EditorOpenCommand:
