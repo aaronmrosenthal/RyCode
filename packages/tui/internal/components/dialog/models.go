@@ -33,17 +33,19 @@ type ModelDialog interface {
 }
 
 type modelDialog struct {
-	app                *app.App
-	allModels          []ModelWithProvider
-	width              int
-	height             int
-	modal              *modal.Modal
-	searchDialog       *SearchDialog
-	dialogWidth        int
-	providerAuthStatus map[string]*ProviderAuthStatus // Cached auth status per provider
-	authPrompt         *AuthPromptDialog              // Auth prompt dialog
-	showingAuthPrompt  bool                           // Whether auth prompt is visible
-	authingProvider    string                         // Provider being authenticated
+	app                   *app.App
+	allModels             []ModelWithProvider
+	width                 int
+	height                int
+	modal                 *modal.Modal
+	searchDialog          *SearchDialog
+	dialogWidth           int
+	providerAuthStatus    map[string]*ProviderAuthStatus // Cached auth status per provider
+	authPrompt            *AuthPromptDialog              // Auth prompt dialog
+	showingAuthPrompt     bool                           // Whether auth prompt is visible
+	authingProvider       string                         // Provider being authenticated
+	recommendationPanel   *ModelRecommendationPanel      // AI recommendation panel
+	showRecommendations   bool                           // Whether to show recommendations
 }
 
 // ProviderAuthStatus holds authentication and health information for a provider
@@ -126,6 +128,13 @@ var modelKeys = modelKeyMap{
 
 func (m *modelDialog) Init() tea.Cmd {
 	m.setupAllModels()
+
+	// Generate initial recommendations
+	if m.recommendationPanel != nil {
+		ctx := GetDefaultContext()
+		m.recommendationPanel.GenerateRecommendations(ctx)
+	}
+
 	return m.searchDialog.Init()
 }
 
@@ -183,6 +192,9 @@ func (m *modelDialog) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.authPrompt != nil {
 			m.authPrompt.SetSize(msg.Width, msg.Height)
 		}
+		if m.recommendationPanel != nil {
+			m.recommendationPanel.SetWidth(m.dialogWidth - 4)
+		}
 
 	case tea.KeyPressMsg:
 		// Handle 'a' key to start authentication on focused provider
@@ -200,6 +212,15 @@ func (m *modelDialog) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Handle 'd' key for auto-detect
 		if msg.String() == "d" {
 			return m, m.performAutoDetect()
+		}
+
+		// Handle 'i' key to toggle recommendations (AI insights)
+		if msg.String() == "i" {
+			m.showRecommendations = !m.showRecommendations
+			if m.recommendationPanel != nil {
+				m.recommendationPanel.SetVisible(m.showRecommendations)
+			}
+			return m, nil
 		}
 
 	case AuthSuccessMsg:
@@ -243,7 +264,20 @@ func (m *modelDialog) View() string {
 	if m.showingAuthPrompt && m.authPrompt != nil {
 		return m.authPrompt.View()
 	}
-	return m.searchDialog.View()
+
+	// Show model list
+	listView := m.searchDialog.View()
+
+	// Add recommendations if enabled and no search query
+	if m.showRecommendations && m.recommendationPanel != nil && m.searchDialog.GetQuery() == "" {
+		recommendationsView := m.recommendationPanel.View()
+		if recommendationsView != "" {
+			// Stack vertically
+			return listView + "\n\n" + recommendationsView
+		}
+	}
+
+	return listView
 }
 
 // showAuthPrompt displays the authentication prompt for a provider
@@ -729,8 +763,10 @@ func (s *modelDialog) Close() tea.Cmd {
 
 func NewModelDialog(app *app.App) ModelDialog {
 	dialog := &modelDialog{
-		app:                app,
-		providerAuthStatus: make(map[string]*ProviderAuthStatus),
+		app:                 app,
+		providerAuthStatus:  make(map[string]*ProviderAuthStatus),
+		recommendationPanel: NewModelRecommendationPanel(),
+		showRecommendations: true, // Show by default
 	}
 
 	dialog.setupAllModels()

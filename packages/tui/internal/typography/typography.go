@@ -6,6 +6,7 @@ import (
 	"github.com/aaronmrosenthal/rycode/internal/styles"
 	"github.com/aaronmrosenthal/rycode/internal/theme"
 	"github.com/charmbracelet/lipgloss/v2"
+	"github.com/charmbracelet/lipgloss/v2/compat"
 )
 
 // Typography defines the type system for the TUI
@@ -100,8 +101,7 @@ func New() *Typography {
 		// Label: 12px equivalent, uppercase, tracked
 		Label: styles.NewStyle().
 			Foreground(t.TextMuted()).
-			Bold(true).
-			Transform(lipgloss.Uppercase),
+			Bold(true),
 
 		// Code: monospace, muted background
 		Code: styles.NewStyle().
@@ -249,7 +249,7 @@ func Card(title, content string) string {
 	return styles.NewStyle().
 		Padding(DefaultSpacing.MD, DefaultSpacing.LG).
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(t.BorderMuted()).
+		BorderForeground(t.Border()).
 		Background(t.BackgroundPanel()).
 		Render(inner)
 }
@@ -268,7 +268,7 @@ func Divider(width int) string {
 	}
 
 	return styles.NewStyle().
-		Foreground(t.BorderMuted()).
+		Foreground(t.Border()).
 		MarginTop(DefaultSpacing.SM).
 		MarginBottom(DefaultSpacing.SM).
 		Render(line)
@@ -336,7 +336,7 @@ func Badge(text string) string {
 func StatusBadge(text string, status string) string {
 	t := theme.CurrentTheme()
 
-	var bg lipgloss.AdaptiveColor
+	var bg compat.AdaptiveColor
 	switch status {
 	case "success":
 		bg = t.Success()
@@ -361,7 +361,6 @@ func StatusBadge(text string, status string) string {
 // Panel creates a panel with title and content
 func Panel(title, content string) string {
 	t := theme.CurrentTheme()
-	typo := New()
 
 	// Title bar
 	titleBar := styles.NewStyle().
@@ -384,7 +383,7 @@ func Panel(title, content string) string {
 
 	return styles.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(t.BorderMuted()).
+		BorderForeground(t.Border()).
 		Background(t.BackgroundPanel()).
 		Render(panel)
 }
