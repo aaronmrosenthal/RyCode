@@ -16,8 +16,9 @@ import (
 
 // Model represents the splash screen state
 type Model struct {
-	act           int             // Current act: 1=boot, 2=cortex, 3=closer
+	act           int             // Current act: 1=matrix rain, 2=cortex, 3=closer
 	frame         int             // Current frame number
+	matrixRain    *MatrixRain     // Matrix rain animation
 	bootSeq       *BootSequence   // Boot sequence animation
 	cortex        *CortexRenderer // 3D torus renderer
 	closer        *Closer         // Closer screen
@@ -41,16 +42,25 @@ type tickMsg time.Time
 // Konami code sequence
 var konamiSequence = []string{"up", "up", "down", "down", "left", "right", "left", "right", "b", "a"}
 
+// RyCode ASCII logo
+const rycodeLogo = `________               _________     _________
+___  __ \____  __      __  ____/___________  /____
+__  /_/ /_  / / /_______  /    _  __ \  __  /_  _ \
+_  _, _/_  /_/ /_/_____/ /___  / /_/ / /_/ / /  __/
+/_/ |_| _\__, /        \____/  \____/\__,_/  \___/
+        /____/`
+
 // New creates a new splash screen model
 func New() Model {
 	return Model{
-		act:       1,
-		frame:     0,
-		bootSeq:   NewBootSequence(),
-		cortex:    NewCortexRenderer(80, 24),
-		closer:    NewCloser(80, 24),
-		skipHint:  true,
-		targetFPS: 30,
+		act:        1,
+		frame:      0,
+		matrixRain: NewMatrixRain(80, 24, rycodeLogo),
+		bootSeq:    NewBootSequence(),
+		cortex:     NewCortexRenderer(80, 24),
+		closer:     NewCloser(80, 24),
+		skipHint:   true,
+		targetFPS:  30,
 	}
 }
 
@@ -88,6 +98,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Update dimensions
 		m.width = msg.Width
 		m.height = msg.Height
+		m.matrixRain = NewMatrixRain(msg.Width, msg.Height, rycodeLogo)
 		m.cortex = NewCortexRenderer(msg.Width, msg.Height)
 		m.closer = NewCloser(msg.Width, msg.Height)
 		return m, nil
@@ -179,14 +190,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// Act transitions (not in donut mode)
 		if !m.donutMode {
-			if m.act == 1 && m.frame > 30 {
-				// After 1 second (30 frames), move to cortex
+			if m.act == 1 && m.frame > 210 {
+				// After 7 seconds (210 frames), move to cortex
 				m.act = 2
-			} else if m.act == 2 && m.frame > 120 {
-				// After 4 seconds total (120 frames), move to closer
+			} else if m.act == 2 && m.frame > 300 {
+				// After 10 seconds total (300 frames), move to closer
 				m.act = 3
-			} else if m.act == 3 && m.frame > 150 {
-				// After 5 seconds total (150 frames), auto-close
+			} else if m.act == 3 && m.frame > 330 {
+				// After 11 seconds total (330 frames), auto-close
 				m.done = true
 				return m, tea.Quit
 			}
@@ -213,9 +224,9 @@ func (m Model) View() string {
 
 	switch m.act {
 	case 1:
-		// Boot sequence
-		m.bootSeq.Update(m.frame)
-		content = m.bootSeq.Render()
+		// Matrix rain over RyCode logo
+		m.matrixRain.Update()
+		content = m.matrixRain.Render()
 
 	case 2:
 		// Rotating cortex
