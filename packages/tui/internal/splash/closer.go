@@ -40,11 +40,20 @@ func (c *Closer) Render() string {
 		Bold(true).
 		Align(lipgloss.Center)
 
-	// Message style
+	// Calculate responsive width (max 70% of screen, min 50 chars)
+	contentWidth := c.width * 7 / 10
+	if contentWidth > 70 {
+		contentWidth = 70
+	}
+	if contentWidth < 50 {
+		contentWidth = 50
+	}
+
+	// Message style - responsive width
 	messageStyle := lipgloss.NewStyle().
 		Foreground(mediumGreen).
 		Align(lipgloss.Center).
-		Width(60)
+		Width(contentWidth - 8) // Account for padding and borders
 
 	// Prompt style
 	promptStyle := lipgloss.NewStyle().
@@ -62,12 +71,13 @@ intelligence."`))
 	content.WriteString("\n\n")
 	content.WriteString(promptStyle.Render("Press any key to begin..."))
 
-	// Create box with proper lipgloss borders
+	// Create box with proper lipgloss borders - tighter padding
 	boxStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(brightCyan).
-		Padding(2, 4).
-		Align(lipgloss.Center)
+		Padding(1, 2).
+		Align(lipgloss.Center).
+		MaxWidth(contentWidth)
 
 	box := boxStyle.Render(content.String())
 
