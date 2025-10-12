@@ -25,7 +25,7 @@ type Config struct {
 func DefaultConfig() *Config {
 	return &Config{
 		SplashEnabled:   true,
-		SplashFrequency: "first",
+		SplashFrequency: "always", // THE AWAKENING - always show the epic splash
 		ReducedMotion:   false,
 		ColorMode:       "auto",
 	}
