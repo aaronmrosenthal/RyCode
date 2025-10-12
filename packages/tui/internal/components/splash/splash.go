@@ -160,10 +160,12 @@ func (m Model) View() string {
 		}
 	}
 
-	// Draw Matrix rain - bright toolkit-cli style
-	primaryGreen := "#00FFAA"  // Bright cyan-green like toolkit-cli
-	dimGreen := "#00CC88"      // Medium cyan-green
-	darkGreen := "#008866"     // Darker cyan-green
+	// Draw Matrix rain - EPIC neon green and cyan like the actual terminal
+	// Match the terminal's blue prompt and green RyCode branding
+	brightCyan := "#00FFAA"    // Brightest - cyan-green (matches terminal prompt)
+	neonGreen := "#00FF00"     // Pure Matrix green
+	mediumGreen := "#00CC88"   // Medium cyan-green (matches RyCode logo)
+	darkGreen := "#008866"     // Darker green for depth
 
 	for _, col := range m.rainColumns {
 		for i, char := range col.chars {
@@ -171,13 +173,19 @@ func (m Model) View() string {
 			if y >= 0 && y < m.height && col.x < m.width {
 				canvas[y][col.x] = char
 
-				// Brightest at the head, dimmer towards tail
+				// Brightest at the head, dimmer towards tail - EPIC color cascade
 				brightness := col.brightness[i] * m.fadeProgress
-				if brightness > 0.7 {
-					colors[y][col.x] = primaryGreen
+				if brightness > 0.8 {
+					// Head of rain: bright cyan (like terminal prompt)
+					colors[y][col.x] = brightCyan
+				} else if brightness > 0.6 {
+					// Upper section: pure Matrix green
+					colors[y][col.x] = neonGreen
 				} else if brightness > 0.3 {
-					colors[y][col.x] = dimGreen
+					// Middle section: medium green (RyCode brand color)
+					colors[y][col.x] = mediumGreen
 				} else {
+					// Tail: dark green for depth
 					colors[y][col.x] = darkGreen
 				}
 			}
@@ -217,8 +225,8 @@ func (m Model) View() string {
 					if x >= 0 && x < m.width {
 						if char != ' ' {
 							canvas[y][x] = char
-							// Logo glows bright green
-							colors[y][x] = primaryGreen
+							// Logo glows in Matrix green matching terminal branding
+							colors[y][x] = brightCyan
 						}
 					}
 				}
@@ -237,7 +245,8 @@ func (m Model) View() string {
 				x := startX + j
 				if x >= 0 && x < m.width {
 					canvas[taglineY][x] = char
-					colors[taglineY][x] = dimGreen
+					// Tagline in medium green to match RyCode branding
+					colors[taglineY][x] = mediumGreen
 				}
 			}
 		}
