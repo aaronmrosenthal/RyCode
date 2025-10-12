@@ -190,14 +190,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// Act transitions (not in donut mode)
 		if !m.donutMode {
-			if m.act == 1 && m.frame > 210 {
-				// After 7 seconds (210 frames), move to cortex
+			if m.act == 1 && m.frame > 330 {
+				// After 11 seconds (330 frames), move to cortex
 				m.act = 2
-			} else if m.act == 2 && m.frame > 300 {
-				// After 10 seconds total (300 frames), move to closer
+			} else if m.act == 2 && m.frame > 420 {
+				// After 14 seconds total (420 frames), move to closer
 				m.act = 3
-			} else if m.act == 3 && m.frame > 330 {
-				// After 11 seconds total (330 frames), auto-close
+			} else if m.act == 3 && m.frame > 450 {
+				// After 15 seconds total (450 frames), auto-close
 				m.done = true
 				return m, tea.Quit
 			}
