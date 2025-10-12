@@ -1274,13 +1274,13 @@ func (a Model) executeCommand(command commands.Command) (tea.Model, tea.Cmd) {
 		helpDialog := dialog.NewHelpDialog(a.app)
 		a.modal = helpDialog
 	case commands.AgentCycleCommand:
-		// Cycle through recent models instead of agents
-		updated, cmd := a.app.CycleRecentModel()
+		// Cycle through authenticated providers
+		updated, cmd := a.app.CycleAuthenticatedProvider()
 		a.app = updated
 		cmds = append(cmds, cmd)
 	case commands.AgentCycleReverseCommand:
-		// Cycle through recent models in reverse instead of agents
-		updated, cmd := a.app.CycleRecentModelReverse()
+		// Cycle through authenticated providers in reverse
+		updated, cmd := a.app.CycleAuthenticatedProviderReverse()
 		a.app = updated
 		cmds = append(cmds, cmd)
 	case commands.EditorOpenCommand:

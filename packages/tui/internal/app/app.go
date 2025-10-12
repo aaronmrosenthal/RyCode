@@ -383,6 +383,115 @@ func (a *App) CycleRecentModelReverse() (*App, tea.Cmd) {
 	return a.cycleRecentModel(false)
 }
 
+// CycleAuthenticatedProviders cycles through all authenticated providers
+func (a *App) CycleAuthenticatedProviders(forward bool) (*App, tea.Cmd) {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	// Get authentication status for all providers
+	status, err := a.AuthBridge.GetAuthStatus(ctx)
+	if err != nil {
+		return a, toast.NewErrorToast("Failed to get provider status")
+	}
+
+	if len(status.Authenticated) == 0 {
+		return a, toast.NewInfoToast("No authenticated providers. Press 'd' in /model to auto-detect.")
+	}
+
+	if len(status.Authenticated) == 1 {
+		return a, toast.NewInfoToast("Only one provider authenticated")
+	}
+
+	// Find current provider index in authenticated list
+	currentIndex := -1
+	for i, prov := range status.Authenticated {
+		if a.Provider != nil && prov.ID == a.Provider.ID {
+			currentIndex = i
+			break
+		}
+	}
+
+	// Calculate next index
+	nextIndex := 0
+	if currentIndex != -1 {
+		if forward {
+			nextIndex = (currentIndex + 1) % len(status.Authenticated)
+		} else {
+			nextIndex = (currentIndex - 1 + len(status.Authenticated)) % len(status.Authenticated)
+		}
+	}
+
+	// Get next provider's info
+	nextProviderInfo := status.Authenticated[nextIndex]
+
+	// Find the actual provider and its default model
+	var nextProvider *opencode.Provider
+	var nextModel *opencode.Model
+
+	for i := range a.Providers {
+		if a.Providers[i].ID == nextProviderInfo.ID {
+			nextProvider = &a.Providers[i]
+			break
+		}
+	}
+
+	if nextProvider == nil {
+		return a, toast.NewErrorToast(fmt.Sprintf("Provider %s not found", nextProviderInfo.Name))
+	}
+
+	// Try to find the most recently used model for this provider
+	for _, recentModel := range a.State.RecentlyUsedModels {
+		if recentModel.ProviderID == nextProvider.ID {
+			// Find this model in the provider's models
+			for _, model := range nextProvider.Models {
+				if model.ID == recentModel.ModelID {
+					nextModel = &model
+					break
+				}
+			}
+			if nextModel != nil {
+				break
+			}
+		}
+	}
+
+	// If no recent model, use the first available model
+	if nextModel == nil && len(nextProvider.Models) > 0 {
+		for _, model := range nextProvider.Models {
+			nextModel = &model
+			break
+		}
+	}
+
+	if nextModel == nil {
+		return a, toast.NewErrorToast(fmt.Sprintf("No models found for %s", nextProvider.Name))
+	}
+
+	// Update app state
+	a.Provider = nextProvider
+	a.Model = nextModel
+	a.State.AgentModel[a.Agent().Name] = AgentModel{
+		ProviderID: nextProvider.ID,
+		ModelID:    nextModel.ID,
+	}
+	a.State.UpdateModelUsage(nextProvider.ID, nextModel.ID)
+
+	return a, tea.Sequence(
+		a.SaveState(),
+		toast.NewSuccessToast(
+			fmt.Sprintf("→ %s: %s", nextProvider.Name, nextModel.Name),
+		),
+	)
+}
+
+func (a *App) CycleAuthenticatedProvider() (*App, tea.Cmd) {
+	return a.CycleAuthenticatedProviders(true)
+}
+
+func (a *App) CycleAuthenticatedProviderReverse() (*App, tea.Cmd) {
+	return a.CycleAuthenticatedProviders(false)
+}
+
 func (a *App) SwitchToAgent(agentName string) (*App, tea.Cmd) {
 	// Find the agent index by name
 	for i, agent := range a.Agents {
@@ -486,6 +595,10 @@ func (a *App) InitializeProvider() tea.Cmd {
 	}
 
 	a.Providers = providers
+
+	// Auto-detect credentials on every startup (silent if none found)
+	var autoDetectCmd tea.Cmd
+	autoDetectCmd = a.autoDetectAllCredentialsQuiet()
 
 	// retains backwards compatibility with old state format
 	if model, ok := a.State.AgentModel[a.State.Agent]; ok {
@@ -623,6 +736,11 @@ func (a *App) InitializeProvider() tea.Cmd {
 		Model:    *selectedModel,
 	}))
 
+	// Add auto-detect command if this is first run
+	if autoDetectCmd != nil {
+		cmds = append(cmds, autoDetectCmd)
+	}
+
 	// Load initial session if provided
 	if a.InitialSession != nil && *a.InitialSession != "" {
 		cmds = append(cmds, func() tea.Msg {
@@ -647,7 +765,7 @@ func (a *App) InitializeProvider() tea.Cmd {
 	if a.InitialPrompt != nil && *a.InitialPrompt != "" {
 		cmds = append(cmds, util.CmdHandler(SendPrompt{Text: *a.InitialPrompt}))
 	}
-	return tea.Sequence(cmds...)
+	return tea.Batch(cmds...)
 }
 
 func getDefaultModel(
@@ -961,6 +1079,208 @@ func (a *App) UpdateSession(ctx context.Context, sessionID string, title string)
 		return err
 	}
 	return nil
+}
+
+// isFirstRun checks if this is the first run (no authenticated providers)
+func (a *App) isFirstRun() bool {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	status, err := a.AuthBridge.GetAuthStatus(ctx)
+	if err != nil {
+		// If we can't check, assume it's not first run to avoid disruption
+		slog.Debug("Failed to check first run status", "error", err)
+		return false
+	}
+
+	return len(status.Authenticated) == 0
+}
+
+// autoDetectAllCredentials attempts to auto-detect credentials on first run
+func (a *App) autoDetectAllCredentials() tea.Cmd {
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		slog.Debug("Auto-detecting credentials on first run")
+		result, err := a.AuthBridge.AutoDetect(ctx)
+		if err != nil {
+			slog.Debug("Auto-detect failed on first run", "error", err)
+			return nil // Silent fail on first run
+		}
+
+		if result.Found > 0 {
+			slog.Info("Auto-detected credentials", "count", result.Found)
+			return toast.NewSuccessToast(
+				fmt.Sprintf("Found %d provider(s). Ready to code!", result.Found),
+			)()
+		}
+
+		slog.Debug("No credentials auto-detected on first run")
+		return nil
+	}
+}
+
+// autoDetectAllCredentialsQuiet runs auto-detect silently on every startup
+func (a *App) autoDetectAllCredentialsQuiet() tea.Cmd {
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		slog.Debug("Auto-detecting credentials")
+		result, err := a.AuthBridge.AutoDetect(ctx)
+		if err != nil {
+			slog.Debug("Auto-detect failed", "error", err)
+			return nil // Silent fail
+		}
+
+		// Get authenticated providers status
+		status, err := a.AuthBridge.GetAuthStatus(ctx)
+		if err != nil {
+			slog.Debug("Failed to get auth status", "error", err)
+			// Still show basic message if we found credentials
+			if result.Found > 0 {
+				return toast.NewSuccessToast(
+					fmt.Sprintf("Found %d provider(s). Ready to code!", result.Found),
+				)()
+			}
+			return nil
+		}
+
+		if len(status.Authenticated) == 0 {
+			// No providers authenticated
+			return nil
+		}
+
+		// Build provider names list
+		providerNames := make([]string, 0, len(status.Authenticated))
+		for _, p := range status.Authenticated {
+			providerNames = append(providerNames, p.Name)
+		}
+
+		// Generate friendly message
+		var msg string
+		if len(providerNames) == 1 {
+			msg = fmt.Sprintf("Ready: %s ✓", providerNames[0])
+		} else if len(providerNames) <= 3 {
+			msg = fmt.Sprintf("Ready: %s ✓", strings.Join(providerNames, ", "))
+		} else {
+			// Show first 3 and count
+			msg = fmt.Sprintf("Ready: %s, +%d more ✓",
+				strings.Join(providerNames[:3], ", "),
+				len(providerNames)-3)
+		}
+
+		// Check if all providers are authenticated
+		totalProviders := len(a.Providers)
+		if len(status.Authenticated) == totalProviders && totalProviders > 1 {
+			msg = fmt.Sprintf("All providers ready: %s ✓", strings.Join(providerNames, ", "))
+		}
+
+		slog.Info("Authenticated providers ready", "count", len(status.Authenticated), "providers", providerNames)
+		return toast.NewSuccessToast(msg)()
+	}
+}
+
+// AnalyzePromptAndRecommendModel analyzes a prompt and recommends a better model if available
+func (a *App) AnalyzePromptAndRecommendModel(prompt string) tea.Cmd {
+	return func() tea.Msg {
+		// Detect task type from prompt
+		taskType := detectTaskType(prompt)
+		if taskType == "general" {
+			// Don't recommend for general tasks
+			return nil
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
+		// Get AI recommendations for this task
+		recommendations, err := a.AuthBridge.GetRecommendations(ctx, taskType)
+		if err != nil {
+			slog.Debug("Failed to get recommendations", "error", err)
+			return nil
+		}
+
+		if len(recommendations) == 0 {
+			return nil
+		}
+
+		// Check if current model is already optimal
+		bestRec := recommendations[0]
+		if a.Model != nil && a.Provider != nil {
+			currentModelID := a.Provider.ID + "/" + a.Model.ID
+			bestModelID := bestRec.Provider + "/" + bestRec.Model
+
+			if currentModelID == bestModelID {
+				// Already using the best model
+				return nil
+			}
+
+			// Only recommend if confidence is high enough
+			if bestRec.Score < 0.7 {
+				return nil
+			}
+
+			// Find the recommended model in providers
+			recommendedProvider, recommendedModel := findModelByProviderAndModelID(
+				a.Providers,
+				bestRec.Provider,
+				bestRec.Model,
+			)
+
+			if recommendedProvider == nil || recommendedModel == nil {
+				return nil
+			}
+
+			// Create toast with action to switch
+			return toast.NewInfoToast(
+				fmt.Sprintf("%s might be better for %s tasks", recommendedModel.Name, taskType),
+			)()
+		}
+
+		return nil
+	}
+}
+
+// detectTaskType detects the task type from a prompt
+func detectTaskType(prompt string) string {
+	lower := strings.ToLower(prompt)
+
+	// Check for debugging/testing keywords
+	if strings.Contains(lower, "test") || strings.Contains(lower, "bug") ||
+		strings.Contains(lower, "debug") || strings.Contains(lower, "fix") ||
+		strings.Contains(lower, "error") || strings.Contains(lower, "issue") {
+		return "debugging"
+	}
+
+	// Check for refactoring keywords
+	if strings.Contains(lower, "refactor") || strings.Contains(lower, "clean") ||
+		strings.Contains(lower, "improve") || strings.Contains(lower, "optimize") {
+		return "refactoring"
+	}
+
+	// Check for code generation keywords
+	if strings.Contains(lower, "build") || strings.Contains(lower, "create") ||
+		strings.Contains(lower, "implement") || strings.Contains(lower, "add") ||
+		strings.Contains(lower, "write") || strings.Contains(lower, "generate") {
+		return "code_generation"
+	}
+
+	// Check for code review keywords
+	if strings.Contains(lower, "review") || strings.Contains(lower, "analyze") ||
+		strings.Contains(lower, "explain") || strings.Contains(lower, "understand") {
+		return "code_review"
+	}
+
+	// Check for quick questions
+	if strings.Contains(lower, "quick") || strings.Contains(lower, "?") ||
+		strings.Contains(lower, "how") || strings.Contains(lower, "what") ||
+		strings.Contains(lower, "why") {
+		return "quick_question"
+	}
+
+	return "general"
 }
 
 func (a *App) ListMessages(ctx context.Context, sessionId string) ([]Message, error) {
