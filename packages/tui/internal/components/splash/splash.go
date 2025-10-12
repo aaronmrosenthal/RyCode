@@ -19,7 +19,7 @@ type SplashFinishedMsg struct{}
 type tickMsg time.Time
 
 const (
-	splashDuration = 2500 * time.Millisecond
+	splashDuration = 4500 * time.Millisecond // Extended for better viewing
 	tickInterval   = 50 * time.Millisecond
 	matrixChars    = "ﾊﾐﾋｰｳｼﾅﾓﾆｻﾜﾂｵﾘｱﾎﾃﾏｹﾒｴｶｷﾑﾕﾗｾﾈｽﾀﾇﾍ01"
 )
@@ -94,17 +94,28 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, func() tea.Msg { return SplashFinishedMsg{} }
 		}
 
-		// Update fade progress (0.0 to 1.0 and back)
+		// Update fade progress with improved timing
+		// Phase 1 (0-20%): Matrix only, no logo
+		// Phase 2 (20-40%): Logo fades in with Matrix
+		// Phase 3 (40-80%): Full visibility - logo and Matrix together
+		// Phase 4 (80-100%): Fade out to chat view
 		progress := float64(elapsed) / float64(splashDuration)
-		if progress < 0.3 {
-			// Fade in (0 to 1)
-			m.fadeProgress = progress / 0.3
-		} else if progress > 0.7 {
-			// Fade out (1 to 0)
-			m.fadeProgress = 1.0 - ((progress - 0.7) / 0.3)
-		} else {
-			// Full visibility
+
+		if progress < 0.2 {
+			// Matrix rain only
+			m.fadeProgress = progress / 0.2
+			m.logoVisible = false
+		} else if progress < 0.4 {
+			// Logo fading in with Matrix
 			m.fadeProgress = 1.0
+			m.logoVisible = true
+		} else if progress < 0.8 {
+			// Full visibility - enjoy the view
+			m.fadeProgress = 1.0
+			m.logoVisible = true
+		} else {
+			// Fade out
+			m.fadeProgress = 1.0 - ((progress - 0.8) / 0.2)
 			m.logoVisible = true
 		}
 

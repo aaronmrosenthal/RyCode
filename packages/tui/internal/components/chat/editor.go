@@ -427,12 +427,13 @@ func (m *editorComponent) Cursor() *tea.Cursor {
 		return nil
 	}
 
-	// Simple, predictable cursor positioning
-	// Prompt is: " ❯ " which is 3 characters wide (space + icon + space)
-	cursor.Position.X += 3
+	// Textarea already calculates X position including prompt
+	// We only need to add the external prompt width (icon + left padding)
+	// External prompt: PaddingLeft(1) + icon(1) = 2 characters
+	cursor.Position.X += 2
 
-	// Y offset: 1 for border top (no empty line, no padding) = 1
-	cursor.Position.Y += 1
+	// Y offset: 0 (textarea handles border position internally)
+	cursor.Position.Y += 0
 
 	return cursor
 }
