@@ -148,10 +148,9 @@ func (m *modelDialog) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case SearchSelectionMsg:
 		// Handle selection from search dialog
 		if item, ok := msg.Item.(modelItem); ok {
-			// If model is locked, show auth prompt
+			// If model is locked, try auto-detect first, then show prompt if needed
 			if !item.isAuthenticated {
-				m.showAuthPrompt(item.model.Provider.ID, item.model.Provider.Name)
-				return m, nil
+				return m, m.tryAutoAuthThenPrompt(item.model.Provider.ID, item.model.Provider.Name, item.model)
 			}
 
 			return m, tea.Sequence(
@@ -253,6 +252,11 @@ func (m *modelDialog) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		items := m.buildDisplayList(m.searchDialog.GetQuery())
 		m.searchDialog.SetItems(items)
 		return m, nil
+
+	case ShowAuthPromptMsg:
+		// Show the auth prompt for the specified provider
+		m.showAuthPrompt(msg.ProviderID, msg.ProviderName)
+		return m, nil
 	}
 
 	updatedDialog, cmd := m.searchDialog.Update(msg)
@@ -286,6 +290,43 @@ func (m *modelDialog) showAuthPrompt(providerID, providerName string) {
 	m.authPrompt.SetSize(m.width, m.height)
 	m.showingAuthPrompt = true
 	m.authingProvider = providerID
+}
+
+// tryAutoAuthThenPrompt attempts auto-authentication first, then shows prompt if needed
+func (m *modelDialog) tryAutoAuthThenPrompt(providerID, providerName string, model ModelWithProvider) tea.Cmd {
+	return func() tea.Msg {
+		// Try auto-detect for this specific provider
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
+		result, err := m.app.AuthBridge.AutoDetectProvider(ctx, providerID)
+		if err == nil && result != nil {
+			// Success! Auto-authenticated, now select the model
+			return tea.Batch(
+				util.CmdHandler(AuthSuccessMsg{
+					Provider:    providerID,
+					ModelsCount: result.ModelsCount,
+				}),
+				util.CmdHandler(modal.CloseModalMsg{}),
+				util.CmdHandler(app.ModelSelectedMsg{
+					Provider: model.Provider,
+					Model:    model.Model,
+				}),
+			)()
+		}
+
+		// Auto-detect failed, show manual prompt
+		return util.CmdHandler(ShowAuthPromptMsg{
+			ProviderID:   providerID,
+			ProviderName: providerName,
+		})()
+	}
+}
+
+// ShowAuthPromptMsg is sent to show the auth prompt dialog
+type ShowAuthPromptMsg struct {
+	ProviderID   string
+	ProviderName string
 }
 
 // handleAuthPromptUpdate handles messages when auth prompt is visible
@@ -476,7 +517,13 @@ func (m *modelDialog) checkProviderAuth(providerID string) *ProviderAuthStatus {
 }
 
 func (m *modelDialog) setupAllModels() {
-	providers, _ := m.app.ListProviders(context.Background())
+	// Try to get providers from API first
+	providers, err := m.app.ListProviders(context.Background())
+
+	// If API returns empty or fails, use curated SOTA models
+	if err != nil || len(providers) == 0 {
+		providers = m.getCuratedSOTAProviders()
+	}
 
 	m.allModels = make([]ModelWithProvider, 0)
 	for _, provider := range providers {
@@ -500,6 +547,97 @@ func (m *modelDialog) setupAllModels() {
 	// Build initial display list (empty query shows grouped view)
 	items := m.buildDisplayList("")
 	m.searchDialog.SetItems(items)
+}
+
+// getCuratedSOTAProviders returns a hardcoded list of top SOTA models
+func (m *modelDialog) getCuratedSOTAProviders() []opencode.Provider {
+	return []opencode.Provider{
+		{
+			ID:   "anthropic",
+			Name: "Anthropic",
+			Models: map[string]opencode.Model{
+				"claude-4-5-sonnet-20250929": {
+					ID:          "claude-4-5-sonnet-20250929",
+					Name:        "Claude 4.5 Sonnet",
+					ReleaseDate: "2025-09-29",
+				},
+				"claude-3-7-sonnet-20250219": {
+					ID:          "claude-3-7-sonnet-20250219",
+					Name:        "Claude 3.7 Sonnet",
+					ReleaseDate: "2025-02-19",
+				},
+				"claude-3-5-haiku-20241022": {
+					ID:          "claude-3-5-haiku-20241022",
+					Name:        "Claude 3.5 Haiku",
+					ReleaseDate: "2024-10-22",
+				},
+			},
+		},
+		{
+			ID:   "openai",
+			Name: "OpenAI",
+			Models: map[string]opencode.Model{
+				"gpt-4-turbo-2024-04-09": {
+					ID:          "gpt-4-turbo-2024-04-09",
+					Name:        "GPT-4 Turbo",
+					ReleaseDate: "2024-04-09",
+				},
+				"gpt-4o": {
+					ID:          "gpt-4o",
+					Name:        "GPT-4o",
+					ReleaseDate: "2024-05-13",
+				},
+				"o1-preview": {
+					ID:          "o1-preview",
+					Name:        "o1 Preview",
+					ReleaseDate: "2024-09-12",
+				},
+			},
+		},
+		{
+			ID:   "google",
+			Name: "Google",
+			Models: map[string]opencode.Model{
+				"gemini-3-0-pro": {
+					ID:          "gemini-3-0-pro",
+					Name:        "Gemini 3.0 Pro",
+					ReleaseDate: "2025-03-15",
+				},
+				"gemini-2-0-flash": {
+					ID:          "gemini-2-0-flash",
+					Name:        "Gemini 2.0 Flash",
+					ReleaseDate: "2024-12-11",
+				},
+			},
+		},
+		{
+			ID:   "xai",
+			Name: "X.AI",
+			Models: map[string]opencode.Model{
+				"grok-3-fast": {
+					ID:          "grok-3-fast",
+					Name:        "Grok 3 Fast",
+					ReleaseDate: "2025-06-01",
+				},
+				"grok-2-mini": {
+					ID:          "grok-2-mini",
+					Name:        "Grok 2 Mini",
+					ReleaseDate: "2024-11-15",
+				},
+			},
+		},
+		{
+			ID:   "qwen",
+			Name: "Alibaba",
+			Models: map[string]opencode.Model{
+				"qwen-3-coder-32b": {
+					ID:          "qwen-3-coder-32b",
+					Name:        "Qwen 3 Coder 32B",
+					ReleaseDate: "2025-04-20",
+				},
+			},
+		},
+	}
 }
 
 func (m *modelDialog) sortModels() {
