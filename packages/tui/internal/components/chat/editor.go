@@ -384,11 +384,9 @@ func (m *editorComponent) Content() string {
 		Width(width).
 		PaddingTop(0).
 		PaddingBottom(0).
-		BorderStyle(lipgloss.RoundedBorder()).
+		Border(lipgloss.RoundedBorder()).
 		BorderForeground(borderForeground).
 		BorderBackground(t.Background()).
-		BorderLeft(true).
-		BorderRight(true).
 		Render(textarea)
 
 	hint := base(m.getSubmitKeyText()) + muted(" send")
