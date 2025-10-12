@@ -1209,7 +1209,7 @@ _  _, _/_  /_/ /_/_____/ /___  / /_/ / /_/ / /  __/
 		)
 	}
 
-	return mainLayout, editorX + 2, editorY + editorYDelta
+	return mainLayout, editorX, editorY + editorYDelta
 }
 
 func (a Model) chat() (string, int, int) {
@@ -1261,7 +1261,7 @@ func (a Model) chat() (string, int, int) {
 		)
 	}
 
-	return mainLayout, editorX + 2, editorY
+	return mainLayout, editorX, editorY
 }
 
 func (a Model) executeCommand(command commands.Command) (tea.Model, tea.Cmd) {
