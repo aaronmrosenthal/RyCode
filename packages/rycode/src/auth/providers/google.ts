@@ -440,9 +440,13 @@ export class GoogleProvider {
    */
   private getKnownModels(): string[] {
     return [
+      'gemini-2.5-pro',
+      'gemini-2.5-flash',
+      'gemini-2.5-flash-lite',
+      'gemini-2.0-flash',
+      'gemini-2.0-flash-lite',
       'gemini-1.5-pro',
-      'gemini-1.5-flash',
-      'gemini-1.0-pro'
+      'gemini-1.5-flash'
     ]
   }
 
@@ -539,6 +543,46 @@ export class GoogleProvider {
       helpUrl: 'https://console.cloud.google.com/apis/credentials',
       models: [
         {
+          id: 'gemini-2.5-pro',
+          name: 'Gemini 2.5 Pro',
+          contextWindow: 2000000,
+          supportsVision: true,
+          inputPrice: 0.00125,
+          outputPrice: 0.005
+        },
+        {
+          id: 'gemini-2.5-flash',
+          name: 'Gemini 2.5 Flash',
+          contextWindow: 1000000,
+          supportsVision: true,
+          inputPrice: 0.000075,
+          outputPrice: 0.0003
+        },
+        {
+          id: 'gemini-2.5-flash-lite',
+          name: 'Gemini 2.5 Flash Lite',
+          contextWindow: 1000000,
+          supportsVision: true,
+          inputPrice: 0.00005,
+          outputPrice: 0.00015
+        },
+        {
+          id: 'gemini-2.0-flash',
+          name: 'Gemini 2.0 Flash',
+          contextWindow: 1000000,
+          supportsVision: true,
+          inputPrice: 0.000075,
+          outputPrice: 0.0003
+        },
+        {
+          id: 'gemini-2.0-flash-lite',
+          name: 'Gemini 2.0 Flash Lite',
+          contextWindow: 1000000,
+          supportsVision: true,
+          inputPrice: 0.00005,
+          outputPrice: 0.00015
+        },
+        {
           id: 'gemini-1.5-pro',
           name: 'Gemini 1.5 Pro',
           contextWindow: 1000000,
@@ -553,14 +597,6 @@ export class GoogleProvider {
           supportsVision: true,
           inputPrice: 0.000075,
           outputPrice: 0.0003
-        },
-        {
-          id: 'gemini-1.0-pro',
-          name: 'Gemini 1.0 Pro',
-          contextWindow: 30720,
-          supportsVision: false,
-          inputPrice: 0.0005,
-          outputPrice: 0.0015
         }
       ]
     }

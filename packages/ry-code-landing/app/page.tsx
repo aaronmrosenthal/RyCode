@@ -20,7 +20,7 @@ export default function Home() {
               The World's Most Advanced Open Source Coding Agent
             </p>
             <p className="text-xl lg:text-2xl text-gray-300 mb-6 max-w-3xl mx-auto font-light">
-              Switch between <span className="text-neural-magenta font-semibold">5 state-of-the-art AI models</span> with a single keystroke. <span className="text-neural-cyan font-semibold">Zero context loss.</span> Infinite possibilities.
+              Switch between <span className="text-neural-magenta font-semibold">multiple state-of-the-art AI models</span> with a single keystroke. <span className="text-neural-cyan font-semibold">Zero context loss.</span> Infinite possibilities.
             </p>
 
             {/* Key Differentiators */}
@@ -73,22 +73,22 @@ export default function Home() {
 
             {/* SOTA Models Showcase */}
             <div className="mb-12">
-              <p className="text-xs sm:text-sm text-gray-500 uppercase tracking-wide mb-4">State-of-the-art models available</p>
+              <p className="text-xs sm:text-sm text-gray-500 uppercase tracking-wide mb-4">Latest frontier models (2025)</p>
               <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
                 <div className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-[#7aa2f7]/20 border-2 border-[#7aa2f7]/40 text-[#7aa2f7] font-mono text-xs sm:text-sm font-semibold">
-                  Claude 4.5 Sonnet
+                  Claude Sonnet 4.5
                 </div>
                 <div className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-[#ea4aaa]/20 border-2 border-[#ea4aaa]/40 text-[#ea4aaa] font-mono text-xs sm:text-sm font-semibold">
-                  Gemini 3.0 Pro
+                  Gemini 2.5 Pro
                 </div>
                 <div className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-[#ff6b35]/20 border-2 border-[#ff6b35]/40 text-[#ff6b35] font-mono text-xs sm:text-sm font-semibold">
-                  Codex
+                  GPT-5
                 </div>
                 <div className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-neural-cyan/20 border-2 border-neural-cyan/40 text-neural-cyan font-mono text-xs sm:text-sm font-semibold">
-                  Grok Code Fast
+                  Grok 4 Fast
                 </div>
                 <div className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-neural-magenta/20 border-2 border-neural-magenta/40 text-neural-magenta font-mono text-xs sm:text-sm font-semibold">
-                  Qwen 3 Coder
+                  Qwen3-Coder
                 </div>
               </div>
             </div>
@@ -118,49 +118,49 @@ export default function Home() {
                 <div className="space-y-2 sm:space-y-3 font-mono text-xs sm:text-sm">
                   <div className="text-gray-400 text-xs mb-4 uppercase tracking-wide">Select AI Model:</div>
 
-                  {/* Claude 4.5 Sonnet - Active */}
+                  {/* Claude Sonnet 4.5 - Active */}
                   <div className="flex items-center gap-2 sm:gap-4 px-2 sm:px-4 py-2 sm:py-3 rounded-lg bg-[#7aa2f7]/10 border-l-2 sm:border-l-4 border-[#7aa2f7]">
                     <span className="text-[#7aa2f7] text-base sm:text-xl">▶</span>
                     <div className="flex-1 min-w-0">
-                      <div className="text-[#7aa2f7] font-bold text-sm sm:text-base">Claude 4.5 Sonnet</div>
-                      <div className="text-[10px] sm:text-xs text-gray-400 mt-0.5 sm:mt-1 hidden sm:block">State-of-the-art reasoning and code generation</div>
+                      <div className="text-[#7aa2f7] font-bold text-sm sm:text-base">Claude Sonnet 4.5</div>
+                      <div className="text-[10px] sm:text-xs text-gray-400 mt-0.5 sm:mt-1 hidden sm:block">Best coding model, 77.2% on SWE-bench Verified</div>
                     </div>
                     <div className="px-1.5 sm:px-2 py-0.5 sm:py-1 rounded bg-[#7aa2f7]/20 text-[#7aa2f7] text-[10px] sm:text-xs font-semibold shrink-0">ACTIVE</div>
                   </div>
 
-                  {/* Gemini 3.0 Pro */}
+                  {/* Gemini 2.5 Pro */}
                   <div className="flex items-center gap-2 sm:gap-4 px-2 sm:px-4 py-2 sm:py-3 rounded-lg hover:bg-gray-700/20 transition-colors">
                     <span className="text-gray-600 text-base sm:text-xl">○</span>
                     <div className="flex-1 min-w-0">
-                      <div className="text-[#ea4aaa] font-bold text-sm sm:text-base">Gemini 3.0 Pro</div>
-                      <div className="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1 hidden sm:block">Ultra-fast multimodal AI with breakthrough speed</div>
+                      <div className="text-[#ea4aaa] font-bold text-sm sm:text-base">Gemini 2.5 Pro</div>
+                      <div className="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1 hidden sm:block">Most intelligent with advanced thinking capabilities</div>
                     </div>
                   </div>
 
-                  {/* Codex */}
+                  {/* GPT-5 */}
                   <div className="flex items-center gap-2 sm:gap-4 px-2 sm:px-4 py-2 sm:py-3 rounded-lg hover:bg-gray-700/20 transition-colors">
                     <span className="text-gray-600 text-base sm:text-xl">○</span>
                     <div className="flex-1 min-w-0">
-                      <div className="text-[#ff6b35] font-bold text-sm sm:text-base">Codex</div>
-                      <div className="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1 hidden sm:block">Specialized for code understanding and generation</div>
+                      <div className="text-[#ff6b35] font-bold text-sm sm:text-base">GPT-5</div>
+                      <div className="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1 hidden sm:block">OpenAI's smartest model with built-in reasoning</div>
                     </div>
                   </div>
 
-                  {/* Grok Code Fast */}
+                  {/* Grok 4 Fast */}
                   <div className="flex items-center gap-2 sm:gap-4 px-2 sm:px-4 py-2 sm:py-3 rounded-lg hover:bg-gray-700/20 transition-colors">
                     <span className="text-gray-600 text-base sm:text-xl">○</span>
                     <div className="flex-1 min-w-0">
-                      <div className="text-neural-cyan font-bold text-sm sm:text-base">Grok Code Fast</div>
-                      <div className="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1 hidden sm:block">Lightning-fast coding assistance from xAI</div>
+                      <div className="text-neural-cyan font-bold text-sm sm:text-base">Grok 4 Fast</div>
+                      <div className="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1 hidden sm:block">2M context window, 98% cost reduction with reasoning</div>
                     </div>
                   </div>
 
-                  {/* Qwen 3 Coder */}
+                  {/* Qwen3-Coder */}
                   <div className="flex items-center gap-2 sm:gap-4 px-2 sm:px-4 py-2 sm:py-3 rounded-lg hover:bg-gray-700/20 transition-colors">
                     <span className="text-gray-600 text-base sm:text-xl">○</span>
                     <div className="flex-1 min-w-0">
-                      <div className="text-neural-magenta font-bold text-sm sm:text-base">Qwen 3 Coder</div>
-                      <div className="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1 hidden sm:block">Open-source coding model with SOTA performance</div>
+                      <div className="text-neural-magenta font-bold text-sm sm:text-base">Qwen3-Coder</div>
+                      <div className="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1 hidden sm:block">480B parameter agentic coder, 256K-1M context</div>
                     </div>
                   </div>
                 </div>
@@ -178,7 +178,7 @@ export default function Home() {
 
               <div className="mt-8 text-center space-y-4">
                 <p className="text-neural-cyan text-lg font-semibold">
-                  Type <span className="bg-black/40 px-3 py-1 rounded font-mono">/model</span> to switch between 5 SOTA AI models
+                  Type <span className="bg-black/40 px-3 py-1 rounded font-mono">/model</span> to switch between the latest frontier models
                 </p>
                 <div className="flex flex-wrap justify-center gap-6 text-sm text-gray-400">
                   <div className="flex items-center gap-2">
@@ -208,7 +208,7 @@ export default function Home() {
               Switch Models Instantly
             </h2>
             <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-              Press <span className="text-neural-cyan font-mono bg-black/40 px-3 py-1 rounded">Tab</span> to cycle through 5 SOTA AI models. Watch the chips update in real-time.
+              Press <span className="text-neural-cyan font-mono bg-black/40 px-3 py-1 rounded">Tab</span> to cycle through the latest frontier models. Watch the chips update in real-time.
             </p>
           </div>
 
@@ -233,13 +233,13 @@ export default function Home() {
                   <div className="absolute -inset-4 bg-neural-cyan/10 rounded-lg animate-pulse pointer-events-none"></div>
                   <div className="px-3 py-1 rounded-full bg-[#7aa2f7]/20 border border-[#7aa2f7]/40 text-[#7aa2f7] text-xs font-mono flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#7aa2f7] animate-pulse"></span>
-                    Claude 4.5
+                    Sonnet 4.5
                   </div>
                   <div className="px-3 py-1 rounded-full bg-gray-700/30 border border-gray-600 text-gray-500 text-xs font-mono">
-                    Gemini 3.0
+                    Gemini 2.5
                   </div>
                   <div className="px-3 py-1 rounded-full bg-gray-700/30 border border-gray-600 text-gray-500 text-xs font-mono">
-                    Codex
+                    GPT-5
                   </div>
                 </div>
               </div>
@@ -270,7 +270,7 @@ export default function Home() {
                 </div>
 
                 <div className="mt-6 text-center text-xs text-gray-500">
-                  <p>Claude 4.5 Sonnet → Gemini 3.0 Pro → Codex → Grok Code Fast → Qwen 3 Coder</p>
+                  <p>Sonnet 4.5 → Gemini 2.5 Pro → GPT-5 → Grok 4 Fast → Qwen3-Coder</p>
                 </div>
               </div>
 
@@ -279,7 +279,7 @@ export default function Home() {
                 <div className="flex items-center gap-4 text-gray-400">
                   <span className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-matrix-green"></span>
-                    5 SOTA models ready
+                    Latest frontier models ready
                   </span>
                   <span>Tab to switch</span>
                 </div>

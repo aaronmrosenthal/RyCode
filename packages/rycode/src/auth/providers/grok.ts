@@ -117,9 +117,11 @@ export class GrokProvider {
       // Fallback to known models if API doesn't return them
       if (models.length === 0) {
         return [
+          'grok-4-fast',
+          'grok-4',
+          'grok-3',
           'grok-2-1212',
-          'grok-2-vision-1212',
-          'grok-beta'
+          'grok-2-vision-1212'
         ]
       }
 
@@ -252,6 +254,33 @@ export class GrokProvider {
       specialFeatures: ['real-time-web-search', 'humor', 'x-twitter-context'],
       models: [
         {
+          id: 'grok-4-fast',
+          name: 'Grok 4 Fast',
+          contextWindow: 2000000,
+          supportsVision: false,
+          supportsRealTime: true,
+          inputPrice: 0.0004,
+          outputPrice: 0.002
+        },
+        {
+          id: 'grok-4',
+          name: 'Grok 4',
+          contextWindow: 128000,
+          supportsVision: false,
+          supportsRealTime: true,
+          inputPrice: 0.002,
+          outputPrice: 0.01
+        },
+        {
+          id: 'grok-3',
+          name: 'Grok 3',
+          contextWindow: 128000,
+          supportsVision: false,
+          supportsRealTime: true,
+          inputPrice: 0.002,
+          outputPrice: 0.01
+        },
+        {
           id: 'grok-2-1212',
           name: 'Grok 2',
           contextWindow: 128000,
@@ -268,15 +297,6 @@ export class GrokProvider {
           supportsRealTime: true,
           inputPrice: 0.002,
           outputPrice: 0.01
-        },
-        {
-          id: 'grok-beta',
-          name: 'Grok Beta',
-          contextWindow: 128000,
-          supportsVision: false,
-          supportsRealTime: true,
-          inputPrice: 0.0005,
-          outputPrice: 0.002
         }
       ]
     }

@@ -347,47 +347,51 @@ func (m *editorComponent) Content() string {
 	base := styles.NewStyle().Foreground(t.Text()).Background(t.Background()).Render
 	muted := styles.NewStyle().Foreground(t.TextMuted()).Background(t.Background()).Render
 
-	// Claude Code style prompt
+	// Modern, polished prompt design
 	promptIconStyle := styles.NewStyle().
 		Foreground(t.Primary()).
 		Bold(true)
 	promptTextStyle := styles.NewStyle().
 		Foreground(t.TextMuted())
 
-	promptIcon := "▸"
+	promptIcon := "❯"
 	promptText := ""
 	borderForeground := t.Primary()
 
 	if m.app.IsLeaderSequence {
 		borderForeground = t.Accent()
+		promptIcon = "⌘"
 	}
 	if m.app.IsBashMode {
 		borderForeground = t.Secondary()
-		promptIcon = "!"
+		promptIcon = "$"
 	}
 
 	prompt := promptIconStyle.Render(promptIcon) + promptTextStyle.Render(promptText)
-	prompt = styles.NewStyle().Padding(0, 1).Render(prompt)
+	prompt = styles.NewStyle().PaddingLeft(1).PaddingRight(0).Render(prompt)
 
-	m.textarea.SetWidth(width - 6)
+	// Account for prompt width: icon + padding
+	m.textarea.SetWidth(width - 5)
 	textarea := lipgloss.JoinHorizontal(
 		lipgloss.Top,
 		prompt,
-		m.textarea.View(),
+		styles.NewStyle().
+			Background(t.BackgroundPanel()).
+			Render(m.textarea.View()),
 	)
 	textarea = styles.NewStyle().
 		Background(t.BackgroundElement()).
 		Width(width).
 		PaddingTop(1).
 		PaddingBottom(1).
-		BorderStyle(lipgloss.ThickBorder()).
+		BorderStyle(lipgloss.RoundedBorder()).
 		BorderForeground(borderForeground).
 		BorderBackground(t.Background()).
 		BorderLeft(true).
 		BorderRight(true).
 		Render(textarea)
 
-	hint := base(m.getSubmitKeyText()) + muted(" send   ")
+	hint := base(m.getSubmitKeyText()) + muted(" send")
 	if m.exitKeyInDebounce {
 		keyText := m.getExitKeyText()
 		hint = base(keyText+" again") + muted(" to exit")
@@ -401,17 +405,9 @@ func (m *editorComponent) Content() string {
 			status = "waiting for permission"
 		}
 		if m.interruptKeyInDebounce && m.app.CurrentPermission.ID == "" {
-			hint = muted(
-				status,
-			) + m.spinner.View() + muted(
-				"  ",
-			) + base(
-				keyText+" again",
-			) + muted(
-				" interrupt",
-			)
+			hint = muted(status) + " " + m.spinner.View() + " " + base(keyText+" again") + muted(" interrupt")
 		} else {
-			hint = muted(status) + m.spinner.View()
+			hint = muted(status) + " " + m.spinner.View()
 			if m.app.CurrentPermission.ID == "" {
 				hint += muted("  ") + base(keyText) + muted(" interrupt")
 			}
@@ -420,11 +416,14 @@ func (m *editorComponent) Content() string {
 
 	model := ""
 	if m.app.Model != nil {
-		model = muted(m.app.Provider.Name) + base(" "+m.app.Model.Name)
+		model = muted("│ ") + muted(m.app.Provider.Name) + base(" "+m.app.Model.Name)
 	}
 
-	space := width - 2 - lipgloss.Width(model) - lipgloss.Width(hint)
-	spacer := styles.NewStyle().Background(t.Background()).Width(space).Render("")
+	// Calculate space with proper accounting
+	hintWidth := lipgloss.Width(hint)
+	modelWidth := lipgloss.Width(model)
+	spaceWidth := max(1, width-hintWidth-modelWidth-4)
+	spacer := styles.NewStyle().Background(t.Background()).Width(spaceWidth).Render("")
 
 	info := hint + spacer + model
 	info = styles.NewStyle().Background(t.Background()).Padding(0, 1).Render(info)
@@ -434,7 +433,36 @@ func (m *editorComponent) Content() string {
 }
 
 func (m *editorComponent) Cursor() *tea.Cursor {
-	return m.textarea.Cursor()
+	cursor := m.textarea.Cursor()
+	if cursor == nil {
+		return nil
+	}
+
+	t := theme.CurrentTheme()
+
+	// Calculate actual prompt width dynamically
+	promptIconStyle := styles.NewStyle().Foreground(t.Primary()).Bold(true)
+	promptTextStyle := styles.NewStyle().Foreground(t.TextMuted())
+
+	promptIcon := "❯"
+	if m.app.IsBashMode {
+		promptIcon = "$"
+	} else if m.app.IsLeaderSequence {
+		promptIcon = "⌘"
+	}
+
+	prompt := promptIconStyle.Render(promptIcon) + promptTextStyle.Render("")
+	prompt = styles.NewStyle().PaddingLeft(1).PaddingRight(0).Render(prompt)
+	promptWidth := lipgloss.Width(prompt)
+
+	// Adjust X position for prompt
+	cursor.Position.X += promptWidth
+
+	// Adjust Y position for top border and padding
+	// PaddingTop(1) adds one line, plus the newline before textarea
+	cursor.Position.Y += 2
+
+	return cursor
 }
 
 func (m *editorComponent) View() string {
@@ -773,6 +801,7 @@ func NewEditorComponent(app *app.App) EditorComponent {
 
 	ta := textarea.New()
 	ta.Prompt = " "
+	ta.Placeholder = "Ask me anything... (or type / for commands)"
 	ta.ShowLineNumbers = false
 	ta.CharLimit = -1
 	ta.VirtualCursor = false

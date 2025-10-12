@@ -125,9 +125,12 @@ export class AnthropicProvider {
       // Fallback to known models if API doesn't return them
       if (models.length === 0) {
         return [
+          'claude-sonnet-4-5-20250929',
+          'claude-opus-4-1-20250805',
+          'claude-sonnet-4-20250514',
+          'claude-3-7-sonnet-20250219',
           'claude-3-5-sonnet-20241022',
-          'claude-3-5-haiku-20241022',
-          'claude-3-opus-20240229'
+          'claude-3-5-haiku-20241022'
         ]
       }
 
@@ -257,6 +260,38 @@ export class AnthropicProvider {
       helpUrl: 'https://console.anthropic.com/settings/keys',
       models: [
         {
+          id: 'claude-sonnet-4-5-20250929',
+          name: 'Claude Sonnet 4.5',
+          contextWindow: 200000,
+          supportsVision: true,
+          inputPrice: 0.003,
+          outputPrice: 0.015
+        },
+        {
+          id: 'claude-opus-4-1-20250805',
+          name: 'Claude Opus 4.1',
+          contextWindow: 200000,
+          supportsVision: true,
+          inputPrice: 0.015,
+          outputPrice: 0.075
+        },
+        {
+          id: 'claude-sonnet-4-20250514',
+          name: 'Claude Sonnet 4',
+          contextWindow: 200000,
+          supportsVision: true,
+          inputPrice: 0.003,
+          outputPrice: 0.015
+        },
+        {
+          id: 'claude-3-7-sonnet-20250219',
+          name: 'Claude 3.7 Sonnet',
+          contextWindow: 200000,
+          supportsVision: true,
+          inputPrice: 0.003,
+          outputPrice: 0.015
+        },
+        {
           id: 'claude-3-5-sonnet-20241022',
           name: 'Claude 3.5 Sonnet',
           contextWindow: 200000,
@@ -271,14 +306,6 @@ export class AnthropicProvider {
           supportsVision: false,
           inputPrice: 0.001,
           outputPrice: 0.005
-        },
-        {
-          id: 'claude-3-opus-20240229',
-          name: 'Claude 3 Opus',
-          contextWindow: 200000,
-          supportsVision: true,
-          inputPrice: 0.015,
-          outputPrice: 0.075
         }
       ]
     }

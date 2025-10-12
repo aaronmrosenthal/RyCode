@@ -156,10 +156,12 @@ export class QwenProvider {
    */
   private getKnownModels(): string[] {
     return [
-      'qwen-turbo',
-      'qwen-plus',
+      'qwen3-coder-480b',
+      'qwen3-coder-30b',
+      'qwen2.5-coder',
       'qwen-max',
-      'qwen-max-longcontext'
+      'qwen-plus',
+      'qwen-turbo'
     ]
   }
 
@@ -270,20 +272,28 @@ export class QwenProvider {
       helpUrl: 'https://dashscope.console.aliyun.com/',
       models: [
         {
-          id: 'qwen-turbo',
-          name: 'Qwen Turbo',
-          contextWindow: 8192,
+          id: 'qwen3-coder-480b',
+          name: 'Qwen3-Coder 480B',
+          contextWindow: 256000,
           supportsVision: false,
-          inputPrice: 0.0002,
-          outputPrice: 0.0006
+          inputPrice: 0.003,
+          outputPrice: 0.009
         },
         {
-          id: 'qwen-plus',
-          name: 'Qwen Plus',
-          contextWindow: 32768,
+          id: 'qwen3-coder-30b',
+          name: 'Qwen3-Coder 30B',
+          contextWindow: 256000,
           supportsVision: false,
-          inputPrice: 0.0004,
-          outputPrice: 0.0012
+          inputPrice: 0.001,
+          outputPrice: 0.003
+        },
+        {
+          id: 'qwen2.5-coder',
+          name: 'Qwen2.5-Coder',
+          contextWindow: 128000,
+          supportsVision: false,
+          inputPrice: 0.0008,
+          outputPrice: 0.0024
         },
         {
           id: 'qwen-max',
@@ -294,12 +304,20 @@ export class QwenProvider {
           outputPrice: 0.006
         },
         {
-          id: 'qwen-max-longcontext',
-          name: 'Qwen Max Long',
-          contextWindow: 30000,
+          id: 'qwen-plus',
+          name: 'Qwen Plus',
+          contextWindow: 32768,
           supportsVision: false,
-          inputPrice: 0.002,
-          outputPrice: 0.006
+          inputPrice: 0.0004,
+          outputPrice: 0.0012
+        },
+        {
+          id: 'qwen-turbo',
+          name: 'Qwen Turbo',
+          contextWindow: 8192,
+          supportsVision: false,
+          inputPrice: 0.0002,
+          outputPrice: 0.0006
         }
       ]
     }

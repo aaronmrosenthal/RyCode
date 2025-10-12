@@ -136,8 +136,11 @@ export class OpenAIProvider {
       // Fallback to known models if API doesn't return them
       if (gptModels.length === 0) {
         return [
-          'gpt-4-turbo-preview',
-          'gpt-4',
+          'gpt-5',
+          'gpt-4.1',
+          'gpt-4.1-mini',
+          'gpt-4o',
+          'gpt-4-turbo',
           'gpt-3.5-turbo'
         ]
       }
@@ -301,20 +304,44 @@ export class OpenAIProvider {
       helpUrl: 'https://platform.openai.com/api-keys',
       models: [
         {
-          id: 'gpt-4-turbo-preview',
-          name: 'GPT-4 Turbo',
-          contextWindow: 128000,
+          id: 'gpt-5',
+          name: 'GPT-5',
+          contextWindow: 1000000,
           supportsVision: true,
           inputPrice: 0.01,
           outputPrice: 0.03
         },
         {
-          id: 'gpt-4',
-          name: 'GPT-4',
-          contextWindow: 8192,
-          supportsVision: false,
-          inputPrice: 0.03,
-          outputPrice: 0.06
+          id: 'gpt-4.1',
+          name: 'GPT-4.1',
+          contextWindow: 1000000,
+          supportsVision: true,
+          inputPrice: 0.008,
+          outputPrice: 0.024
+        },
+        {
+          id: 'gpt-4.1-mini',
+          name: 'GPT-4.1 Mini',
+          contextWindow: 1000000,
+          supportsVision: true,
+          inputPrice: 0.0015,
+          outputPrice: 0.006
+        },
+        {
+          id: 'gpt-4o',
+          name: 'GPT-4o',
+          contextWindow: 128000,
+          supportsVision: true,
+          inputPrice: 0.005,
+          outputPrice: 0.015
+        },
+        {
+          id: 'gpt-4-turbo',
+          name: 'GPT-4 Turbo',
+          contextWindow: 128000,
+          supportsVision: true,
+          inputPrice: 0.01,
+          outputPrice: 0.03
         },
         {
           id: 'gpt-3.5-turbo',

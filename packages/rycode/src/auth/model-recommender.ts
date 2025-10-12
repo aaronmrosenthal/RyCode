@@ -46,6 +46,39 @@ const MODEL_CAPABILITIES: ModelCapabilities[] = [
   // Anthropic
   {
     provider: 'anthropic',
+    model: 'claude-sonnet-4-5-20250929',
+    contextWindow: 200000,
+    supportsVision: true,
+    supportsRealTime: false,
+    speed: 8,
+    quality: 5,
+    costEfficiency: 8,
+    bestFor: ['code_generation', 'code_review', 'refactoring', 'complex reasoning']
+  },
+  {
+    provider: 'anthropic',
+    model: 'claude-opus-4-1-20250805',
+    contextWindow: 200000,
+    supportsVision: true,
+    supportsRealTime: false,
+    speed: 6,
+    quality: 5,
+    costEfficiency: 5,
+    bestFor: ['complex reasoning', 'creative writing', 'analysis']
+  },
+  {
+    provider: 'anthropic',
+    model: 'claude-3-7-sonnet-20250219',
+    contextWindow: 200000,
+    supportsVision: true,
+    supportsRealTime: false,
+    speed: 8,
+    quality: 5,
+    costEfficiency: 8,
+    bestFor: ['code_generation', 'code_review', 'refactoring']
+  },
+  {
+    provider: 'anthropic',
     model: 'claude-3-5-sonnet-20241022',
     contextWindow: 200000,
     supportsVision: true,
@@ -66,22 +99,55 @@ const MODEL_CAPABILITIES: ModelCapabilities[] = [
     costEfficiency: 10,
     bestFor: ['quick_question', 'documentation', 'simple tasks']
   },
-  {
-    provider: 'anthropic',
-    model: 'claude-3-opus-20240229',
-    contextWindow: 200000,
-    supportsVision: true,
-    supportsRealTime: false,
-    speed: 5,
-    quality: 5,
-    costEfficiency: 4,
-    bestFor: ['complex reasoning', 'creative writing', 'analysis']
-  },
 
   // OpenAI
   {
     provider: 'openai',
-    model: 'gpt-4-turbo-preview',
+    model: 'gpt-5',
+    contextWindow: 1000000,
+    supportsVision: true,
+    supportsRealTime: false,
+    speed: 8,
+    quality: 5,
+    costEfficiency: 6,
+    bestFor: ['code_generation', 'complex reasoning', 'analysis']
+  },
+  {
+    provider: 'openai',
+    model: 'gpt-4.1',
+    contextWindow: 1000000,
+    supportsVision: true,
+    supportsRealTime: false,
+    speed: 8,
+    quality: 5,
+    costEfficiency: 7,
+    bestFor: ['code_generation', 'large context', 'analysis']
+  },
+  {
+    provider: 'openai',
+    model: 'gpt-4.1-mini',
+    contextWindow: 1000000,
+    supportsVision: true,
+    supportsRealTime: false,
+    speed: 9,
+    quality: 4,
+    costEfficiency: 9,
+    bestFor: ['code_generation', 'quick_question', 'large context']
+  },
+  {
+    provider: 'openai',
+    model: 'gpt-4o',
+    contextWindow: 128000,
+    supportsVision: true,
+    supportsRealTime: false,
+    speed: 8,
+    quality: 5,
+    costEfficiency: 7,
+    bestFor: ['code_generation', 'vision tasks', 'analysis']
+  },
+  {
+    provider: 'openai',
+    model: 'gpt-4-turbo',
     contextWindow: 128000,
     supportsVision: true,
     supportsRealTime: false,
@@ -89,17 +155,6 @@ const MODEL_CAPABILITIES: ModelCapabilities[] = [
     quality: 5,
     costEfficiency: 6,
     bestFor: ['code_generation', 'creative writing', 'analysis']
-  },
-  {
-    provider: 'openai',
-    model: 'gpt-4',
-    contextWindow: 8192,
-    supportsVision: false,
-    supportsRealTime: false,
-    speed: 6,
-    quality: 5,
-    costEfficiency: 3,
-    bestFor: ['complex reasoning', 'analysis']
   },
   {
     provider: 'openai',
@@ -116,28 +171,83 @@ const MODEL_CAPABILITIES: ModelCapabilities[] = [
   // Grok (xAI)
   {
     provider: 'grok',
-    model: 'grok-2',
+    model: 'grok-4-fast',
+    contextWindow: 2000000,
+    supportsVision: false,
+    supportsRealTime: true,
+    speed: 10,
+    quality: 5,
+    costEfficiency: 10,
+    bestFor: ['code_generation', 'large context', 'real-time info']
+  },
+  {
+    provider: 'grok',
+    model: 'grok-4',
+    contextWindow: 128000,
+    supportsVision: false,
+    supportsRealTime: true,
+    speed: 8,
+    quality: 5,
+    costEfficiency: 7,
+    bestFor: ['code_generation', 'real-time info', 'complex reasoning']
+  },
+  {
+    provider: 'grok',
+    model: 'grok-3',
     contextWindow: 128000,
     supportsVision: false,
     supportsRealTime: true,
     speed: 9,
     quality: 4,
     costEfficiency: 8,
-    bestFor: ['code_generation', 'real-time info', 'humor']
+    bestFor: ['code_generation', 'real-time info']
   },
   {
     provider: 'grok',
-    model: 'grok-2-mini',
+    model: 'grok-2-1212',
     contextWindow: 128000,
     supportsVision: false,
     supportsRealTime: true,
-    speed: 10,
-    quality: 3,
-    costEfficiency: 10,
-    bestFor: ['quick_question', 'real-time info']
+    speed: 9,
+    quality: 4,
+    costEfficiency: 8,
+    bestFor: ['code_generation', 'real-time info']
   },
 
   // Qwen (Alibaba)
+  {
+    provider: 'qwen',
+    model: 'qwen3-coder-480b',
+    contextWindow: 256000,
+    supportsVision: false,
+    supportsRealTime: false,
+    speed: 7,
+    quality: 5,
+    costEfficiency: 7,
+    bestFor: ['code_generation', 'code_review', 'refactoring', 'large context']
+  },
+  {
+    provider: 'qwen',
+    model: 'qwen3-coder-30b',
+    contextWindow: 256000,
+    supportsVision: false,
+    supportsRealTime: false,
+    speed: 8,
+    quality: 4,
+    costEfficiency: 9,
+    bestFor: ['code_generation', 'large context']
+  },
+  {
+    provider: 'qwen',
+    model: 'qwen2.5-coder',
+    contextWindow: 128000,
+    supportsVision: false,
+    supportsRealTime: false,
+    speed: 8,
+    quality: 4,
+    costEfficiency: 9,
+    bestFor: ['code_generation', 'documentation']
+  },
   {
     provider: 'qwen',
     model: 'qwen-max',
@@ -173,6 +283,61 @@ const MODEL_CAPABILITIES: ModelCapabilities[] = [
   },
 
   // Google
+  {
+    provider: 'google',
+    model: 'gemini-2.5-pro',
+    contextWindow: 2000000,
+    supportsVision: true,
+    supportsRealTime: false,
+    speed: 7,
+    quality: 5,
+    costEfficiency: 7,
+    bestFor: ['large context', 'complex reasoning', 'vision tasks']
+  },
+  {
+    provider: 'google',
+    model: 'gemini-2.5-flash',
+    contextWindow: 1000000,
+    supportsVision: true,
+    supportsRealTime: false,
+    speed: 10,
+    quality: 4,
+    costEfficiency: 10,
+    bestFor: ['quick_question', 'large context', 'vision tasks']
+  },
+  {
+    provider: 'google',
+    model: 'gemini-2.5-flash-lite',
+    contextWindow: 1000000,
+    supportsVision: true,
+    supportsRealTime: false,
+    speed: 10,
+    quality: 3,
+    costEfficiency: 10,
+    bestFor: ['quick_question', 'simple tasks']
+  },
+  {
+    provider: 'google',
+    model: 'gemini-2.0-flash',
+    contextWindow: 1000000,
+    supportsVision: true,
+    supportsRealTime: false,
+    speed: 10,
+    quality: 4,
+    costEfficiency: 10,
+    bestFor: ['quick_question', 'large context', 'vision tasks']
+  },
+  {
+    provider: 'google',
+    model: 'gemini-2.0-flash-lite',
+    contextWindow: 1000000,
+    supportsVision: true,
+    supportsRealTime: false,
+    speed: 10,
+    quality: 3,
+    costEfficiency: 10,
+    bestFor: ['quick_question', 'simple tasks']
+  },
   {
     provider: 'google',
     model: 'gemini-1.5-pro',
@@ -378,17 +543,35 @@ export class ModelRecommender {
   private estimateCost(model: ModelCapabilities, _context: TaskContext): string {
     // Rough estimates per request
     const estimates: Record<string, string> = {
+      // Anthropic
+      'anthropic/claude-sonnet-4-5-20250929': '$0.01-0.05 per request',
       'anthropic/claude-3-5-sonnet-20241022': '$0.01-0.05 per request',
       'anthropic/claude-3-5-haiku-20241022': '$0.001-0.01 per request',
       'anthropic/claude-3-opus-20240229': '$0.05-0.20 per request',
-      'openai/gpt-4-turbo-preview': '$0.02-0.10 per request',
-      'openai/gpt-4': '$0.05-0.20 per request',
+      // OpenAI
+      'openai/gpt-5': '$0.02-0.10 per request',
+      'openai/gpt-4.1': '$0.015-0.08 per request',
+      'openai/gpt-4.1-mini': '$0.003-0.015 per request',
+      'openai/gpt-4o': '$0.01-0.05 per request',
+      'openai/gpt-4-turbo': '$0.02-0.10 per request',
       'openai/gpt-3.5-turbo': '$0.001-0.005 per request',
-      'grok/grok-2': '$0.01-0.03 per request',
-      'grok/grok-2-mini': '$0.001-0.01 per request',
+      // Grok
+      'grok/grok-4-fast': '$0.0008-0.004 per request',
+      'grok/grok-4': '$0.01-0.03 per request',
+      'grok/grok-3': '$0.01-0.03 per request',
+      'grok/grok-2-1212': '$0.01-0.03 per request',
+      'grok/grok-2-vision-1212': '$0.01-0.03 per request',
+      // Qwen
+      'qwen/qwen3-coder-480b': '$0.015-0.045 per request',
+      'qwen/qwen3-coder-30b': '$0.005-0.015 per request',
+      'qwen/qwen2.5-coder': '$0.004-0.012 per request',
       'qwen/qwen-max': '$0.01-0.03 per request',
       'qwen/qwen-plus': '$0.002-0.01 per request',
       'qwen/qwen-turbo': '$0.0005-0.002 per request',
+      // Google
+      'google/gemini-2.5-pro-latest': '$0.01-0.05 per request',
+      'google/gemini-2.5-flash-latest': '$0.0005-0.002 per request',
+      'google/gemini-2.0-flash-exp': '$0.0005-0.002 per request',
       'google/gemini-1.5-pro': '$0.01-0.05 per request',
       'google/gemini-1.5-flash': '$0.0005-0.002 per request'
     }
@@ -416,21 +599,21 @@ export class ModelRecommender {
   getDefaultRecommendation(): ModelRecommendation {
     return {
       provider: 'anthropic',
-      model: 'claude-3-5-sonnet-20241022',
-      reason: 'Best all-around model for coding tasks',
+      model: 'claude-sonnet-4-5-20250929',
+      reason: 'Best coding model available, 77.2% on SWE-bench Verified',
       pros: [
-        'Excellent code generation',
+        'State-of-the-art code generation',
         'Large 200K context window',
-        'Good balance of speed and quality',
-        'Cost-efficient'
+        'Excellent reasoning capabilities',
+        'Cost-efficient for quality'
       ],
       cons: [
-        'Premium features require paid tier'
+        'API key required'
       ],
       estimatedCost: '$0.01-0.05 per request',
       speed: 'fast',
       quality: 5,
-      confidence: 0.95
+      confidence: 0.98
     }
   }
 
