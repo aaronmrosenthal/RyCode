@@ -90,6 +90,11 @@ type Model struct {
 
 func (a Model) Init() tea.Cmd {
 	var cmds []tea.Cmd
+
+	// Disable cursor blinking at terminal level (DECSET)
+	// CSI ? 12 l = Disable cursor blinking
+	fmt.Print("\x1b[?12l")
+
 	// https://github.com/charmbracelet/bubbletea/issues/1440
 	// https://github.com/aaronmrosenthal/rycode/issues/127
 	if !util.IsWsl() {
