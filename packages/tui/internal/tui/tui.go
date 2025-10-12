@@ -415,6 +415,13 @@ func (a Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, toast.NewErrorToast(msg.Error())
 	case app.SendPrompt:
 		a.showCompletionDialog = false
+
+		// Analyze prompt and recommend better model if available
+		// This is a proactive feature that runs in the background
+		if a.app.AuthBridge != nil {
+			cmds = append(cmds, a.app.AnalyzePromptAndRecommendModel(msg.Text))
+		}
+
 		// If we're in a child session, switch back to parent before sending prompt
 		if a.app.Session.ParentID != "" {
 			parentSession, err := a.app.Client.Session.Get(context.Background(), a.app.Session.ParentID, opencode.SessionGetParams{})
@@ -784,9 +791,21 @@ func (a Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.exitKeyState = ExitKeyIdle
 		a.editor.SetExitKeyInDebounce(false)
 	case splash.SplashFinishedMsg:
-		// Splash screen animation finished
+		// Splash screen animation finished - create new session and skip home view
 		a.showSplash = false
 		a.splashScreen = nil
+
+		// If no active session, create one automatically
+		if a.app.Session.ID == "" {
+			return a, func() tea.Msg {
+				session, err := a.app.CreateSession(context.Background())
+				if err != nil {
+					slog.Error("Failed to create session", "error", err)
+					return toast.NewErrorToast("Failed to create session")
+				}
+				return app.SessionCreatedMsg{Session: session}
+			}
+		}
 	case CostTickMsg:
 		// Update cost in background and schedule next tick
 		return a, tea.Batch(
@@ -1038,7 +1057,6 @@ func (a Model) Cleanup() {
 func (a Model) home() (string, int, int) {
 	t := theme.CurrentTheme()
 	effectiveWidth := a.width - 4
-	baseStyle := styles.NewStyle().Foreground(t.Text()).Background(t.Background())
 
 	// RyCode ASCII logo - toolkit-cli style with bright green
 	rycode := `
@@ -1116,44 +1134,48 @@ _  _, _/_  /_/ /_/_____/ /___  / /_/ / /_/ / /  __/
 		styles.WhitespaceStyle(t.Background()),
 	)
 
-	lines := []string{}
-	lines = append(lines, "")
-	lines = append(lines, logoAndVersion)
-	lines = append(lines, taglineCentered)
-	lines = append(lines, "")
-	lines = append(lines, cmds)
-	lines = append(lines, "")
-	lines = append(lines, "")
+	// Build top content (logo, tagline, commands)
+	topContent := []string{}
+	topContent = append(topContent, "")
+	topContent = append(topContent, logoAndVersion)
+	topContent = append(topContent, taglineCentered)
+	topContent = append(topContent, "")
+	topContent = append(topContent, cmds)
 
-	mainHeight := lipgloss.Height(strings.Join(lines, "\n"))
-
+	// Calculate editor dimensions
 	editorView := a.editor.View()
 	editorWidth := lipgloss.Width(editorView)
+	editorLines := a.editor.Lines()
+	editorHeight := lipgloss.Height(a.editor.Content())
+
+	// Position editor at BOTTOM like Claude Code
+	// Leave small margin at bottom (2 lines)
+	editorY := a.height - editorHeight - 2
+	editorX := max(0, (effectiveWidth-editorWidth)/2)
+
+	// Place top content
+	topRendered := lipgloss.PlaceVertical(
+		editorY - 2, // Leave space before editor
+		lipgloss.Top,
+		strings.Join(topContent, "\n"),
+		styles.WhitespaceStyle(t.Background()),
+	)
+
+	// Place editor at bottom
 	editorView = lipgloss.PlaceHorizontal(
 		effectiveWidth,
 		lipgloss.Center,
 		editorView,
 		styles.WhitespaceStyle(t.Background()),
 	)
-	lines = append(lines, editorView)
 
-	editorLines := a.editor.Lines()
+	// Combine top content and editor with spacing
+	mainLayout := topRendered + "\n" + editorView
 
-	mainLayout := lipgloss.Place(
-		effectiveWidth,
-		a.height,
-		lipgloss.Center,
-		lipgloss.Center,
-		baseStyle.Render(strings.Join(lines, "\n")),
-		styles.WhitespaceStyle(t.Background()),
-	)
-
-	editorX := max(0, (effectiveWidth-editorWidth)/2)
-	editorY := (a.height / 2) + (mainHeight / 2) - 3
-	editorYDelta := 3
+	editorYDelta := 1
 
 	if editorLines > 1 {
-		editorYDelta = 2
+		editorYDelta = 0
 		content := a.editor.Content()
 		editorHeight := lipgloss.Height(content)
 
@@ -1234,7 +1256,7 @@ func (a Model) chat() (string, int, int) {
 		)
 	}
 
-	return mainLayout, editorX + 5, editorY + 2
+	return mainLayout, editorX + 5, editorY
 }
 
 func (a Model) executeCommand(command commands.Command) (tea.Model, tea.Cmd) {

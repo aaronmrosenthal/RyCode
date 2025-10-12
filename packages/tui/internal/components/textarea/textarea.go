@@ -599,7 +599,7 @@ func DefaultStyles(isDark bool) Styles {
 	s.Cursor = CursorStyle{
 		Color: lipgloss.Color("7"),
 		Shape: tea.CursorBlock,
-		Blink: true,
+		Blink: false,
 	}
 	return s
 }
@@ -1908,16 +1908,22 @@ func (m Model) placeholderView() string {
 		switch {
 		// first line
 		case i == 0:
-			// first character of first line as cursor with character
-			m.virtualCursor.TextStyle = styles.computedPlaceholder()
-			m.virtualCursor.SetChar(string(plines[0][0]))
-			s.WriteString(lineStyle.Render(m.virtualCursor.View()))
-
-			// the rest of the first line
-			placeholderTail := plines[0][1:]
-			gap := strings.Repeat(" ", max(0, m.width-uniseg.StringWidth(plines[0])))
-			renderedPlaceholder := styles.computedPlaceholder().Render(placeholderTail + gap)
-			s.WriteString(lineStyle.Render(renderedPlaceholder))
+			// Render placeholder text
+			if m.VirtualCursor {
+				// Virtual cursor: render first char with cursor, then rest
+				m.virtualCursor.TextStyle = styles.computedPlaceholder()
+				m.virtualCursor.SetChar(string(plines[0][0]))
+				s.WriteString(lineStyle.Render(m.virtualCursor.View()))
+				placeholderTail := plines[0][1:]
+				gap := strings.Repeat(" ", max(0, m.width-uniseg.StringWidth(plines[0])))
+				renderedPlaceholder := styles.computedPlaceholder().Render(placeholderTail + gap)
+				s.WriteString(lineStyle.Render(renderedPlaceholder))
+			} else {
+				// Real cursor: render full placeholder text, cursor will be positioned by Bubble Tea
+				gap := strings.Repeat(" ", max(0, m.width-uniseg.StringWidth(plines[0])))
+				renderedPlaceholder := styles.computedPlaceholder().Render(plines[0] + gap)
+				s.WriteString(lineStyle.Render(renderedPlaceholder))
+			}
 		// remaining lines
 		case len(plines) > i:
 			// current line placeholder text

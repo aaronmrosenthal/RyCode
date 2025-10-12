@@ -382,8 +382,8 @@ func (m *editorComponent) Content() string {
 	textarea = styles.NewStyle().
 		Background(t.BackgroundElement()).
 		Width(width).
-		PaddingTop(1).
-		PaddingBottom(1).
+		PaddingTop(0).
+		PaddingBottom(0).
 		BorderStyle(lipgloss.RoundedBorder()).
 		BorderForeground(borderForeground).
 		BorderBackground(t.Background()).
@@ -414,21 +414,10 @@ func (m *editorComponent) Content() string {
 		}
 	}
 
-	model := ""
-	if m.app.Model != nil {
-		model = muted("│ ") + muted(m.app.Provider.Name) + base(" "+m.app.Model.Name)
-	}
+	// Model info removed - it's shown in the status bar to avoid duplication
+	info := styles.NewStyle().Background(t.Background()).Padding(0, 1).Render(hint)
 
-	// Calculate space with proper accounting
-	hintWidth := lipgloss.Width(hint)
-	modelWidth := lipgloss.Width(model)
-	spaceWidth := max(1, width-hintWidth-modelWidth-4)
-	spacer := styles.NewStyle().Background(t.Background()).Width(spaceWidth).Render("")
-
-	info := hint + spacer + model
-	info = styles.NewStyle().Background(t.Background()).Padding(0, 1).Render(info)
-
-	content := strings.Join([]string{"", textarea, info}, "\n")
+	content := strings.Join([]string{textarea, info}, "\n")
 	return content
 }
 
@@ -438,29 +427,12 @@ func (m *editorComponent) Cursor() *tea.Cursor {
 		return nil
 	}
 
-	t := theme.CurrentTheme()
+	// Simple, predictable cursor positioning
+	// Prompt is: " ❯ " which is 3 characters wide (space + icon + space)
+	cursor.Position.X += 3
 
-	// Calculate actual prompt width dynamically
-	promptIconStyle := styles.NewStyle().Foreground(t.Primary()).Bold(true)
-	promptTextStyle := styles.NewStyle().Foreground(t.TextMuted())
-
-	promptIcon := "❯"
-	if m.app.IsBashMode {
-		promptIcon = "$"
-	} else if m.app.IsLeaderSequence {
-		promptIcon = "⌘"
-	}
-
-	prompt := promptIconStyle.Render(promptIcon) + promptTextStyle.Render("")
-	prompt = styles.NewStyle().PaddingLeft(1).PaddingRight(0).Render(prompt)
-	promptWidth := lipgloss.Width(prompt)
-
-	// Adjust X position for prompt
-	cursor.Position.X += promptWidth
-
-	// Adjust Y position for top border and padding
-	// PaddingTop(1) adds one line, plus the newline before textarea
-	cursor.Position.Y += 2
+	// Y offset: 1 for border top (no empty line, no padding) = 1
+	cursor.Position.Y += 1
 
 	return cursor
 }
@@ -752,7 +724,7 @@ func (m *editorComponent) handleLongPaste(text string) {
 
 func updateTextareaStyles(ta textarea.Model) textarea.Model {
 	t := theme.CurrentTheme()
-	bgColor := t.BackgroundElement()
+	bgColor := t.BackgroundPanel()
 	textColor := t.Text()
 	textMutedColor := t.TextMuted()
 
@@ -778,7 +750,12 @@ func updateTextareaStyles(ta textarea.Model) textarea.Model {
 		Foreground(t.Text()).
 		Background(t.Secondary()).
 		Lipgloss()
-	ta.Styles.Cursor.Color = t.Primary()
+
+	// Clean, standard terminal cursor - solid block like Claude
+	ta.Styles.Cursor.Shape = tea.CursorBlock
+	ta.Styles.Cursor.Blink = false
+	ta.Styles.Cursor.Color = t.Text()
+
 	return ta
 }
 
@@ -804,7 +781,7 @@ func NewEditorComponent(app *app.App) EditorComponent {
 	ta.Placeholder = "Ask me anything... (or type / for commands)"
 	ta.ShowLineNumbers = false
 	ta.CharLimit = -1
-	ta.VirtualCursor = false
+	ta.VirtualCursor = false  // Use REAL cursor for clean UX
 	ta = updateTextareaStyles(ta)
 
 	m := &editorComponent{
