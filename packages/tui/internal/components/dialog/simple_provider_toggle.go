@@ -24,6 +24,7 @@ import (
 // providersLoadedMsg is sent when providers finish loading
 type providersLoadedMsg struct {
 	providers []opencode.Provider
+	err       error
 }
 
 // loadingTickMsg is sent for loading animation updates
@@ -37,6 +38,7 @@ type SimpleProviderToggle struct {
 	width           int
 	height          int
 	isLoading       bool
+	loadError       error
 	cortexRenderer  *splash.CortexRenderer
 }
 
@@ -70,12 +72,12 @@ func (s *SimpleProviderToggle) tickLoadingAnimation() tea.Cmd {
 
 func (s *SimpleProviderToggle) loadProvidersAsync() tea.Cmd {
 	return func() tea.Msg {
-		providers := s.loadAuthenticatedProvidersSync()
-		return providersLoadedMsg{providers: providers}
+		providers, err := s.loadAuthenticatedProvidersSync()
+		return providersLoadedMsg{providers: providers, err: err}
 	}
 }
 
-func (s *SimpleProviderToggle) loadAuthenticatedProvidersSync() []opencode.Provider {
+func (s *SimpleProviderToggle) loadAuthenticatedProvidersSync() ([]opencode.Provider, error) {
 	// Use timeout context to prevent hanging
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -86,7 +88,7 @@ func (s *SimpleProviderToggle) loadAuthenticatedProvidersSync() []opencode.Provi
 	cliProviders, err := s.app.AuthBridge.GetCLIProviders(ctx)
 	if err != nil {
 		logModelsDebug("ERROR: Failed to load CLI providers: %v", err)
-		return []opencode.Provider{}
+		return nil, fmt.Errorf("failed to load CLI providers: %w", err)
 	}
 
 	logModelsDebug("Got %d CLI providers from GetCLIProviders()", len(cliProviders))
@@ -159,7 +161,30 @@ func (s *SimpleProviderToggle) loadAuthenticatedProvidersSync() []opencode.Provi
 		logModelsDebug("  Final Provider %d: ID=%s, Name=%s, ModelsCount=%d", i, p.ID, p.Name, len(p.Models))
 	}
 
-	return providers
+	// Sort providers by priority: Claude, Codex, Gemini, Grok, Qwen
+	providerOrder := map[string]int{
+		"claude":  1,
+		"codex":   2,
+		"gemini":  3,
+		"grok":    4,
+		"qwen":    5,
+	}
+	sort.Slice(providers, func(i, j int) bool {
+		orderI, okI := providerOrder[providers[i].ID]
+		orderJ, okJ := providerOrder[providers[j].ID]
+		if okI && okJ {
+			return orderI < orderJ
+		}
+		if okI {
+			return true
+		}
+		if okJ {
+			return false
+		}
+		return providers[i].ID < providers[j].ID
+	})
+
+	return providers, nil
 }
 
 // formatModelName formats a model ID into a human-readable name
@@ -217,7 +242,12 @@ func (s *SimpleProviderToggle) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case providersLoadedMsg:
 		s.isLoading = false
+		if msg.err != nil {
+			s.loadError = msg.err
+			return s, nil
+		}
 		s.providers = msg.providers
+		s.loadError = nil
 		return s, nil
 
 	case loadingTickMsg:
@@ -285,6 +315,37 @@ func (s *SimpleProviderToggle) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Esc: close without selecting
 			logModelsDebug("✓ Esc key MATCHED - closing modal")
 			return s, util.CmdHandler(modal.CloseModalMsg{})
+
+		case key.Matches(msg, key.NewBinding(key.WithKeys("r"))):
+			// R: retry loading if there was an error
+			if s.loadError != nil {
+				s.isLoading = true
+				s.loadError = nil
+				return s, tea.Batch(
+					s.loadProvidersAsync(),
+					s.tickLoadingAnimation(),
+				)
+			}
+			return s, nil
+
+		case key.Matches(msg, key.NewBinding(key.WithKeys("1", "2", "3", "4", "5"))):
+			// Number keys: direct provider selection
+			index := int(msg.String()[0] - '1') // Convert '1'-'5' to 0-4
+			if index >= 0 && index < len(s.providers) {
+				provider := s.providers[index]
+				selectedModel := s.getDefaultModelForProvider(provider)
+
+				logModelsDebug("Direct selection: index=%d, provider=%s", index, provider.ID)
+				return s, tea.Sequence(
+					util.CmdHandler(modal.CloseModalMsg{}),
+					util.CmdHandler(app.ModelSelectedMsg{
+						Provider: provider,
+						Model:    selectedModel,
+					}),
+				)
+			}
+			return s, nil
+
 		default:
 			logModelsDebug("Key not matched by any case: %s", msg.String())
 		}
@@ -298,6 +359,10 @@ func (s *SimpleProviderToggle) View() string {
 
 	if s.isLoading {
 		return s.renderLoading(t)
+	}
+
+	if s.loadError != nil {
+		return s.renderError(t)
 	}
 
 	if len(s.providers) == 0 {
@@ -314,11 +379,11 @@ func (s *SimpleProviderToggle) View() string {
 	b.WriteString(titleStyle.Render("Select Provider"))
 	b.WriteString("\n\n")
 
-	// Provider chips (horizontal layout)
+	// Provider chips (horizontal layout with numbers)
 	var chipsWithSpacing []string
 	for i, provider := range s.providers {
 		isSelected := i == s.selectedIndex
-		chip := s.renderProviderChip(provider, isSelected, t)
+		chip := s.renderProviderChip(provider, isSelected, i+1, t)
 		chipsWithSpacing = append(chipsWithSpacing, chip)
 		// Add spacing between chips (but not after the last one)
 		if i < len(s.providers)-1 {
@@ -344,7 +409,7 @@ func (s *SimpleProviderToggle) View() string {
 	footerStyle := lipgloss.NewStyle().
 		Foreground(t.TextMuted()).
 		Padding(1, 2)
-	footer := "Tab: Next | Shift+Tab: Previous | Enter: Select | Esc: Cancel"
+	footer := "1-5: Quick Select | Tab: Next | Shift+Tab: Previous | Enter: Select | Esc: Cancel"
 	b.WriteString(footerStyle.Render(footer))
 
 	return b.String()
@@ -389,7 +454,29 @@ func (s *SimpleProviderToggle) renderEmpty(t theme.Theme) string {
 	return emptyStyle.Render(msg)
 }
 
-func (s *SimpleProviderToggle) renderProviderChip(provider opencode.Provider, isSelected bool, t theme.Theme) string {
+func (s *SimpleProviderToggle) renderError(t theme.Theme) string {
+	errorStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#FF4444")).
+		Bold(true).
+		Padding(1, 2)
+
+	helpStyle := lipgloss.NewStyle().
+		Foreground(t.TextMuted()).
+		Padding(0, 2)
+
+	var b strings.Builder
+	b.WriteString("\n")
+	b.WriteString(errorStyle.Render("⚠ Failed to load providers"))
+	b.WriteString("\n\n")
+	b.WriteString(helpStyle.Render(fmt.Sprintf("Error: %s", s.loadError.Error())))
+	b.WriteString("\n\n")
+	b.WriteString(helpStyle.Render("Press R to retry | Esc to cancel"))
+	b.WriteString("\n")
+
+	return b.String()
+}
+
+func (s *SimpleProviderToggle) renderProviderChip(provider opencode.Provider, isSelected bool, number int, t theme.Theme) string {
 	// Get provider color
 	color := s.getProviderColor(provider.ID)
 
@@ -408,7 +495,9 @@ func (s *SimpleProviderToggle) renderProviderChip(provider opencode.Provider, is
 			Foreground(color)
 	}
 
-	return chipStyle.Render(getProviderDisplayName(provider.ID))
+	// Show: [number] Name (modelCount)
+	displayName := fmt.Sprintf("[%d] %s (%d)", number, getProviderDisplayName(provider.ID), len(provider.Models))
+	return chipStyle.Render(displayName)
 }
 
 func (s *SimpleProviderToggle) getProviderColor(providerID string) compat.AdaptiveColor {
@@ -502,8 +591,51 @@ func (s *SimpleProviderToggle) renderProviderModels(provider opencode.Provider, 
 		Foreground(t.Text()).
 		Padding(0, 3)
 
+	// Get models sorted by priority (best models first)
+	modelIDs := make([]string, 0, len(provider.Models))
+	for id := range provider.Models {
+		modelIDs = append(modelIDs, id)
+	}
+
+	// Sort models using the same priority system as getDefaultModelForProvider
+	priorities := map[string][]string{
+		"claude":  {"claude-sonnet-4-5-20250929", "claude-sonnet-4-5", "claude-sonnet-3-5-20241022", "claude-sonnet-3-5"},
+		"codex":   {"gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-4"},
+		"gemini":  {"gemini-2.0-flash-exp", "gemini-exp-1206", "gemini-pro-1.5", "gemini-pro"},
+		"grok":    {"grok-beta", "grok-2-1212"},
+		"qwen":    {"qwen-max", "qwen-plus", "qwen-turbo"},
+	}
+
+	priorityList := priorities[provider.ID]
+	sort.Slice(modelIDs, func(i, j int) bool {
+		// Find positions in priority list
+		posI, posJ := -1, -1
+		for idx, pID := range priorityList {
+			if pID == modelIDs[i] {
+				posI = idx
+			}
+			if pID == modelIDs[j] {
+				posJ = idx
+			}
+		}
+
+		// If both in priority list, compare positions
+		if posI >= 0 && posJ >= 0 {
+			return posI < posJ
+		}
+		// Priority models come first
+		if posI >= 0 {
+			return true
+		}
+		if posJ >= 0 {
+			return false
+		}
+		// Otherwise alphabetical
+		return modelIDs[i] < modelIDs[j]
+	})
+
 	count := 0
-	for _, model := range provider.Models {
+	for _, modelID := range modelIDs {
 		if count >= 5 { // Show max 5 models
 			remaining := len(provider.Models) - count
 			moreStyle := lipgloss.NewStyle().
@@ -512,6 +644,7 @@ func (s *SimpleProviderToggle) renderProviderModels(provider opencode.Provider, 
 			b.WriteString(moreStyle.Render(fmt.Sprintf("... and %d more", remaining)))
 			break
 		}
+		model := provider.Models[modelID]
 		b.WriteString(modelStyle.Render("• " + model.Name))
 		b.WriteString("\n")
 		count++
