@@ -154,41 +154,67 @@ export class SmartProviderSetup {
   private async checkCLITools(): Promise<DetectedCredential[]> {
     const found: DetectedCredential[] = []
 
-    // Check Google Cloud CLI
+    // Check for installed CLI tools using 'which'
+    const cliTools = [
+      { name: 'claude', provider: 'anthropic', versionCmd: 'claude --version 2>/dev/null' },
+      { name: 'qwen', provider: 'qwen', versionCmd: 'qwen --version 2>/dev/null' },
+      { name: 'codex', provider: 'openai', versionCmd: 'codex --version 2>/dev/null' },
+      { name: 'gemini', provider: 'google', versionCmd: 'gemini --version 2>/dev/null' },
+    ]
+
+    for (const { name, provider, versionCmd } of cliTools) {
+      try {
+        // Check if CLI tool exists
+        const { stdout: whichOut } = await execAsync(`which ${name} 2>/dev/null`)
+        if (whichOut.trim()) {
+          // CLI tool exists, try to get version to confirm it works
+          try {
+            const { stdout: versionOut } = await execAsync(versionCmd)
+            found.push({
+              provider,
+              source: 'cli',
+              credential: 'cli-authenticated', // Marker that CLI is available
+              metadata: {
+                tool: name,
+                path: whichOut.trim(),
+                version: versionOut.trim()
+              }
+            })
+          } catch {
+            // Version check failed, but CLI exists - still add it
+            found.push({
+              provider,
+              source: 'cli',
+              credential: 'cli-authenticated',
+              metadata: {
+                tool: name,
+                path: whichOut.trim()
+              }
+            })
+          }
+        }
+      } catch {
+        // CLI tool not found
+      }
+    }
+
+    // Also check Google Cloud CLI (gcloud) as alternative to gemini CLI
     try {
       const { stdout } = await execAsync('gcloud auth print-access-token 2>/dev/null')
       if (stdout.trim()) {
-        found.push({
-          provider: 'google',
-          source: 'cli',
-          credential: stdout.trim(),
-          metadata: { tool: 'gcloud' }
-        })
+        // Only add gcloud if we haven't already found gemini CLI
+        const hasGeminiCLI = found.some(c => c.metadata?.['tool'] === 'gemini')
+        if (!hasGeminiCLI) {
+          found.push({
+            provider: 'google',
+            source: 'cli',
+            credential: stdout.trim(),
+            metadata: { tool: 'gcloud' }
+          })
+        }
       }
     } catch {
       // gcloud not available or not authenticated
-    }
-
-    // Check for other CLI tools
-    const cliChecks = [
-      { command: 'anthropic auth whoami 2>/dev/null', provider: 'anthropic' },
-      { command: 'openai api key.get 2>/dev/null', provider: 'openai' }
-    ]
-
-    for (const { command, provider } of cliChecks) {
-      try {
-        const { stdout } = await execAsync(command)
-        if (stdout.trim()) {
-          found.push({
-            provider,
-            source: 'cli',
-            credential: stdout.trim(),
-            metadata: { command }
-          })
-        }
-      } catch {
-        // CLI not available or not authenticated
-      }
     }
 
     return found

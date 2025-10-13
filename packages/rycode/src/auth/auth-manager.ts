@@ -19,6 +19,7 @@ import { costTracker } from './cost-tracker'
 import { modelRecommender } from './model-recommender'
 import { smartSetup } from './auto-detect'
 import { circuitBreakerRegistry } from './security/circuit-breaker'
+import { cliProviderBridge } from './providers/cli-bridge'
 import type { ProviderAuthConfig, ProviderInfo } from './provider-registry'
 import type { TaskContext, ModelRecommendation } from './model-recommender'
 import type { CostSummary, CostSavingTip } from './cost-tracker'
@@ -246,6 +247,27 @@ export class AuthManager {
    */
   async autoDetect(): Promise<AutoDetectResult> {
     return await smartSetup.autoDetect()
+  }
+
+  /**
+   * Detect available CLI providers
+   */
+  async detectCLIProviders() {
+    return await cliProviderBridge.detectAvailableProviders()
+  }
+
+  /**
+   * Get available providers with models (including CLI)
+   */
+  async getAvailableProvidersWithModels() {
+    return await cliProviderBridge.getAvailableProvidersWithModels()
+  }
+
+  /**
+   * Test if a CLI provider is working
+   */
+  async testCLIProvider(provider: string): Promise<boolean> {
+    return await cliProviderBridge.testProvider(provider)
   }
 
   /**
