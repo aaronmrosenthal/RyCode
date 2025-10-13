@@ -240,6 +240,30 @@ func getProviderDisplayName(providerID string) string {
 	return providerID
 }
 
+// getProviderBrandColorRGB returns the provider's brand color as RGB
+func getProviderBrandColorRGB(providerID string) splash.RGB {
+	switch providerID {
+	case "anthropic", "claude":
+		// Claude brand: warm orange/peach #E07856
+		return splash.RGB{R: 224, G: 120, B: 86}
+	case "google", "gemini":
+		// Gemini brand: light blue #4A90E2
+		return splash.RGB{R: 74, G: 144, B: 226}
+	case "openai", "codex":
+		// OpenAI/Codex brand: teal/cyan #10A37F
+		return splash.RGB{R: 16, G: 163, B: 127}
+	case "xai", "grok":
+		// Grok/xAI brand: red #FF4444
+		return splash.RGB{R: 255, G: 68, B: 68}
+	case "qwen":
+		// Qwen brand: orange/amber #FFA500
+		return splash.RGB{R: 255, G: 165, B: 0}
+	default:
+		// Default: cyan #00FFFF
+		return splash.RGB{R: 0, G: 255, B: 255}
+	}
+}
+
 
 func (s *SimpleProviderToggle) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -308,7 +332,13 @@ func (s *SimpleProviderToggle) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if len(s.providers) > 0 {
 				oldIndex := s.selectedIndex
 				s.selectedIndex = (s.selectedIndex + 1) % len(s.providers)
-				logModelsDebug("Tab cycling: %d -> %d (provider: %s)", oldIndex, s.selectedIndex, s.providers[s.selectedIndex].ID)
+				selectedProvider := s.providers[s.selectedIndex]
+				logModelsDebug("Tab cycling: %d -> %d (provider: %s)", oldIndex, s.selectedIndex, selectedProvider.ID)
+
+				// Set cortex to provider's brand color
+				brandColor := getProviderBrandColorRGB(selectedProvider.ID)
+				s.cortexRenderer.SetBrandColor(brandColor)
+				logModelsDebug("✓ Set cortex brand color: R=%d G=%d B=%d", brandColor.R, brandColor.G, brandColor.B)
 
 				// Start cortex fade animation (600ms total: fade-in, hold, fade-out)
 				s.isSwitching = true
@@ -330,7 +360,13 @@ func (s *SimpleProviderToggle) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if s.selectedIndex < 0 {
 					s.selectedIndex = len(s.providers) - 1
 				}
-				logModelsDebug("Shift+Tab cycling: %d -> %d (provider: %s)", oldIndex, s.selectedIndex, s.providers[s.selectedIndex].ID)
+				selectedProvider := s.providers[s.selectedIndex]
+				logModelsDebug("Shift+Tab cycling: %d -> %d (provider: %s)", oldIndex, s.selectedIndex, selectedProvider.ID)
+
+				// Set cortex to provider's brand color
+				brandColor := getProviderBrandColorRGB(selectedProvider.ID)
+				s.cortexRenderer.SetBrandColor(brandColor)
+				logModelsDebug("✓ Set cortex brand color: R=%d G=%d B=%d", brandColor.R, brandColor.G, brandColor.B)
 
 				// Start cortex fade animation (600ms total: fade-in, hold, fade-out)
 				s.isSwitching = true

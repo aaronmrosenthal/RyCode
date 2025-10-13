@@ -15,6 +15,7 @@ type CortexRenderer struct {
 	zbuffer     []float64 // Depth buffer for z-buffering
 	chars       []rune    // Character set for luminance mapping
 	rainbowMode bool      // Easter egg: rainbow colors
+	brandColor  *RGB      // Optional brand color for provider-themed rendering
 }
 
 // NewCortexRenderer creates a new cortex renderer
@@ -140,6 +141,16 @@ func (r *CortexRenderer) SetRainbowMode(enabled bool) {
 	r.rainbowMode = enabled
 }
 
+// SetBrandColor sets a custom brand color for provider-themed rendering
+func (r *CortexRenderer) SetBrandColor(color RGB) {
+	r.brandColor = &color
+}
+
+// ClearBrandColor removes the custom brand color and returns to default gradient
+func (r *CortexRenderer) ClearBrandColor() {
+	r.brandColor = nil
+}
+
 // Render renders the torus with colors and returns the string
 func (r *CortexRenderer) Render() string {
 	r.RenderFrame()
@@ -156,6 +167,21 @@ func (r *CortexRenderer) Render() string {
 					// Rainbow mode: cycle through all colors
 					angle := math.Atan2(float64(y-r.height/2), float64(x-r.width/2))
 					color = RainbowColor(angle + r.B + r.A)
+				} else if r.brandColor != nil {
+					// Brand mode: gradient from brand color to brighter version
+					angle := math.Atan2(float64(y-r.height/2), float64(x-r.width/2))
+					// Normalize angle to [0, 1]
+					t := math.Mod(angle+r.B, 2*math.Pi) / (2 * math.Pi)
+					if t < 0 {
+						t += 1.0
+					}
+					// Create gradient from brand color to brighter version
+					bright := RGB{
+						R: uint8(math.Min(255, float64(r.brandColor.R)*1.5)),
+						G: uint8(math.Min(255, float64(r.brandColor.G)*1.5)),
+						B: uint8(math.Min(255, float64(r.brandColor.B)*1.5)),
+					}
+					color = lerpRGB(*r.brandColor, bright, t)
 				} else {
 					// Normal mode: cyan-magenta gradient
 					angle := math.Atan2(float64(y-r.height/2), float64(x-r.width/2))
