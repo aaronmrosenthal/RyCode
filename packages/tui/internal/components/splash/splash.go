@@ -74,7 +74,7 @@ func New(width, height int) Model {
 		height:         height,
 		rainColumns:    columns,
 		logoVisible:    false,
-		fadeProgress:   0,
+		fadeProgress:   1.0, // Start fully visible - cortex + Matrix rain immediately
 		cortexRenderer: cortexRenderer,
 		showCortex:     true, // Always show cortex on first install
 	}
@@ -104,18 +104,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		// Update fade progress with improved timing
-		// Phase 1 (0-20%): Matrix only, no logo
-		// Phase 2 (20-40%): Logo fades in with Matrix
-		// Phase 3 (40-80%): Full visibility - logo and Matrix together
+		// Phase 1 (0-20%): Cortex + Matrix rain only, no logo - FULL VISIBILITY FROM START
+		// Phase 2 (20-40%): Logo fades in with cortex + Matrix
+		// Phase 3 (40-80%): Full visibility - logo, cortex, and Matrix together
 		// Phase 4 (80-100%): Fade out to chat view
 		progress := float64(elapsed) / float64(splashDuration)
 
 		if progress < 0.2 {
-			// Matrix rain only
-			m.fadeProgress = progress / 0.2
+			// Cortex + Matrix rain only - FULL VISIBILITY (no blank screen)
+			m.fadeProgress = 1.0
 			m.logoVisible = false
 		} else if progress < 0.4 {
-			// Logo fading in with Matrix
+			// Logo fading in with cortex + Matrix
 			m.fadeProgress = 1.0
 			m.logoVisible = true
 		} else if progress < 0.8 {
@@ -207,22 +207,26 @@ func (m Model) View() string {
 		m.cortexRenderer.RenderFrame()
 
 		// Calculate center position for cortex (upper part of screen)
-		cortexStartY := m.height/4 - m.cortexRenderer.height/2
-		cortexStartX := (m.width - m.cortexRenderer.width) / 2
+		cortexWidth := m.cortexRenderer.Width()
+		cortexHeight := m.cortexRenderer.Height()
+		cortexStartY := m.height/4 - cortexHeight/2
+		cortexStartX := (m.width - cortexWidth) / 2
 
 		if cortexStartY >= 0 && cortexStartX >= 0 {
-			// Overlay cortex on canvas
-			for cy := 0; cy < m.cortexRenderer.height; cy++ {
-				for cx := 0; cx < m.cortexRenderer.width; cx++ {
+			// Overlay cortex on canvas with actual renderer colors
+			for cy := 0; cy < cortexHeight; cy++ {
+				for cx := 0; cx < cortexWidth; cx++ {
 					y := cortexStartY + cy
 					x := cortexStartX + cx
 
 					if y >= 0 && y < m.height && x >= 0 && x < m.width {
-						char := m.cortexRenderer.screen[cy*m.cortexRenderer.width+cx]
+						idx := cy*cortexWidth + cx
+						char := m.cortexRenderer.Screen(idx)
 						if char != ' ' {
 							canvas[y][x] = char
-							// Cortex glows with cyan-magenta gradient
-							colors[y][x] = "#00FFFF" // Bright cyan for cortex
+							// Get the actual color from the cortex renderer (cyan-magenta gradient)
+							rgb := m.cortexRenderer.GetColorAt(cx, cy)
+							colors[y][x] = rgb.ToHex()
 						}
 					}
 				}

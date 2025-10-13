@@ -151,6 +151,24 @@ func (r *CortexRenderer) ClearBrandColor() {
 	r.brandColor = nil
 }
 
+// Width returns the width of the renderer
+func (r *CortexRenderer) Width() int {
+	return r.width
+}
+
+// Height returns the height of the renderer
+func (r *CortexRenderer) Height() int {
+	return r.height
+}
+
+// Screen returns the character at the given index
+func (r *CortexRenderer) Screen(idx int) rune {
+	if idx >= 0 && idx < len(r.screen) {
+		return r.screen[idx]
+	}
+	return ' '
+}
+
 // Render renders the torus with colors and returns the string
 func (r *CortexRenderer) Render() string {
 	r.RenderFrame()
@@ -197,6 +215,41 @@ func (r *CortexRenderer) Render() string {
 		}
 	}
 	return buf.String()
+}
+
+// GetColorAt returns the color for a specific pixel position
+func (r *CortexRenderer) GetColorAt(x, y int) RGB {
+	return r.GetColorAtWithOpacity(x, y, 1.0)
+}
+
+// GetColorAtWithOpacity returns the color for a specific pixel position with opacity applied
+func (r *CortexRenderer) GetColorAtWithOpacity(x, y int, opacity float64) RGB {
+	var color RGB
+	if r.rainbowMode {
+		// Rainbow mode: cycle through all colors
+		angle := math.Atan2(float64(y-r.height/2), float64(x-r.width/2))
+		color = RainbowColor(angle + r.B + r.A)
+	} else if r.brandColor != nil {
+		// Brand mode: gradient from brand color to brighter version
+		angle := math.Atan2(float64(y-r.height/2), float64(x-r.width/2))
+		// Normalize angle to [0, 1]
+		t := math.Mod(angle+r.B, 2*math.Pi) / (2 * math.Pi)
+		if t < 0 {
+			t += 1.0
+		}
+		// Create gradient from brand color to brighter version
+		bright := RGB{
+			R: uint8(math.Min(255, float64(r.brandColor.R)*1.5)),
+			G: uint8(math.Min(255, float64(r.brandColor.G)*1.5)),
+			B: uint8(math.Min(255, float64(r.brandColor.B)*1.5)),
+		}
+		color = lerpRGB(*r.brandColor, bright, t)
+	} else {
+		// Normal mode: cyan-magenta gradient
+		angle := math.Atan2(float64(y-r.height/2), float64(x-r.width/2))
+		color = GradientColor(angle + r.B) // Rotate gradient with torus
+	}
+	return color.WithOpacity(opacity)
 }
 
 // String returns the rendered frame as a string (without colors)

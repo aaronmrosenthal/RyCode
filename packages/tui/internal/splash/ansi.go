@@ -15,6 +15,26 @@ func (c RGB) ANSI() string {
 	return fmt.Sprintf("\033[38;2;%d;%d;%dm", c.R, c.G, c.B)
 }
 
+// ToHex returns the hex color string (#RRGGBB)
+func (c RGB) ToHex() string {
+	return fmt.Sprintf("#%02X%02X%02X", c.R, c.G, c.B)
+}
+
+// WithOpacity returns a new RGB color dimmed by the given opacity (0.0 to 1.0)
+func (c RGB) WithOpacity(opacity float64) RGB {
+	if opacity < 0.0 {
+		opacity = 0.0
+	}
+	if opacity > 1.0 {
+		opacity = 1.0
+	}
+	return RGB{
+		R: uint8(float64(c.R) * opacity),
+		G: uint8(float64(c.G) * opacity),
+		B: uint8(float64(c.B) * opacity),
+	}
+}
+
 // ResetColor returns the ANSI reset sequence
 func ResetColor() string {
 	return "\033[0m"

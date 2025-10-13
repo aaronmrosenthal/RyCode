@@ -286,20 +286,21 @@ func (s *SimpleProviderToggle) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Fade animation when switching providers
 		if s.isSwitching {
 			elapsed := time.Since(s.switchStartTime)
-			totalDuration := 600 * time.Millisecond // Total animation: 200ms fade-in + 200ms hold + 200ms fade-out
-			fadeInDuration := 200 * time.Millisecond
-			fadeOutStart := 400 * time.Millisecond
+			totalDuration := 1200 * time.Millisecond // Total animation: 300ms fade-in + 600ms hold + 300ms fade-out
+			fadeInDuration := 300 * time.Millisecond
+			fadeOutStart := 900 * time.Millisecond
 
 			if elapsed < fadeInDuration {
-				// Fade in (0.0 -> 1.0 over 200ms)
-				s.fadeOpacity = float64(elapsed) / float64(fadeInDuration)
-				logModelsDebug("Fade IN: opacity=%.2f", s.fadeOpacity)
+				// Fade in (0.5 -> 1.0 over 300ms) - starts from initial 0.5 opacity
+				fadeProgress := float64(elapsed) / float64(fadeInDuration)
+				s.fadeOpacity = 0.5 + (0.5 * fadeProgress) // Interpolate from 0.5 to 1.0
+				logModelsDebug("Fade IN: opacity=%.2f (progress=%.2f)", s.fadeOpacity, fadeProgress)
 			} else if elapsed < fadeOutStart {
-				// Hold at full opacity
+				// Hold at full opacity for 600ms (long enough to see the cortex)
 				s.fadeOpacity = 1.0
 				logModelsDebug("Hold: opacity=%.2f", s.fadeOpacity)
 			} else if elapsed < totalDuration {
-				// Fade out (1.0 -> 0.0 over 200ms)
+				// Fade out (1.0 -> 0.0 over 300ms)
 				fadeOutElapsed := elapsed - fadeOutStart
 				s.fadeOpacity = 1.0 - (float64(fadeOutElapsed) / float64(totalDuration-fadeOutStart))
 				logModelsDebug("Fade OUT: opacity=%.2f", s.fadeOpacity)
@@ -340,10 +341,10 @@ func (s *SimpleProviderToggle) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				s.cortexRenderer.SetBrandColor(brandColor)
 				logModelsDebug("✓ Set cortex brand color: R=%d G=%d B=%d", brandColor.R, brandColor.G, brandColor.B)
 
-				// Start cortex fade animation (600ms total: fade-in, hold, fade-out)
+				// Start cortex fade animation (1.2s total: fade-in, hold, fade-out)
 				s.isSwitching = true
 				s.switchStartTime = time.Now()
-				s.fadeOpacity = 0.0 // Start from transparent
+				s.fadeOpacity = 0.5 // Start semi-visible so it's immediately noticeable
 				logModelsDebug("✓ SWITCHING ANIMATION ACTIVATED - starting fade-in")
 				return s, s.tickLoadingAnimation()
 			} else {
@@ -368,10 +369,10 @@ func (s *SimpleProviderToggle) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				s.cortexRenderer.SetBrandColor(brandColor)
 				logModelsDebug("✓ Set cortex brand color: R=%d G=%d B=%d", brandColor.R, brandColor.G, brandColor.B)
 
-				// Start cortex fade animation (600ms total: fade-in, hold, fade-out)
+				// Start cortex fade animation (1.2s total: fade-in, hold, fade-out)
 				s.isSwitching = true
 				s.switchStartTime = time.Now()
-				s.fadeOpacity = 0.0 // Start from transparent
+				s.fadeOpacity = 0.5 // Start semi-visible so it's immediately noticeable
 				logModelsDebug("✓ SWITCHING ANIMATION ACTIVATED - starting fade-in")
 				return s, s.tickLoadingAnimation()
 			} else {
@@ -575,8 +576,30 @@ func (s *SimpleProviderToggle) renderSwitching(t theme.Theme) string {
 
 	// Only render cortex if opacity > 0.1 (optimization)
 	if opacity > 0.1 {
-		// Render the 3D spinning torus
-		torusOutput := s.cortexRenderer.Render()
+		// Render cortex frame (updates screen buffer)
+		s.cortexRenderer.RenderFrame()
+
+		// Manually build the cortex output with opacity applied to colors
+		var cortexBuilder strings.Builder
+		cortexWidth := s.cortexRenderer.Width()
+		cortexHeight := s.cortexRenderer.Height()
+		for y := 0; y < cortexHeight; y++ {
+			for x := 0; x < cortexWidth; x++ {
+				idx := y*cortexWidth + x
+				char := s.cortexRenderer.Screen(idx)
+
+				if char != ' ' {
+					// Get color with opacity applied
+					rgb := s.cortexRenderer.GetColorAtWithOpacity(x, y, opacity)
+					cortexBuilder.WriteString(splash.Colorize(string(char), rgb))
+				} else {
+					cortexBuilder.WriteRune(' ')
+				}
+			}
+			if y < cortexHeight-1 {
+				cortexBuilder.WriteRune('\n')
+			}
+		}
 
 		// Center the torus (use default width if not set yet)
 		width := s.width
@@ -586,7 +609,7 @@ func (s *SimpleProviderToggle) renderSwitching(t theme.Theme) string {
 		torusStyle := lipgloss.NewStyle().
 			Align(lipgloss.Center).
 			Width(width)
-		builder.WriteString(torusStyle.Render(torusOutput))
+		builder.WriteString(torusStyle.Render(cortexBuilder.String()))
 
 		builder.WriteString("\n")
 
@@ -662,22 +685,23 @@ func (s *SimpleProviderToggle) renderProviderChip(provider opencode.Provider, is
 }
 
 func (s *SimpleProviderToggle) getProviderColor(providerID string) compat.AdaptiveColor {
+	// Use the same brand colors as RGB definitions for consistency
 	switch providerID {
 	case "anthropic", "claude":
-		// Claude brand: warm orange/peach (from screenshot)
+		// Claude brand: warm orange/peach #E07856
 		return compat.AdaptiveColor{Light: lipgloss.Color("#E07856"), Dark: lipgloss.Color("#E07856")}
 	case "google", "gemini":
-		// Gemini brand: light blue (from screenshot - matches the blue gradient)
-		return compat.AdaptiveColor{Light: lipgloss.Color("#4A90E2"), Dark: lipgloss.Color("#4A90E2")}
+		// Gemini brand: blue-to-purple gradient (mid-purple) #8B7FD8
+		return compat.AdaptiveColor{Light: lipgloss.Color("#8B7FD8"), Dark: lipgloss.Color("#8B7FD8")}
 	case "openai", "codex":
-		// OpenAI/Codex brand: teal/cyan (keeping OpenAI's signature color)
+		// OpenAI/Codex brand: teal/cyan #10A37F
 		return compat.AdaptiveColor{Light: lipgloss.Color("#10A37F"), Dark: lipgloss.Color("#10A37F")}
 	case "xai", "grok":
-		// Grok/xAI brand: red
+		// Grok/xAI brand: red #FF4444
 		return compat.AdaptiveColor{Light: lipgloss.Color("#FF4444"), Dark: lipgloss.Color("#FF4444")}
 	case "qwen":
-		// Qwen brand: orange/amber (from screenshot - matches the orange gradient)
-		return compat.AdaptiveColor{Light: lipgloss.Color("#FFA500"), Dark: lipgloss.Color("#FFA500")}
+		// Qwen brand: golden orange (from badge) #FFA726
+		return compat.AdaptiveColor{Light: lipgloss.Color("#FFA726"), Dark: lipgloss.Color("#FFA726")}
 	default:
 		return theme.CurrentTheme().Primary()
 	}
