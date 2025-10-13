@@ -13,29 +13,31 @@ const (
 	CortexMinVisibleOpacity     = 0.05                    // Don't render below this opacity
 )
 
+// providerBrandColors is a pre-computed map for O(1) color lookups
+// This optimization reduces repeated switch statement overhead
+var providerBrandColors = map[string]RGB{
+	"anthropic": {R: 224, G: 120, B: 86},  // Claude brand: warm orange/peach #E07856
+	"claude":    {R: 224, G: 120, B: 86},  // Claude brand: warm orange/peach #E07856
+	"google":    {R: 139, G: 127, B: 216}, // Gemini brand: blue-to-purple gradient #8B7FD8
+	"gemini":    {R: 139, G: 127, B: 216}, // Gemini brand: blue-to-purple gradient #8B7FD8
+	"openai":    {R: 16, G: 163, B: 127},  // OpenAI/Codex brand: teal/cyan #10A37F
+	"codex":     {R: 16, G: 163, B: 127},  // OpenAI/Codex brand: teal/cyan #10A37F
+	"xai":       {R: 255, G: 68, B: 68},   // Grok/xAI brand: red #FF4444
+	"grok":      {R: 255, G: 68, B: 68},   // Grok/xAI brand: red #FF4444
+	"qwen":      {R: 255, G: 167, B: 38},  // Qwen brand: golden orange #FFA726
+}
+
+// defaultBrandColor is the fallback color for unknown providers
+var defaultBrandColor = RGB{R: 0, G: 255, B: 255} // Cyan #00FFFF
+
 // GetProviderBrandColor returns the brand color for a given provider ID
 // This is the single source of truth for provider colors throughout the application
+// Optimized with map lookup for O(1) performance
 func GetProviderBrandColor(providerID string) RGB {
-	switch providerID {
-	case "anthropic", "claude":
-		// Claude brand: warm orange/peach #E07856
-		return RGB{R: 224, G: 120, B: 86}
-	case "google", "gemini":
-		// Gemini brand: blue-to-purple gradient (using mid-purple) #8B7FD8
-		return RGB{R: 139, G: 127, B: 216}
-	case "openai", "codex":
-		// OpenAI/Codex brand: teal/cyan #10A37F
-		return RGB{R: 16, G: 163, B: 127}
-	case "xai", "grok":
-		// Grok/xAI brand: red #FF4444
-		return RGB{R: 255, G: 68, B: 68}
-	case "qwen":
-		// Qwen brand: golden orange (from badge) #FFA726
-		return RGB{R: 255, G: 167, B: 38}
-	default:
-		// Default: cyan #00FFFF for unknown providers
-		return RGB{R: 0, G: 255, B: 255}
+	if color, ok := providerBrandColors[providerID]; ok {
+		return color
 	}
+	return defaultBrandColor
 }
 
 // CalculateAnimationOpacity calculates the current opacity based on animation timing

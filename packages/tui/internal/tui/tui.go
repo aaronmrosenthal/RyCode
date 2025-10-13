@@ -1858,7 +1858,6 @@ func (a Model) renderProviderSwitchOverlay(mainLayout string) string {
 	a.providerSwitchCortex.RenderFrame()
 
 	// Build cortex output with opacity applied
-	var cortexBuilder strings.Builder
 	cortexWidth := a.providerSwitchCortex.Width()
 	cortexHeight := a.providerSwitchCortex.Height()
 
@@ -1869,6 +1868,13 @@ func (a Model) renderProviderSwitchOverlay(mainLayout string) string {
 			"height", cortexHeight)
 		return mainLayout
 	}
+
+	// Pre-allocate string builder with estimated capacity
+	// Estimate: ~30 bytes per character (ANSI color codes + char)
+	// Plus newlines (height-1) and some padding
+	estimatedCapacity := (cortexWidth * cortexHeight * 30) + cortexHeight
+	var cortexBuilder strings.Builder
+	cortexBuilder.Grow(estimatedCapacity)
 
 	for y := 0; y < cortexHeight; y++ {
 		for x := 0; x < cortexWidth; x++ {
