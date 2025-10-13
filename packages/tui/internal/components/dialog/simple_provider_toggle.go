@@ -247,8 +247,8 @@ func getProviderBrandColorRGB(providerID string) splash.RGB {
 		// Claude brand: warm orange/peach #E07856
 		return splash.RGB{R: 224, G: 120, B: 86}
 	case "google", "gemini":
-		// Gemini brand: light blue #4A90E2
-		return splash.RGB{R: 74, G: 144, B: 226}
+		// Gemini brand: blue-to-purple gradient (using mid-purple) #8B7FD8
+		return splash.RGB{R: 139, G: 127, B: 216}
 	case "openai", "codex":
 		// OpenAI/Codex brand: teal/cyan #10A37F
 		return splash.RGB{R: 16, G: 163, B: 127}
@@ -256,8 +256,8 @@ func getProviderBrandColorRGB(providerID string) splash.RGB {
 		// Grok/xAI brand: red #FF4444
 		return splash.RGB{R: 255, G: 68, B: 68}
 	case "qwen":
-		// Qwen brand: orange/amber #FFA500
-		return splash.RGB{R: 255, G: 165, B: 0}
+		// Qwen brand: golden orange (from badge) #FFA726
+		return splash.RGB{R: 255, G: 167, B: 38}
 	default:
 		// Default: cyan #00FFFF
 		return splash.RGB{R: 0, G: 255, B: 255}
