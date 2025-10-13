@@ -25,11 +25,13 @@ const (
 )
 
 type Model struct {
-	width, height int
-	startTime     time.Time
-	rainColumns   []rainColumn
-	logoVisible   bool
-	fadeProgress  float64
+	width, height   int
+	startTime       time.Time
+	rainColumns     []rainColumn
+	logoVisible     bool
+	fadeProgress    float64
+	cortexRenderer  *CortexRenderer
+	showCortex      bool  // Show cortex instead of matrix rain (first install)
 }
 
 type rainColumn struct {
@@ -62,12 +64,19 @@ func New(width, height int) Model {
 		}
 	}
 
+	// Create 3D cortex renderer (centered, smaller than full screen)
+	cortexWidth := 60
+	cortexHeight := 20
+	cortexRenderer := NewCortexRenderer(cortexWidth, cortexHeight)
+
 	return Model{
-		width:       width,
-		height:      height,
-		rainColumns: columns,
-		logoVisible: false,
-		fadeProgress: 0,
+		width:          width,
+		height:         height,
+		rainColumns:    columns,
+		logoVisible:    false,
+		fadeProgress:   0,
+		cortexRenderer: cortexRenderer,
+		showCortex:     true, // Always show cortex on first install
 	}
 }
 
@@ -192,6 +201,35 @@ func (m Model) View() string {
 		}
 	}
 
+	// RENDER 3D CORTEX (if enabled) - positioned ABOVE logo
+	if m.showCortex && m.cortexRenderer != nil {
+		// Render the cortex frame
+		m.cortexRenderer.RenderFrame()
+
+		// Calculate center position for cortex (upper part of screen)
+		cortexStartY := m.height/4 - m.cortexRenderer.height/2
+		cortexStartX := (m.width - m.cortexRenderer.width) / 2
+
+		if cortexStartY >= 0 && cortexStartX >= 0 {
+			// Overlay cortex on canvas
+			for cy := 0; cy < m.cortexRenderer.height; cy++ {
+				for cx := 0; cx < m.cortexRenderer.width; cx++ {
+					y := cortexStartY + cy
+					x := cortexStartX + cx
+
+					if y >= 0 && y < m.height && x >= 0 && x < m.width {
+						char := m.cortexRenderer.screen[cy*m.cortexRenderer.width+cx]
+						if char != ' ' {
+							canvas[y][x] = char
+							// Cortex glows with cyan-magenta gradient
+							colors[y][x] = "#00FFFF" // Bright cyan for cortex
+						}
+					}
+				}
+			}
+		}
+	}
+
 	// Ry-Code ASCII art (toolkit-cli style - bright and readable)
 	logo := []string{
 		"",
@@ -206,8 +244,8 @@ func (m Model) View() string {
 
 	tagline := "> Where Code Writes Itself"
 
-	// Calculate center position for logo
-	logoStartY := (m.height - len(logo) - 2) / 2
+	// Calculate center position for logo (lower part of screen, below cortex)
+	logoStartY := m.height*2/3
 
 	// Overlay logo if visible
 	if m.logoVisible && logoStartY >= 0 {
