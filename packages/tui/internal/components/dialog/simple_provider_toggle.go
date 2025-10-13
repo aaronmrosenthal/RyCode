@@ -42,6 +42,7 @@ type SimpleProviderToggle struct {
 	cortexRenderer  *splash.CortexRenderer
 	isSwitching     bool      // True when switching providers (show cortex)
 	switchStartTime time.Time // When the switch animation started
+	fadeOpacity     float64   // Current fade opacity (0.0 to 1.0)
 }
 
 // NewSimpleProviderToggle creates a new simple provider toggle
@@ -258,14 +259,34 @@ func (s *SimpleProviderToggle) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return s, s.tickLoadingAnimation()
 		}
 
-		// Check if we're switching providers and should stop the animation
+		// Fade animation when switching providers
 		if s.isSwitching {
 			elapsed := time.Since(s.switchStartTime)
-			if elapsed >= 500*time.Millisecond {
+			totalDuration := 600 * time.Millisecond // Total animation: 200ms fade-in + 200ms hold + 200ms fade-out
+			fadeInDuration := 200 * time.Millisecond
+			fadeOutStart := 400 * time.Millisecond
+
+			if elapsed < fadeInDuration {
+				// Fade in (0.0 -> 1.0 over 200ms)
+				s.fadeOpacity = float64(elapsed) / float64(fadeInDuration)
+				logModelsDebug("Fade IN: opacity=%.2f", s.fadeOpacity)
+			} else if elapsed < fadeOutStart {
+				// Hold at full opacity
+				s.fadeOpacity = 1.0
+				logModelsDebug("Hold: opacity=%.2f", s.fadeOpacity)
+			} else if elapsed < totalDuration {
+				// Fade out (1.0 -> 0.0 over 200ms)
+				fadeOutElapsed := elapsed - fadeOutStart
+				s.fadeOpacity = 1.0 - (float64(fadeOutElapsed) / float64(totalDuration-fadeOutStart))
+				logModelsDebug("Fade OUT: opacity=%.2f", s.fadeOpacity)
+			} else {
 				// Animation complete
 				s.isSwitching = false
+				s.fadeOpacity = 0.0
+				logModelsDebug("Animation COMPLETE")
 				return s, nil
 			}
+
 			// Continue animation
 			return s, s.tickLoadingAnimation()
 		}
@@ -283,15 +304,17 @@ func (s *SimpleProviderToggle) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch {
 		case key.Matches(msg, key.NewBinding(key.WithKeys("tab"))):
 			logModelsDebug("✓ Tab key MATCHED!")
-			// Tab: cycle to next provider with cortex animation
+			// Tab: cycle to next provider with cortex fade animation
 			if len(s.providers) > 0 {
 				oldIndex := s.selectedIndex
 				s.selectedIndex = (s.selectedIndex + 1) % len(s.providers)
 				logModelsDebug("Tab cycling: %d -> %d (provider: %s)", oldIndex, s.selectedIndex, s.providers[s.selectedIndex].ID)
 
-				// Show cortex animation for 500ms
+				// Start cortex fade animation (600ms total: fade-in, hold, fade-out)
 				s.isSwitching = true
 				s.switchStartTime = time.Now()
+				s.fadeOpacity = 0.0 // Start from transparent
+				logModelsDebug("✓ SWITCHING ANIMATION ACTIVATED - starting fade-in")
 				return s, s.tickLoadingAnimation()
 			} else {
 				logModelsDebug("Cannot cycle: no providers loaded")
@@ -300,7 +323,7 @@ func (s *SimpleProviderToggle) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case key.Matches(msg, key.NewBinding(key.WithKeys("shift+tab"))):
 			logModelsDebug("✓ Shift+Tab key MATCHED!")
-			// Shift+Tab: cycle to previous provider with cortex animation
+			// Shift+Tab: cycle to previous provider with cortex fade animation
 			if len(s.providers) > 0 {
 				oldIndex := s.selectedIndex
 				s.selectedIndex--
@@ -309,9 +332,11 @@ func (s *SimpleProviderToggle) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				logModelsDebug("Shift+Tab cycling: %d -> %d (provider: %s)", oldIndex, s.selectedIndex, s.providers[s.selectedIndex].ID)
 
-				// Show cortex animation for 500ms
+				// Start cortex fade animation (600ms total: fade-in, hold, fade-out)
 				s.isSwitching = true
 				s.switchStartTime = time.Now()
+				s.fadeOpacity = 0.0 // Start from transparent
+				logModelsDebug("✓ SWITCHING ANIMATION ACTIVATED - starting fade-in")
 				return s, s.tickLoadingAnimation()
 			} else {
 				logModelsDebug("Cannot cycle: no providers loaded")
@@ -382,12 +407,15 @@ func (s *SimpleProviderToggle) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (s *SimpleProviderToggle) View() string {
 	t := theme.CurrentTheme()
 
+	logModelsDebug("View() called - isLoading=%v, isSwitching=%v", s.isLoading, s.isSwitching)
+
 	if s.isLoading {
 		return s.renderLoading(t)
 	}
 
 	// Show cortex when switching providers
 	if s.isSwitching {
+		logModelsDebug("✓ Rendering SWITCHING view with cortex!")
 		return s.renderSwitching(t)
 	}
 
@@ -474,37 +502,68 @@ func (s *SimpleProviderToggle) renderLoading(t theme.Theme) string {
 }
 
 func (s *SimpleProviderToggle) renderSwitching(t theme.Theme) string {
+	// Apply opacity to the cortex and text based on fade state
+	// Opacity ranges from 0.0 (transparent) to 1.0 (full opacity)
+	opacity := s.fadeOpacity
+
+	// Calculate color with opacity (blend with background)
+	// Simple opacity simulation by reducing brightness (terminals don't support true alpha)
+	var textColor compat.AdaptiveColor
+	if opacity >= 0.9 {
+		textColor = t.Text()
+	} else if opacity >= 0.7 {
+		textColor = t.TextMuted()
+	} else if opacity >= 0.4 {
+		textColor = compat.AdaptiveColor{
+			Light: lipgloss.Color("#666666"),
+			Dark:  lipgloss.Color("#444444"),
+		}
+	} else if opacity >= 0.2 {
+		textColor = compat.AdaptiveColor{
+			Light: lipgloss.Color("#333333"),
+			Dark:  lipgloss.Color("#222222"),
+		}
+	} else {
+		textColor = compat.AdaptiveColor{
+			Light: lipgloss.Color("#222222"),
+			Dark:  lipgloss.Color("#111111"),
+		}
+	}
+
 	textStyle := lipgloss.NewStyle().
-		Foreground(t.TextMuted()).
+		Foreground(textColor).
 		Align(lipgloss.Center)
 
 	var builder strings.Builder
 	builder.WriteString("\n")
 
-	// Render the 3D spinning torus
-	torusOutput := s.cortexRenderer.Render()
+	// Only render cortex if opacity > 0.1 (optimization)
+	if opacity > 0.1 {
+		// Render the 3D spinning torus
+		torusOutput := s.cortexRenderer.Render()
 
-	// Center the torus (use default width if not set yet)
-	width := s.width
-	if width == 0 {
-		width = 80 // Default terminal width
+		// Center the torus (use default width if not set yet)
+		width := s.width
+		if width == 0 {
+			width = 80 // Default terminal width
+		}
+		torusStyle := lipgloss.NewStyle().
+			Align(lipgloss.Center).
+			Width(width)
+		builder.WriteString(torusStyle.Render(torusOutput))
+
+		builder.WriteString("\n")
+
+		// Show which provider we're switching to
+		if s.selectedIndex < len(s.providers) {
+			providerName := getProviderDisplayName(s.providers[s.selectedIndex].ID)
+			builder.WriteString(textStyle.Render(fmt.Sprintf("Switching to %s...", providerName)))
+		} else {
+			builder.WriteString(textStyle.Render("Switching provider..."))
+		}
+
+		builder.WriteString("\n")
 	}
-	torusStyle := lipgloss.NewStyle().
-		Align(lipgloss.Center).
-		Width(width)
-	builder.WriteString(torusStyle.Render(torusOutput))
-
-	builder.WriteString("\n")
-
-	// Show which provider we're switching to
-	if s.selectedIndex < len(s.providers) {
-		providerName := getProviderDisplayName(s.providers[s.selectedIndex].ID)
-		builder.WriteString(textStyle.Render(fmt.Sprintf("Switching to %s...", providerName)))
-	} else {
-		builder.WriteString(textStyle.Render("Switching provider..."))
-	}
-
-	builder.WriteString("\n")
 
 	return builder.String()
 }
