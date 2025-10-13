@@ -252,3 +252,27 @@ func (b *Bridge) GetRecommendations(ctx context.Context, task string) ([]Recomme
 
 	return result.Recommendations, nil
 }
+
+// CLIProviderInfo represents a CLI provider with models
+type CLIProviderInfo struct {
+	Provider string   `json:"provider"`
+	Models   []string `json:"models"`
+	Source   string   `json:"source"`
+}
+
+// GetCLIProviders retrieves available CLI providers with models
+func (b *Bridge) GetCLIProviders(ctx context.Context) ([]CLIProviderInfo, error) {
+	output, err := b.runCLI(ctx, "cli-providers")
+	if err != nil {
+		return nil, err
+	}
+
+	var result struct {
+		Providers []CLIProviderInfo `json:"providers"`
+	}
+	if err := json.Unmarshal(output, &result); err != nil {
+		return nil, fmt.Errorf("failed to parse CLI providers: %w", err)
+	}
+
+	return result.Providers, nil
+}

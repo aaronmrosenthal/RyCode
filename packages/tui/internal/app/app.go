@@ -1306,16 +1306,99 @@ func (a *App) ListMessages(ctx context.Context, sessionId string) ([]Message, er
 }
 
 func (a *App) ListProviders(ctx context.Context) ([]opencode.Provider, error) {
+	// Get providers from API
 	response, err := a.Client.App.Providers(ctx, opencode.AppProvidersParams{})
-	if err != nil {
-		return nil, err
-	}
-	if response == nil {
-		return []opencode.Provider{}, nil
+	apiProviders := []opencode.Provider{}
+	if err == nil && response != nil {
+		providers := *response
+		apiProviders = providers.Providers
 	}
 
-	providers := *response
-	return providers.Providers, nil
+	// Get CLI providers and merge with API providers
+	cliProviders, err := a.AuthBridge.GetCLIProviders(ctx)
+	if err != nil || len(cliProviders) == 0 {
+		// If CLI providers fail, return API providers only (or empty)
+		if len(apiProviders) == 0 {
+			return []opencode.Provider{}, nil
+		}
+		return apiProviders, nil
+	}
+
+	// Convert CLI providers to opencode.Provider format
+	providerMap := make(map[string]opencode.Provider)
+
+	// Add API providers to map first
+	for _, p := range apiProviders {
+		providerMap[p.ID] = p
+	}
+
+	// Add or merge CLI providers
+	for _, cliProv := range cliProviders {
+		models := make(map[string]opencode.Model)
+		for _, modelID := range cliProv.Models {
+			models[modelID] = opencode.Model{
+				ID:   modelID,
+				Name: formatModelName(modelID),
+			}
+		}
+
+		provider := opencode.Provider{
+			ID:     cliProv.Provider,
+			Name:   formatProviderName(cliProv.Provider),
+			Models: models,
+		}
+
+		// If provider already exists from API, merge models
+		if existing, exists := providerMap[cliProv.Provider]; exists {
+			// Merge models from CLI into existing provider
+			for modelID, model := range models {
+				if _, hasModel := existing.Models[modelID]; !hasModel {
+					existing.Models[modelID] = model
+				}
+			}
+			providerMap[cliProv.Provider] = existing
+		} else {
+			// Add new CLI provider
+			providerMap[cliProv.Provider] = provider
+		}
+	}
+
+	// Convert map back to slice
+	result := make([]opencode.Provider, 0, len(providerMap))
+	for _, provider := range providerMap {
+		result = append(result, provider)
+	}
+
+	return result, nil
+}
+
+// formatModelName formats a model ID into a human-readable name
+func formatModelName(modelID string) string {
+	// Simple formatting: replace hyphens with spaces and title case
+	parts := strings.Split(modelID, "-")
+	for i, part := range parts {
+		if len(part) > 0 {
+			parts[i] = strings.ToUpper(part[:1]) + part[1:]
+		}
+	}
+	return strings.Join(parts, " ")
+}
+
+// formatProviderName formats a provider ID into a human-readable name
+func formatProviderName(providerID string) string {
+	names := map[string]string{
+		"claude":    "Anthropic",
+		"qwen":      "Alibaba",
+		"codex":     "OpenAI",
+		"gemini":    "Google",
+		"anthropic": "Anthropic",
+		"openai":    "OpenAI",
+		"google":    "Google",
+	}
+	if name, ok := names[providerID]; ok {
+		return name
+	}
+	return strings.ToUpper(providerID[:1]) + providerID[1:]
 }
 
 // func (a *App) loadCustomKeybinds() {

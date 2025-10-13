@@ -186,8 +186,25 @@ async function main() {
         break
       }
 
+      case 'cli-providers': {
+        // Get CLI providers with models
+        const cliProviders = await authManager.getAvailableProvidersWithModels()
+
+        response = {
+          success: true,
+          data: {
+            providers: cliProviders.map(p => ({
+              provider: p.provider,
+              models: p.models,
+              source: p.source
+            }))
+          }
+        }
+        break
+      }
+
       default:
-        throw new Error(`Unknown command: ${command}\n\nAvailable commands:\n  - check <provider>\n  - auth <provider> <apiKey>\n  - cost\n  - health <provider>\n  - list\n  - auto-detect\n  - recommendations [task]`)
+        throw new Error(`Unknown command: ${command}\n\nAvailable commands:\n  - check <provider>\n  - auth <provider> <apiKey>\n  - cost\n  - health <provider>\n  - list\n  - auto-detect\n  - recommendations [task]\n  - cli-providers`)
     }
 
     // Output JSON response
