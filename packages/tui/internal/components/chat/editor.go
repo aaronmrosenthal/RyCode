@@ -429,13 +429,14 @@ func (m *editorComponent) Cursor() *tea.Cursor {
 	// Textarea.Cursor() returns position relative to textarea (includes its internal prompt)
 	// We need to add the external prompt that wraps the textarea
 
-	// External prompt: " ❯ " = PaddingLeft(1) + icon(1) = 2 visual characters
-	// But after rendering, we join it horizontally with textarea
-	// So we add 2 for the prompt width
-	cursor.Position.X += 2
+	// External prompt calculation:
+	// PaddingLeft(1) + icon(1) + PaddingRight(0) = 2 visual characters
+	// Plus the border left (1) + padding from border (0) = 1
+	// Total offset: 2 (prompt) + 1 (border) = 3
+	cursor.Position.X += 3
 
-	// Y is relative to editor content (no offset needed, textarea handles it)
-	cursor.Position.Y += 0
+	// Y offset for the border top = 1
+	cursor.Position.Y += 1
 
 	return cursor
 }

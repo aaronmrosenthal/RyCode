@@ -14,12 +14,9 @@
  * Quality Markers: Comprehensive mocking, edge case handling, security validation
  */
 
-import { describe, test, expect, beforeEach, afterEach, mock } from 'bun:test'
+import { describe, test, expect, beforeEach, afterEach } from 'bun:test'
 import { SmartProviderSetup } from '../auto-detect'
-import type { DetectedCredential, AutoDetectResult } from '../auto-detect'
-import { existsSync, readFileSync } from 'fs'
-import { homedir } from 'os'
-import { exec } from 'child_process'
+import type { DetectedCredential } from '../auto-detect'
 
 // ============================================================================
 // MOCK SETUP - AI-crafted isolation patterns
@@ -95,7 +92,7 @@ describe('SmartProviderSetup - Environment Variable Detection', () => {
     expect(anthropicCred).toBeDefined()
     expect(anthropicCred?.credential).toBe(apiKey)
     expect(anthropicCred?.source).toBe('env')
-    expect(anthropicCred?.metadata?.envVar).toBe('ANTHROPIC_API_KEY')
+    expect(anthropicCred?.metadata?.['envVar']).toBe('ANTHROPIC_API_KEY')
   })
 
   test('🤖 AI Test: Detects CLAUDE_API_KEY as alternative for Anthropic', async () => {
@@ -107,7 +104,7 @@ describe('SmartProviderSetup - Environment Variable Detection', () => {
     const anthropicCred = result.found.find(c => c.provider === 'anthropic')
     expect(anthropicCred).toBeDefined()
     expect(anthropicCred?.credential).toBe(apiKey)
-    expect(anthropicCred?.metadata?.envVar).toBe('CLAUDE_API_KEY')
+    expect(anthropicCred?.metadata?.['envVar']).toBe('CLAUDE_API_KEY')
   })
 
   test('🤖 AI Test: Detects OPENAI_API_KEY from environment', async () => {
@@ -173,7 +170,7 @@ describe('SmartProviderSetup - Environment Variable Detection', () => {
     const googleCred = result.found.find(c => c.provider === 'google')
     expect(googleCred).toBeDefined()
     expect(googleCred?.credential).toBe(credPath)
-    expect(googleCred?.metadata?.type).toBe('service_account_file')
+    expect(googleCred?.metadata?.['type']).toBe('service_account_file')
 
     // Cleanup
     await import('fs/promises').then(async (fs) => {
@@ -334,9 +331,9 @@ describe('SmartProviderSetup - Import Functionality', () => {
       { provider: 'openai', source: 'env', credential: 'sk-openai-key' }
     ]
 
-    const mockStore = mock(async (provider: string, credential: string) => {
+    const mockStore = async (_provider: string, _credential: string) => {
       // Mock successful storage
-    })
+    }
 
     const result = await setup.importAll(detected, mockStore)
 
@@ -352,11 +349,11 @@ describe('SmartProviderSetup - Import Functionality', () => {
       { provider: 'invalid', source: 'env', credential: 'bad-key' }
     ]
 
-    const mockStore = mock(async (provider: string, credential: string) => {
+    const mockStore = async (provider: string, _credential: string) => {
       if (provider === 'invalid') {
         throw new Error('Invalid provider')
       }
-    })
+    }
 
     const result = await setup.importAll(detected, mockStore)
 
@@ -371,9 +368,9 @@ describe('SmartProviderSetup - Import Functionality', () => {
       { provider: 'anthropic', source: 'env', credential: 'sk-ant-key' }
     ]
 
-    const mockStore = mock(async (provider: string, credential: string) => {
+    const mockStore = async (_provider: string, _credential: string) => {
       throw new Error('Storage system unavailable')
-    })
+    }
 
     const result = await setup.importAll(detected, mockStore)
 

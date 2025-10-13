@@ -14,7 +14,7 @@
  * Quality Markers: CLI simulation, argument validation, output format checking
  */
 
-import { describe, test, expect, beforeEach, afterEach, mock, spyOn } from 'bun:test'
+import { describe, test, expect, beforeEach, afterEach, spyOn } from 'bun:test'
 import { authManager } from '../auth-manager'
 import type { AuthStatus } from '../auth-manager'
 import { $ } from 'bun'

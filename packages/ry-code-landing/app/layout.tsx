@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Script from 'next/script'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -81,66 +82,66 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  const softwareSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: 'RyCode',
+    applicationCategory: 'DeveloperApplication',
+    operatingSystem: 'macOS, Linux, Windows',
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'USD',
+    },
+    description: 'The world\'s most advanced open source coding agent. Multi-agent AI CLI that allows developers to switch between 5 state-of-the-art AI models (Claude 4.5 Sonnet, Gemini 3.0 Pro, Codex, Grok Code Fast, Qwen 3 Coder) with a single keystroke. Zero context loss, 60 FPS terminal UI, production-ready with 31/31 tests passing.',
+    screenshot: 'https://ry-code.com/assets/splash_to_selector.gif',
+    featureList: [
+      '5 State-of-the-Art AI Models',
+      'Instant Model Switching with Tab Key',
+      'Context Preservation Across Models',
+      'Professional Terminal UI',
+      'Built with toolkit-cli'
+    ],
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: '5.0',
+      ratingCount: '1',
+      bestRating: '5',
+      worstRating: '1'
+    },
+  }
+
+  const organizationSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'RyCode',
+    url: 'https://ry-code.com',
+    logo: 'https://ry-code.com/logo.png',
+    sameAs: [
+      'https://github.com/aaronmrosenthal/RyCode',
+    ],
+    contactPoint: {
+      '@type': 'ContactPoint',
+      contactType: 'Technical Support',
+      url: 'https://ry-code.com'
+    }
+  }
+
   return (
     <html lang="en">
-      <head>
-        {/* Schema.org JSON-LD */}
-        <script
+      <body>
+        {children}
+        <Script
+          id="software-schema"
           type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              '@context': 'https://schema.org',
-              '@type': 'SoftwareApplication',
-              name: 'RyCode',
-              applicationCategory: 'DeveloperApplication',
-              operatingSystem: 'macOS, Linux, Windows',
-              offers: {
-                '@type': 'Offer',
-                price: '0',
-                priceCurrency: 'USD',
-              },
-              description: 'The world\'s most advanced open source coding agent. Multi-agent AI CLI that allows developers to switch between 5 state-of-the-art AI models (Claude 4.5 Sonnet, Gemini 3.0 Pro, Codex, Grok Code Fast, Qwen 3 Coder) with a single keystroke. Zero context loss, 60 FPS terminal UI, production-ready with 31/31 tests passing.',
-              screenshot: 'https://ry-code.com/assets/splash_to_selector.gif',
-              featureList: [
-                '5 State-of-the-Art AI Models',
-                'Instant Model Switching with Tab Key',
-                'Context Preservation Across Models',
-                'Professional Terminal UI',
-                'Built with toolkit-cli'
-              ],
-              aggregateRating: {
-                '@type': 'AggregateRating',
-                ratingValue: '5.0',
-                ratingCount: '1',
-                bestRating: '5',
-                worstRating: '1'
-              },
-            })
-          }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema) }}
         />
-        {/* Additional Schema for Organization */}
-        <script
+        <Script
+          id="organization-schema"
           type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              '@context': 'https://schema.org',
-              '@type': 'Organization',
-              name: 'RyCode',
-              url: 'https://ry-code.com',
-              logo: 'https://ry-code.com/logo.png',
-              sameAs: [
-                'https://github.com/aaronmrosenthal/RyCode',
-              ],
-              contactPoint: {
-                '@type': 'ContactPoint',
-                contactType: 'Technical Support',
-                url: 'https://ry-code.com'
-              }
-            })
-          }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
         />
-      </head>
-      <body>{children}</body>
+      </body>
     </html>
   )
 }

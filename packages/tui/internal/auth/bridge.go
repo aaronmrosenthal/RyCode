@@ -194,6 +194,45 @@ func (b *Bridge) AutoDetect(ctx context.Context) (*AutoDetectResult, error) {
 	return &result, nil
 }
 
+// AutoDetectProvider attempts to auto-detect credentials for a specific provider
+func (b *Bridge) AutoDetectProvider(ctx context.Context, provider string) (*AuthResult, error) {
+	// Run auto-detect first
+	result, err := b.AutoDetect(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if provider was found
+	for _, cred := range result.Credentials {
+		if cred.Provider == provider {
+			// Provider credentials detected, now authenticate
+			return &AuthResult{
+				Provider:    provider,
+				ModelsCount: cred.Count,
+				Message:     fmt.Sprintf("Auto-detected credentials for %s", provider),
+			}, nil
+		}
+	}
+
+	return nil, fmt.Errorf("no credentials found for provider: %s", provider)
+}
+
+// GetAuthStatus retrieves the full auth status for all providers
+func (b *Bridge) GetAuthStatus(ctx context.Context) (*struct {
+	Authenticated []ProviderInfo `json:"authenticated"`
+}, error) {
+	providers, err := b.ListAuthenticatedProviders(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &struct {
+		Authenticated []ProviderInfo `json:"authenticated"`
+	}{
+		Authenticated: providers,
+	}, nil
+}
+
 // GetRecommendations gets model recommendations for a task
 func (b *Bridge) GetRecommendations(ctx context.Context, task string) ([]Recommendation, error) {
 	args := []string{"recommendations"}

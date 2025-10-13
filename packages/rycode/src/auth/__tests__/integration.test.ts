@@ -18,7 +18,6 @@ import { describe, test, expect, beforeAll, afterAll, beforeEach } from 'bun:tes
 import { authManager } from '../auth-manager'
 import { providerRegistry } from '../provider-registry'
 import { smartSetup } from '../auto-detect'
-import { Auth } from '../index'
 import { existsSync } from 'fs'
 import { rm, mkdir } from 'fs/promises'
 import { join } from 'path'
@@ -305,7 +304,7 @@ describe('Integration: Model Selection', () => {
 
   test('🤖 AI Test: Model recommendations work with authenticated providers', async () => {
     const recommendations = authManager.getRecommendations({
-      task: 'coding'
+      task: 'code_generation'
     })
 
     expect(recommendations.length).toBeGreaterThan(0)
@@ -605,8 +604,8 @@ describe('Integration: User Journeys', () => {
     })
 
     // User gets recommendations for different tasks
-    const codingRecs = authManager.getRecommendations({ task: 'coding' })
-    const writingRecs = authManager.getRecommendations({ task: 'writing' })
+    const codingRecs = authManager.getRecommendations({ task: 'code_generation' })
+    const writingRecs = authManager.getRecommendations({ task: 'documentation' })
 
     expect(codingRecs.length).toBeGreaterThan(0)
     expect(writingRecs.length).toBeGreaterThan(0)
