@@ -582,16 +582,24 @@ func findProviderByID(providers []opencode.Provider, providerID string) *opencod
 }
 
 func (a *App) InitializeProvider() tea.Cmd {
-	providersResponse, err := a.Client.App.Providers(context.Background(), opencode.AppProvidersParams{})
+	ctx := context.Background()
+
+	// Get merged providers (HTTP API + CLI providers)
+	providers, err := a.ListProviders(ctx)
 	if err != nil {
 		slog.Error("Failed to list providers", "error", err)
 		// TODO: notify user
 		return nil
 	}
-	providers := providersResponse.Providers
 	if len(providers) == 0 {
 		slog.Error("No providers configured")
 		return nil
+	}
+
+	// Get the HTTP-only response for default model selection
+	providersResponse, err := a.Client.App.Providers(ctx, opencode.AppProvidersParams{})
+	if err != nil {
+		slog.Warn("Failed to get provider response for defaults", "error", err)
 	}
 
 	a.Providers = providers

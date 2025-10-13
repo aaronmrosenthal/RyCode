@@ -1604,6 +1604,9 @@ func (a Model) executeCommand(command commands.Command) (tea.Model, tea.Cmd) {
 			fmt.Fprintf(f, "DEBUG: ModelListCommand - modal set: %v\n", a.modal != nil)
 			f.Close()
 		}
+		// CRITICAL: Initialize the modal to load providers
+		initCmd := modelDialog.Init()
+		cmds = append(cmds, initCmd)
 
 	case commands.AgentListCommand:
 		agentDialog := dialog.NewAgentDialog(a.app)
