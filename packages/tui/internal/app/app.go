@@ -385,7 +385,7 @@ func (a *App) CycleRecentModelReverse() (*App, tea.Cmd) {
 
 // CycleAuthenticatedProviders cycles through all authenticated providers
 func (a *App) CycleAuthenticatedProviders(forward bool) (*App, tea.Cmd) {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	// Get authenticated CLI providers

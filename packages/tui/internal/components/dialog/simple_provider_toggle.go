@@ -3,7 +3,9 @@ package dialog
 import (
 	"context"
 	"fmt"
+	"math"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/charmbracelet/bubbles/v2/key"
@@ -17,6 +19,14 @@ import (
 	"github.com/aaronmrosenthal/rycode/internal/util"
 )
 
+// providersLoadedMsg is sent when providers finish loading
+type providersLoadedMsg struct {
+	providers []opencode.Provider
+}
+
+// loadingTickMsg is sent for loading animation updates
+type loadingTickMsg time.Time
+
 // SimpleProviderToggle is a minimal provider selector that just cycles between CLI providers
 type SimpleProviderToggle struct {
 	app             *app.App
@@ -24,6 +34,8 @@ type SimpleProviderToggle struct {
 	selectedIndex   int
 	width           int
 	height          int
+	isLoading       bool
+	loadingFrame    int
 }
 
 // NewSimpleProviderToggle creates a new simple provider toggle
@@ -32,16 +44,33 @@ func NewSimpleProviderToggle(app *app.App) *SimpleProviderToggle {
 		app:           app,
 		providers:     []opencode.Provider{},
 		selectedIndex: 0,
+		isLoading:     true,
+		loadingFrame:  0,
 	}
 }
 
 func (s *SimpleProviderToggle) Init() tea.Cmd {
-	// Load only authenticated CLI providers
-	s.loadAuthenticatedProviders()
-	return nil
+	// Start loading animation and load providers asynchronously
+	return tea.Batch(
+		s.loadProvidersAsync(),
+		s.tickLoadingAnimation(),
+	)
 }
 
-func (s *SimpleProviderToggle) loadAuthenticatedProviders() {
+func (s *SimpleProviderToggle) tickLoadingAnimation() tea.Cmd {
+	return tea.Tick(80*time.Millisecond, func(t time.Time) tea.Msg {
+		return loadingTickMsg(t)
+	})
+}
+
+func (s *SimpleProviderToggle) loadProvidersAsync() tea.Cmd {
+	return func() tea.Msg {
+		providers := s.loadAuthenticatedProvidersSync()
+		return providersLoadedMsg{providers: providers}
+	}
+}
+
+func (s *SimpleProviderToggle) loadAuthenticatedProvidersSync() []opencode.Provider {
 	ctx := context.Background()
 
 	logModelsDebug("=== SimpleProviderToggle.loadAuthenticatedProviders() START ===")
@@ -50,7 +79,7 @@ func (s *SimpleProviderToggle) loadAuthenticatedProviders() {
 	cliProviders, err := s.app.AuthBridge.GetCLIProviders(ctx)
 	if err != nil {
 		logModelsDebug("ERROR: Failed to load CLI providers: %v", err)
-		return
+		return []opencode.Provider{}
 	}
 
 	logModelsDebug("Got %d CLI providers from GetCLIProviders()", len(cliProviders))
@@ -59,7 +88,7 @@ func (s *SimpleProviderToggle) loadAuthenticatedProviders() {
 	}
 
 	// Convert CLI providers to opencode.Provider format and check authentication
-	s.providers = []opencode.Provider{}
+	providers := []opencode.Provider{}
 	for _, cliProv := range cliProviders {
 		providerID := cliProv.Provider
 		logModelsDebug("Checking provider: %s", providerID)
@@ -94,13 +123,15 @@ func (s *SimpleProviderToggle) loadAuthenticatedProviders() {
 		}
 
 		logModelsDebug("  ADDED %s to providers list with %d models", providerID, len(models))
-		s.providers = append(s.providers, provider)
+		providers = append(providers, provider)
 	}
 
-	logModelsDebug("=== SimpleProviderToggle.loadAuthenticatedProviders() END: %d providers loaded ===", len(s.providers))
-	for i, p := range s.providers {
+	logModelsDebug("=== SimpleProviderToggle.loadAuthenticatedProviders() END: %d providers loaded ===", len(providers))
+	for i, p := range providers {
 		logModelsDebug("  Final Provider %d: ID=%s, Name=%s, ModelsCount=%d", i, p.ID, p.Name, len(p.Models))
 	}
+
+	return providers
 }
 
 // formatModelName formats a model ID into a human-readable name
@@ -133,6 +164,18 @@ func formatProviderName(providerID string) string {
 
 func (s *SimpleProviderToggle) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case providersLoadedMsg:
+		s.isLoading = false
+		s.providers = msg.providers
+		return s, nil
+
+	case loadingTickMsg:
+		if s.isLoading {
+			s.loadingFrame++
+			return s, s.tickLoadingAnimation()
+		}
+		return s, nil
+
 	case tea.WindowSizeMsg:
 		s.width = msg.Width
 		s.height = msg.Height
@@ -206,6 +249,10 @@ func (s *SimpleProviderToggle) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (s *SimpleProviderToggle) View() string {
 	t := theme.CurrentTheme()
 
+	if s.isLoading {
+		return s.renderLoading(t)
+	}
+
 	if len(s.providers) == 0 {
 		return s.renderEmpty(t)
 	}
@@ -254,6 +301,48 @@ func (s *SimpleProviderToggle) View() string {
 	b.WriteString(footerStyle.Render(footer))
 
 	return b.String()
+}
+
+func (s *SimpleProviderToggle) renderLoading(t theme.Theme) string {
+	// Create a pulsing orb animation - simple and clean
+	orbFrames := []string{
+		"◯",   // Empty circle
+		"◔",   // Quarter filled
+		"◑",   // Half filled
+		"◕",   // Three-quarters filled
+		"●",   // Full circle
+		"◕",   // Three-quarters filled
+		"◑",   // Half filled
+		"◔",   // Quarter filled
+	}
+
+	frame := orbFrames[s.loadingFrame%len(orbFrames)]
+
+	// Calculate pulse intensity for color
+	progress := float64(s.loadingFrame%len(orbFrames)) / float64(len(orbFrames))
+	intensity := 0.5 + 0.5*math.Sin(progress*2*math.Pi)
+
+	// Interpolate between dark green and bright cyan (Matrix style)
+	r := uint8(0)
+	g := uint8(float64(0xCC) + (float64(0xFF-0xCC) * intensity))
+	blue := uint8(float64(0x88) + (float64(0xAA-0x88) * intensity))
+	color := fmt.Sprintf("#%02X%02X%02X", r, g, blue)
+
+	orbStyle := lipgloss.NewStyle().
+		Foreground(compat.AdaptiveColor{Light: lipgloss.Color(color), Dark: lipgloss.Color(color)}).
+		Bold(true)
+
+	textStyle := lipgloss.NewStyle().
+		Foreground(t.TextMuted())
+
+	var builder strings.Builder
+	builder.WriteString("\n\n")
+	builder.WriteString(orbStyle.Render(fmt.Sprintf("        %s", frame)))
+	builder.WriteString("\n\n")
+	builder.WriteString(textStyle.Render("   Loading providers..."))
+	builder.WriteString("\n")
+
+	return builder.String()
 }
 
 func (s *SimpleProviderToggle) renderEmpty(t theme.Theme) string {
