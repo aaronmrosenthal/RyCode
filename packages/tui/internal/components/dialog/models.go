@@ -3,7 +3,9 @@ package dialog
 import (
 	"context"
 	"fmt"
+	"os"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/bubbles/v2/key"
@@ -19,6 +21,24 @@ import (
 	"github.com/aaronmrosenthal/rycode/internal/theme"
 	"github.com/aaronmrosenthal/rycode/internal/util"
 )
+
+var modelsDebugLog *os.File
+
+func init() {
+	var err error
+	// Use owner-only permissions (0600) for security
+	modelsDebugLog, err = os.OpenFile("/tmp/rycode-debug.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
+	if err != nil {
+		modelsDebugLog = nil
+	}
+}
+
+func logModelsDebug(format string, args ...interface{}) {
+	if modelsDebugLog != nil {
+		fmt.Fprintf(modelsDebugLog, format+"\n", args...)
+		modelsDebugLog.Sync()
+	}
+}
 
 const (
 	numVisibleModels = 10
@@ -90,7 +110,15 @@ func (m modelItem) Render(
 		Background(t.BackgroundPanel())
 
 	modelPart := itemStyle.Render(m.model.Model.Name)
-	providerPart := providerStyle.Render(fmt.Sprintf(" %s", m.model.Provider.Name))
+
+	// Add model badges (speed, cost indicators)
+	badges := m.getModelBadges()
+	badgePart := ""
+	if badges != "" {
+		badgePart = providerStyle.Render("  " + badges)
+	}
+
+	providerPart := providerStyle.Render("  " + m.model.Provider.Name)
 
 	// Add lock indicator for unauthenticated providers
 	lockPart := ""
@@ -98,11 +126,63 @@ func (m modelItem) Render(
 		lockPart = providerStyle.Render(" [locked]")
 	}
 
-	combinedText := modelPart + providerPart + lockPart
+	combinedText := modelPart + badgePart + providerPart + lockPart
 	return baseStyle.
 		Background(t.BackgroundPanel()).
 		PaddingLeft(1).
 		Render(combinedText)
+}
+
+// getModelBadges returns visual indicators for model characteristics
+func (m modelItem) getModelBadges() string {
+	var badges []string
+	modelID := m.model.Model.ID
+
+	// Speed indicators
+	if containsAny(modelID, []string{"haiku", "flash", "mini", "fast", "lite"}) {
+		badges = append(badges, "⚡")
+	} else if containsAny(modelID, []string{"o1", "o3", "opus"}) {
+		badges = append(badges, "🧠")
+	}
+
+	// Cost indicators (simplified heuristic)
+	if containsAny(modelID, []string{"mini", "haiku", "flash-lite", "fast"}) {
+		badges = append(badges, "💰")
+	} else if containsAny(modelID, []string{"4o", "sonnet", "flash", "2.5", "3.0"}) {
+		badges = append(badges, "💰💰")
+	} else if containsAny(modelID, []string{"4-5", "opus", "o1", "o3", "gpt-5"}) {
+		badges = append(badges, "💰💰💰")
+	}
+
+	// New model indicator (if recently released)
+	if m.model.Model.ReleaseDate != "" {
+		if releaseDate, err := time.Parse("2006-01-02", m.model.Model.ReleaseDate); err == nil {
+			if time.Since(releaseDate) < 60*24*time.Hour { // 60 days
+				badges = append(badges, "🆕")
+			}
+		}
+	}
+
+	if len(badges) == 0 {
+		return ""
+	}
+
+	result := ""
+	for _, badge := range badges {
+		result += badge
+	}
+	return result
+}
+
+// containsAny checks if a string contains any of the given substrings
+func containsAny(s string, substrs []string) bool {
+	s = strings.ToLower(s)
+	for _, substr := range substrs {
+		if strings.Contains(s, strings.ToLower(substr)) {
+			return true
+		}
+	}
+	return false
 }
 
 func (m modelItem) Selectable() bool {
@@ -196,6 +276,16 @@ func (m *modelDialog) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case tea.KeyPressMsg:
+		// Handle number keys (1-9) to jump to provider
+		if len(msg.String()) == 1 && msg.String()[0] >= '1' && msg.String()[0] <= '9' {
+			providerIndex := int(msg.String()[0] - '1')
+			cmd := m.jumpToProvider(providerIndex)
+			if cmd != nil {
+				return m, cmd
+			}
+			return m, nil
+		}
+
 		// Handle 'a' key to start authentication on focused provider
 		if msg.String() == "a" {
 			providerID, providerName := m.getFocusedProvider()
@@ -260,7 +350,9 @@ func (m *modelDialog) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	updatedDialog, cmd := m.searchDialog.Update(msg)
-	m.searchDialog = updatedDialog.(*SearchDialog)
+	if sd, ok := updatedDialog.(*SearchDialog); ok {
+		m.searchDialog = sd
+	}
 	return m, cmd
 }
 
@@ -277,11 +369,59 @@ func (m *modelDialog) View() string {
 		recommendationsView := m.recommendationPanel.View()
 		if recommendationsView != "" {
 			// Stack vertically
-			return listView + "\n\n" + recommendationsView
+			listView = listView + "\n\n" + recommendationsView
 		}
 	}
 
-	return listView
+	// Add persistent shortcut footer
+	footer := m.renderShortcutFooter()
+	return listView + "\n" + footer
+}
+
+// renderShortcutFooter creates a persistent keyboard shortcut hint at the bottom
+func (m *modelDialog) renderShortcutFooter() string {
+	t := theme.CurrentTheme()
+	footerStyle := styles.NewStyle().
+		Foreground(t.TextMuted()).
+		Background(t.BackgroundPanel()).
+		Padding(0, 1)
+
+	var shortcuts []string
+
+	// Context-sensitive shortcuts based on current state
+	if m.searchDialog.GetQuery() == "" {
+		// Grouped view shortcuts
+		shortcuts = append(shortcuts,
+			"Tab:Quick Switch",
+			"1-9:Jump",
+			"d:Auto-detect",
+			"i:Insights",
+		)
+	} else {
+		// Search view shortcuts
+		shortcuts = append(shortcuts,
+			"↑↓:Navigate",
+			"Enter:Select",
+			"Esc:Clear",
+		)
+	}
+
+	// Check if focused item is locked
+	if selectedItem, _ := m.searchDialog.list.GetSelectedItem(); selectedItem != nil {
+		if item, ok := selectedItem.(modelItem); ok && !item.isAuthenticated {
+			shortcuts = append(shortcuts, "a:Auth")
+		}
+	}
+
+	shortcutText := ""
+	for i, s := range shortcuts {
+		if i > 0 {
+			shortcutText += " | "
+		}
+		shortcutText += s
+	}
+
+	return footerStyle.Render("  " + shortcutText)
 }
 
 // showAuthPrompt displays the authentication prompt for a provider
@@ -439,6 +579,49 @@ func (m *modelDialog) getFocusedProvider() (string, string) {
 	return "", ""
 }
 
+// jumpToProvider jumps to the specified provider group (0-indexed)
+func (m *modelDialog) jumpToProvider(providerIndex int) tea.Cmd {
+	// Only works in grouped view (no search query)
+	if m.searchDialog.GetQuery() != "" {
+		return nil
+	}
+
+	// Get all items in the display list
+	items := m.buildDisplayList("")
+
+	// Count provider headers and find the target
+	headerCount := 0
+	targetIndex := -1
+
+	for i, item := range items {
+		if _, isHeader := item.(list.HeaderItem); isHeader {
+			// Skip "Recent" header
+			headerText := string(item.(list.HeaderItem))
+			if !strings.HasPrefix(headerText, "Recent") {
+				if headerCount == providerIndex {
+					targetIndex = i
+					break
+				}
+				headerCount++
+			}
+		}
+	}
+
+	if targetIndex == -1 {
+		// Provider index out of range
+		return toast.NewInfoToast(fmt.Sprintf("Provider %d not found", providerIndex+1))
+	}
+
+	// Jump to the first model under this provider (skip the header)
+	if targetIndex+1 < len(items) {
+		m.searchDialog.list.SetSelectedIndex(targetIndex + 1)
+	} else {
+		m.searchDialog.list.SetSelectedIndex(targetIndex)
+	}
+
+	return nil
+}
+
 func (m *modelDialog) calculateOptimalWidth(models []ModelWithProvider) int {
 	maxWidth := minDialogWidth
 
@@ -517,22 +700,27 @@ func (m *modelDialog) checkProviderAuth(providerID string) *ProviderAuthStatus {
 }
 
 func (m *modelDialog) setupAllModels() {
+	logModelsDebug("=== setupAllModels() called ===")
+
 	// Try to get providers from API first
 	providers, err := m.app.ListProviders(context.Background())
 
 	// DEBUG: Log what we got back
 	if err != nil {
-		fmt.Printf("DEBUG: ListProviders error: %v\n", err)
+		logModelsDebug("DEBUG: ListProviders error: %v", err)
 	} else {
-		fmt.Printf("DEBUG: ListProviders returned %d providers\n", len(providers))
+		logModelsDebug("DEBUG: ListProviders returned %d providers", len(providers))
 		for _, p := range providers {
-			fmt.Printf("DEBUG:   Provider %s (%s) has %d models\n", p.ID, p.Name, len(p.Models))
+			logModelsDebug("DEBUG:   Provider %s (%s) has %d models", p.ID, p.Name, len(p.Models))
+			for modelID := range p.Models {
+				logModelsDebug("DEBUG:     - Model: %s", modelID)
+			}
 		}
 	}
 
 	// If API returns empty or fails, use curated SOTA models
 	if err != nil || len(providers) == 0 {
-		fmt.Println("DEBUG: Falling back to curated SOTA models")
+		logModelsDebug("DEBUG: Falling back to curated SOTA models")
 		providers = m.getCuratedSOTAProviders()
 	}
 
@@ -911,6 +1099,8 @@ func (s *modelDialog) Close() tea.Cmd {
 }
 
 func NewModelDialog(app *app.App) ModelDialog {
+	logModelsDebug("=== NewModelDialog() called ===")
+
 	dialog := &modelDialog{
 		app:                 app,
 		providerAuthStatus:  make(map[string]*ProviderAuthStatus),
@@ -918,7 +1108,9 @@ func NewModelDialog(app *app.App) ModelDialog {
 		showRecommendations: true, // Show by default
 	}
 
+	logModelsDebug("DEBUG: About to call setupAllModels()")
 	dialog.setupAllModels()
+	logModelsDebug("DEBUG: setupAllModels() completed")
 
 	dialog.modal = modal.New(
 		modal.WithTitle("Select Model"),

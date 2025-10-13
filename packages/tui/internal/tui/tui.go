@@ -1265,6 +1265,12 @@ func (a Model) chat() (string, int, int) {
 }
 
 func (a Model) executeCommand(command commands.Command) (tea.Model, tea.Cmd) {
+	// DEBUG: Log ALL command executions
+	if f, err := os.OpenFile("/tmp/rycode-debug.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644); err == nil {
+		fmt.Fprintf(f, "DEBUG: executeCommand called with: %s\n", command.Name)
+		f.Close()
+	}
+
 	var cmd tea.Cmd
 	cmds := []tea.Cmd{
 		util.CmdHandler(commands.CommandExecutedMsg(command)),
@@ -1586,8 +1592,18 @@ func (a Model) executeCommand(command commands.Command) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, util.CmdHandler(chat.ToggleThinkingBlocksMsg{}))
 		cmds = append(cmds, toast.NewInfoToast(message))
 	case commands.ModelListCommand:
+		// DEBUG: Log model list command execution
+		if f, err := os.OpenFile("/tmp/rycode-debug.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644); err == nil {
+			fmt.Fprintf(f, "DEBUG: ModelListCommand executed - creating dialog\n")
+			f.Close()
+		}
 		modelDialog := dialog.NewModelDialog(a.app)
 		a.modal = modelDialog
+		// DEBUG: Log modal set
+		if f, err := os.OpenFile("/tmp/rycode-debug.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644); err == nil {
+			fmt.Fprintf(f, "DEBUG: ModelListCommand - modal set: %v\n", a.modal != nil)
+			f.Close()
+		}
 
 	case commands.AgentListCommand:
 		agentDialog := dialog.NewAgentDialog(a.app)

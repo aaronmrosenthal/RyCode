@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"time"
@@ -74,16 +75,40 @@ type Bridge struct {
 	cliPath string
 }
 
+var debugLog *os.File
+
+func init() {
+	var err error
+	debugLog, err = os.OpenFile("/tmp/rycode-debug.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		debugLog = nil
+	}
+}
+
+func logDebug(format string, args ...interface{}) {
+	if debugLog != nil {
+		fmt.Fprintf(debugLog, format+"\n", args...)
+		debugLog.Sync()
+	}
+}
+
 // NewBridge creates a new authentication bridge
 func NewBridge(projectRoot string) *Bridge {
+	cliPath := filepath.Join(projectRoot, "packages", "rycode", "src", "auth", "cli.ts")
+	logDebug("DEBUG [NewBridge]: projectRoot=%s, cliPath=%s", projectRoot, cliPath)
 	return &Bridge{
-		cliPath: filepath.Join(projectRoot, "packages", "rycode", "src", "auth", "cli.ts"),
+		cliPath: cliPath,
 	}
 }
 
 // runCLI executes a CLI command and returns the result
 func (b *Bridge) runCLI(ctx context.Context, args ...string) ([]byte, error) {
-	cmd := exec.CommandContext(ctx, "bun", append([]string{"run", b.cliPath}, args...)...)
+	fullArgs := append([]string{"run", b.cliPath}, args...)
+	cmd := exec.CommandContext(ctx, "bun", fullArgs...)
+
+	// DEBUG: Log the command being run
+	logDebug("DEBUG [bridge]: Running: bun %v", fullArgs)
+
 	output, err := cmd.Output()
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
@@ -92,13 +117,17 @@ func (b *Bridge) runCLI(ctx context.Context, args ...string) ([]byte, error) {
 				Success bool   `json:"success"`
 				Error   string `json:"error"`
 			}
+			logDebug("DEBUG [bridge]: Command failed with stderr: %s", string(exitErr.Stderr))
 			if jsonErr := json.Unmarshal(exitErr.Stderr, &errorResp); jsonErr == nil {
 				return nil, fmt.Errorf("auth CLI error: %s", errorResp.Error)
 			}
 			return nil, fmt.Errorf("auth CLI failed: %s", string(exitErr.Stderr))
 		}
+		logDebug("DEBUG [bridge]: Command failed: %v", err)
 		return nil, fmt.Errorf("failed to run auth CLI: %w", err)
 	}
+
+	logDebug("DEBUG [bridge]: Got output (%d bytes)", len(output))
 	return output, nil
 }
 

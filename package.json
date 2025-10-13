@@ -33,7 +33,9 @@
     }
   },
   "devDependencies": {
+    "@playwright/test": "1.56.0",
     "husky": "9.1.7",
+    "playwright": "1.56.0",
     "prettier": "3.6.2",
     "sst": "3.17.14",
     "turbo": "2.5.8"

@@ -1,0 +1,61 @@
+#!/usr/bin/expect -f
+# Test script for RyCode TUI model selector
+
+set timeout 10
+
+# Clear debug log
+exec rm -f /tmp/rycode-debug.log
+
+puts "Starting TUI test with expect...\n"
+
+# Start the TUI
+spawn ./bin/rycode
+
+# Wait for TUI to initialize
+sleep 2
+
+puts "Sending Ctrl+X (leader key)..."
+
+# Send Ctrl+X (leader key)
+send "\x18"
+
+sleep 0.3
+
+puts "Sending 'm' to open models..."
+
+# Send 'm' for models command
+send "m"
+
+# Wait for modal to render
+sleep 2
+
+puts "Model selector should now be open!"
+
+puts "\nPressing Escape to close..."
+
+# Press Escape to close
+send "\x1b"
+
+sleep 0.5
+
+puts "Sending Ctrl+C to quit..."
+
+# Send Ctrl+C to quit
+send "\x03"
+
+# Wait for exit
+expect eof
+
+puts "\n=== Test Complete ===\n"
+
+# Read and display debug log
+puts "\n=== Debug Log ===\n"
+if {[file exists "/tmp/rycode-debug.log"]} {
+    set fp [open "/tmp/rycode-debug.log" r]
+    set file_data [read $fp]
+    close $fp
+    puts $file_data
+} else {
+    puts "WARNING: Debug log was not created!"
+}
+puts "=== End Debug Log ===\n"

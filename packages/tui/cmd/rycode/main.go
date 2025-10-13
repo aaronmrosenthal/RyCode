@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log/slog"
 	"os"
@@ -23,6 +24,14 @@ import (
 )
 
 var Version = "dev"
+
+func init() {
+	// Log startup to debug file
+	if f, err := os.OpenFile("/tmp/rycode-debug.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644); err == nil {
+		fmt.Fprintf(f, "=== RYCODE TUI STARTED ===\n")
+		f.Close()
+	}
+}
 
 func main() {
 	version := Version
