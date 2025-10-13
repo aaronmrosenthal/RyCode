@@ -1314,14 +1314,14 @@ func (a *App) ListProviders(ctx context.Context) ([]opencode.Provider, error) {
 		apiProviders = providers.Providers
 	}
 
-	// Get CLI providers and merge with API providers
+	// ALWAYS try to get CLI providers and merge them
 	cliProviders, err := a.AuthBridge.GetCLIProviders(ctx)
-	if err != nil || len(cliProviders) == 0 {
-		// If CLI providers fail, return API providers only (or empty)
-		if len(apiProviders) == 0 {
-			return []opencode.Provider{}, nil
+	if err != nil {
+		// CLI detection failed - just use API providers
+		if len(apiProviders) > 0 {
+			return apiProviders, nil
 		}
-		return apiProviders, nil
+		return nil, fmt.Errorf("failed to get providers: API returned %d, CLI error: %w", len(apiProviders), err)
 	}
 
 	// Convert CLI providers to opencode.Provider format

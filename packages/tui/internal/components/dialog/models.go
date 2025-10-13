@@ -520,8 +520,19 @@ func (m *modelDialog) setupAllModels() {
 	// Try to get providers from API first
 	providers, err := m.app.ListProviders(context.Background())
 
+	// DEBUG: Log what we got back
+	if err != nil {
+		fmt.Printf("DEBUG: ListProviders error: %v\n", err)
+	} else {
+		fmt.Printf("DEBUG: ListProviders returned %d providers\n", len(providers))
+		for _, p := range providers {
+			fmt.Printf("DEBUG:   Provider %s (%s) has %d models\n", p.ID, p.Name, len(p.Models))
+		}
+	}
+
 	// If API returns empty or fails, use curated SOTA models
 	if err != nil || len(providers) == 0 {
+		fmt.Println("DEBUG: Falling back to curated SOTA models")
 		providers = m.getCuratedSOTAProviders()
 	}
 
