@@ -40,6 +40,8 @@ type SimpleProviderToggle struct {
 	isLoading       bool
 	loadError       error
 	cortexRenderer  *splash.CortexRenderer
+	isSwitching     bool      // True when switching providers (show cortex)
+	switchStartTime time.Time // When the switch animation started
 }
 
 // NewSimpleProviderToggle creates a new simple provider toggle
@@ -255,6 +257,19 @@ func (s *SimpleProviderToggle) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Torus animation advances automatically in Render()
 			return s, s.tickLoadingAnimation()
 		}
+
+		// Check if we're switching providers and should stop the animation
+		if s.isSwitching {
+			elapsed := time.Since(s.switchStartTime)
+			if elapsed >= 500*time.Millisecond {
+				// Animation complete
+				s.isSwitching = false
+				return s, nil
+			}
+			// Continue animation
+			return s, s.tickLoadingAnimation()
+		}
+
 		return s, nil
 
 	case tea.WindowSizeMsg:
@@ -268,11 +283,16 @@ func (s *SimpleProviderToggle) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch {
 		case key.Matches(msg, key.NewBinding(key.WithKeys("tab"))):
 			logModelsDebug("✓ Tab key MATCHED!")
-			// Tab: cycle to next provider
+			// Tab: cycle to next provider with cortex animation
 			if len(s.providers) > 0 {
 				oldIndex := s.selectedIndex
 				s.selectedIndex = (s.selectedIndex + 1) % len(s.providers)
 				logModelsDebug("Tab cycling: %d -> %d (provider: %s)", oldIndex, s.selectedIndex, s.providers[s.selectedIndex].ID)
+
+				// Show cortex animation for 500ms
+				s.isSwitching = true
+				s.switchStartTime = time.Now()
+				return s, s.tickLoadingAnimation()
 			} else {
 				logModelsDebug("Cannot cycle: no providers loaded")
 			}
@@ -280,7 +300,7 @@ func (s *SimpleProviderToggle) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case key.Matches(msg, key.NewBinding(key.WithKeys("shift+tab"))):
 			logModelsDebug("✓ Shift+Tab key MATCHED!")
-			// Shift+Tab: cycle to previous provider
+			// Shift+Tab: cycle to previous provider with cortex animation
 			if len(s.providers) > 0 {
 				oldIndex := s.selectedIndex
 				s.selectedIndex--
@@ -288,6 +308,11 @@ func (s *SimpleProviderToggle) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					s.selectedIndex = len(s.providers) - 1
 				}
 				logModelsDebug("Shift+Tab cycling: %d -> %d (provider: %s)", oldIndex, s.selectedIndex, s.providers[s.selectedIndex].ID)
+
+				// Show cortex animation for 500ms
+				s.isSwitching = true
+				s.switchStartTime = time.Now()
+				return s, s.tickLoadingAnimation()
 			} else {
 				logModelsDebug("Cannot cycle: no providers loaded")
 			}
@@ -359,6 +384,11 @@ func (s *SimpleProviderToggle) View() string {
 
 	if s.isLoading {
 		return s.renderLoading(t)
+	}
+
+	// Show cortex when switching providers
+	if s.isSwitching {
+		return s.renderSwitching(t)
 	}
 
 	if s.loadError != nil {
@@ -438,6 +468,42 @@ func (s *SimpleProviderToggle) renderLoading(t theme.Theme) string {
 
 	builder.WriteString("\n")
 	builder.WriteString(textStyle.Render("Loading providers..."))
+	builder.WriteString("\n")
+
+	return builder.String()
+}
+
+func (s *SimpleProviderToggle) renderSwitching(t theme.Theme) string {
+	textStyle := lipgloss.NewStyle().
+		Foreground(t.TextMuted()).
+		Align(lipgloss.Center)
+
+	var builder strings.Builder
+	builder.WriteString("\n")
+
+	// Render the 3D spinning torus
+	torusOutput := s.cortexRenderer.Render()
+
+	// Center the torus (use default width if not set yet)
+	width := s.width
+	if width == 0 {
+		width = 80 // Default terminal width
+	}
+	torusStyle := lipgloss.NewStyle().
+		Align(lipgloss.Center).
+		Width(width)
+	builder.WriteString(torusStyle.Render(torusOutput))
+
+	builder.WriteString("\n")
+
+	// Show which provider we're switching to
+	if s.selectedIndex < len(s.providers) {
+		providerName := getProviderDisplayName(s.providers[s.selectedIndex].ID)
+		builder.WriteString(textStyle.Render(fmt.Sprintf("Switching to %s...", providerName)))
+	} else {
+		builder.WriteString(textStyle.Render("Switching provider..."))
+	}
+
 	builder.WriteString("\n")
 
 	return builder.String()
