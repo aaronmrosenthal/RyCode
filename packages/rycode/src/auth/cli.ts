@@ -37,9 +37,20 @@ async function main() {
           throw new Error('Provider name required')
         }
 
+        // First check stored credentials
         const status = await authManager.getStatus(provider)
-        const isAuthenticated = status !== null && status.authenticated
-        const models = status?.models.length || 0
+        let isAuthenticated = status !== null && status.authenticated
+        let models = status?.models.length || 0
+
+        // If not authenticated via stored credentials, check CLI providers
+        if (!isAuthenticated) {
+          const cliProviders = await authManager.getAvailableProvidersWithModels()
+          const cliProvider = cliProviders.find(p => p.provider === provider)
+          if (cliProvider) {
+            isAuthenticated = true
+            models = cliProvider.models.length
+          }
+        }
 
         response = {
           success: true,
