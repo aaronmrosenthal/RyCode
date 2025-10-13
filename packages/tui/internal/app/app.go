@@ -388,24 +388,34 @@ func (a *App) CycleAuthenticatedProviders(forward bool) (*App, tea.Cmd) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	// Get authentication status for all providers
-	status, err := a.AuthBridge.GetAuthStatus(ctx)
+	// Get authenticated CLI providers
+	cliProviders, err := a.AuthBridge.GetCLIProviders(ctx)
 	if err != nil {
-		return a, toast.NewErrorToast("Failed to get provider status")
+		return a, toast.NewErrorToast("Failed to get CLI providers")
 	}
 
-	if len(status.Authenticated) == 0 {
+	// Filter to only authenticated providers
+	authenticatedProviders := []string{}
+	for _, cliProv := range cliProviders {
+		authStatus, err := a.AuthBridge.CheckAuthStatus(ctx, cliProv.Provider)
+		if err != nil || !authStatus.IsAuthenticated {
+			continue
+		}
+		authenticatedProviders = append(authenticatedProviders, cliProv.Provider)
+	}
+
+	if len(authenticatedProviders) == 0 {
 		return a, toast.NewInfoToast("No authenticated providers. Press 'd' in /model to auto-detect.")
 	}
 
-	if len(status.Authenticated) == 1 {
+	if len(authenticatedProviders) == 1 {
 		return a, toast.NewInfoToast("Only one provider authenticated")
 	}
 
 	// Find current provider index in authenticated list
 	currentIndex := -1
-	for i, prov := range status.Authenticated {
-		if a.Provider != nil && prov.ID == a.Provider.ID {
+	for i, provID := range authenticatedProviders {
+		if a.Provider != nil && provID == a.Provider.ID {
 			currentIndex = i
 			break
 		}
@@ -415,28 +425,28 @@ func (a *App) CycleAuthenticatedProviders(forward bool) (*App, tea.Cmd) {
 	nextIndex := 0
 	if currentIndex != -1 {
 		if forward {
-			nextIndex = (currentIndex + 1) % len(status.Authenticated)
+			nextIndex = (currentIndex + 1) % len(authenticatedProviders)
 		} else {
-			nextIndex = (currentIndex - 1 + len(status.Authenticated)) % len(status.Authenticated)
+			nextIndex = (currentIndex - 1 + len(authenticatedProviders)) % len(authenticatedProviders)
 		}
 	}
 
-	// Get next provider's info
-	nextProviderInfo := status.Authenticated[nextIndex]
+	// Get next provider ID
+	nextProviderID := authenticatedProviders[nextIndex]
 
-	// Find the actual provider and its default model
+	// Find the actual provider in a.Providers
 	var nextProvider *opencode.Provider
 	var nextModel *opencode.Model
 
 	for i := range a.Providers {
-		if a.Providers[i].ID == nextProviderInfo.ID {
+		if a.Providers[i].ID == nextProviderID {
 			nextProvider = &a.Providers[i]
 			break
 		}
 	}
 
 	if nextProvider == nil {
-		return a, toast.NewErrorToast(fmt.Sprintf("Provider %s not found", nextProviderInfo.Name))
+		return a, toast.NewErrorToast(fmt.Sprintf("Provider %s not found in providers list", nextProviderID))
 	}
 
 	// Try to find the most recently used model for this provider
