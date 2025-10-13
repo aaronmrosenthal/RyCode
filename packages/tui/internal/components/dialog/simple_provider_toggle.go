@@ -524,34 +524,45 @@ func (s *SimpleProviderToggle) getProviderColor(providerID string) compat.Adapti
 
 // getDefaultModelForProvider returns the best/default model for a provider (deterministic)
 func (s *SimpleProviderToggle) getDefaultModelForProvider(provider opencode.Provider) opencode.Model {
-	// Priority order for each provider's models
+	// Priority order for each provider's models (latest SOTA models as of 2025)
 	priorities := map[string][]string{
 		"claude": {
-			"claude-sonnet-4-5-20250929",
-			"claude-sonnet-4-5",
-			"claude-sonnet-3-5-20241022",
-			"claude-sonnet-3-5",
+			"claude-opus-4-5",                // Latest Opus 4.5 (plan/complex reasoning)
+			"claude-sonnet-4-5-20250929",     // Latest Sonnet 4.5 dated version
+			"claude-sonnet-4-5",              // Latest Sonnet 4.5 (main coding model)
+			"claude-sonnet-4-5-1m",           // Sonnet 4.5 with 1M context (failover)
+			"claude-sonnet-3-5-20241022",     // Previous Sonnet 3.5
+			"claude-sonnet-3-5",              // Legacy Sonnet 3.5
 		},
 		"codex": {
-			"gpt-4o",
-			"gpt-4o-mini",
-			"gpt-4-turbo",
-			"gpt-4",
+			"gpt-5-codex",                    // GPT-5 specialized codex model
+			"codex-gpt-5",                    // Alternative GPT-5 codex naming
+			"gpt-5",                          // GPT-5 base model
+			"gpt-4o",                         // GPT-4o (current best non-5)
+			"gpt-4o-mini",                    // GPT-4o mini
+			"gpt-4-turbo",                    // GPT-4 turbo
+			"gpt-4",                          // GPT-4 base
 		},
 		"gemini": {
-			"gemini-2.0-flash-exp",
-			"gemini-exp-1206",
-			"gemini-pro-1.5",
-			"gemini-pro",
+			"gemini-pro-2.5",                 // Gemini Pro 2.5 (latest)
+			"gemini-2.5-flash",               // Gemini 2.5 Flash (failover)
+			"gemini-flash-2.5",               // Alternative Flash 2.5 naming
+			"gemini-2.0-flash-exp",           // Gemini 2.0 Flash (current)
+			"gemini-exp-1206",                // Experimental release
+			"gemini-pro-1.5",                 // Pro 1.5
+			"gemini-pro",                     // Legacy Pro
 		},
 		"grok": {
-			"grok-beta",
-			"grok-2-1212",
+			"grok-beta",                      // Grok beta (latest)
+			"grok-2-1212",                    // Grok 2 dated release
 		},
 		"qwen": {
-			"qwen-max",
-			"qwen-plus",
-			"qwen-turbo",
+			"qwen-coder-3",                   // Qwen Coder 3 (specialized coding model)
+			"qwen-coder-3.0",                 // Alternative Qwen Coder 3 naming
+			"qwen3-coder",                    // Alternative naming format
+			"qwen-max",                       // Qwen Max (general purpose)
+			"qwen-plus",                      // Qwen Plus
+			"qwen-turbo",                     // Qwen Turbo
 		},
 	}
 
@@ -597,13 +608,13 @@ func (s *SimpleProviderToggle) renderProviderModels(provider opencode.Provider, 
 		modelIDs = append(modelIDs, id)
 	}
 
-	// Sort models using the same priority system as getDefaultModelForProvider
+	// Sort models using the same priority system as getDefaultModelForProvider (latest SOTA models as of 2025)
 	priorities := map[string][]string{
-		"claude":  {"claude-sonnet-4-5-20250929", "claude-sonnet-4-5", "claude-sonnet-3-5-20241022", "claude-sonnet-3-5"},
-		"codex":   {"gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-4"},
-		"gemini":  {"gemini-2.0-flash-exp", "gemini-exp-1206", "gemini-pro-1.5", "gemini-pro"},
+		"claude":  {"claude-opus-4-5", "claude-sonnet-4-5-20250929", "claude-sonnet-4-5", "claude-sonnet-4-5-1m", "claude-sonnet-3-5-20241022", "claude-sonnet-3-5"},
+		"codex":   {"gpt-5-codex", "codex-gpt-5", "gpt-5", "gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-4"},
+		"gemini":  {"gemini-pro-2.5", "gemini-2.5-flash", "gemini-flash-2.5", "gemini-2.0-flash-exp", "gemini-exp-1206", "gemini-pro-1.5", "gemini-pro"},
 		"grok":    {"grok-beta", "grok-2-1212"},
-		"qwen":    {"qwen-max", "qwen-plus", "qwen-turbo"},
+		"qwen":    {"qwen-coder-3", "qwen-coder-3.0", "qwen3-coder", "qwen-max", "qwen-plus", "qwen-turbo"},
 	}
 
 	priorityList := priorities[provider.ID]
