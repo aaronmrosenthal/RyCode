@@ -1,33 +1,12 @@
 package dialog
 
 import (
-	"fmt"
-	"os"
-
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/aaronmrosenthal/rycode-sdk-go"
 	"github.com/aaronmrosenthal/rycode/internal/app"
 	"github.com/aaronmrosenthal/rycode/internal/components/modal"
 	"github.com/aaronmrosenthal/rycode/internal/layout"
 )
-
-var modelsDebugLog *os.File
-
-func init() {
-	var err error
-	// Use owner-only permissions (0600) for security
-	modelsDebugLog, err = os.OpenFile("/tmp/rycode-debug.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
-	if err != nil {
-		modelsDebugLog = nil
-	}
-}
-
-func logModelsDebug(format string, args ...interface{}) {
-	if modelsDebugLog != nil {
-		fmt.Fprintf(modelsDebugLog, format+"\n", args...)
-		modelsDebugLog.Sync()
-	}
-}
 
 // ModelDialog interface for the model selection dialog
 type ModelDialog interface {
@@ -40,7 +19,6 @@ type modelDialog struct {
 	height       int
 	modal        *modal.Modal
 	simpleToggle *SimpleProviderToggle
-	dialogWidth  int
 }
 
 type ModelWithProvider struct {
@@ -82,17 +60,20 @@ func (s *modelDialog) Close() tea.Cmd {
 }
 
 func NewModelDialog(app *app.App) ModelDialog {
-	logModelsDebug("=== NewModelDialog() called ===")
+	simpleToggle := NewSimpleProviderToggle(app)
+
+	// Calculate dynamic width based on provider count and names
+	// Will be recalculated after providers load, but start with reasonable default
+	dialogWidth := 80
 
 	dialog := &modelDialog{
 		app:          app,
-		simpleToggle: NewSimpleProviderToggle(app),
-		dialogWidth:  60,
+		simpleToggle: simpleToggle,
 	}
 
 	dialog.modal = modal.New(
 		modal.WithTitle(""),
-		modal.WithMaxWidth(dialog.dialogWidth+4),
+		modal.WithMaxWidth(dialogWidth+4), // Add padding for modal border
 	)
 
 	return dialog

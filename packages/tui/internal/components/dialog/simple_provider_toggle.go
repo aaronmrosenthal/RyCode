@@ -3,6 +3,7 @@ package dialog
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sort"
 	"strings"
 	"time"
@@ -16,7 +17,7 @@ import (
 	"github.com/aaronmrosenthal/rycode/internal/app"
 	"github.com/aaronmrosenthal/rycode/internal/auth"
 	"github.com/aaronmrosenthal/rycode/internal/components/modal"
-	"github.com/aaronmrosenthal/rycode/internal/splash"
+	"github.com/aaronmrosenthal/rycode/internal/components/splash"
 	"github.com/aaronmrosenthal/rycode/internal/theme"
 	"github.com/aaronmrosenthal/rycode/internal/util"
 )
@@ -68,7 +69,7 @@ func (s *SimpleProviderToggle) Init() tea.Cmd {
 }
 
 func (s *SimpleProviderToggle) tickLoadingAnimation() tea.Cmd {
-	return tea.Tick(50*time.Millisecond, func(t time.Time) tea.Msg {
+	return tea.Tick(splash.CortexAnimationTickInterval, func(t time.Time) tea.Msg {
 		return loadingTickMsg(t)
 	})
 }
@@ -85,18 +86,18 @@ func (s *SimpleProviderToggle) loadAuthenticatedProvidersSync() ([]opencode.Prov
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	logModelsDebug("=== SimpleProviderToggle.loadAuthenticatedProviders() START ===")
+	slog.Debug("loading authenticated providers")
 
 	// Get CLI providers directly from AuthBridge (doesn't require full client)
 	cliProviders, err := s.app.AuthBridge.GetCLIProviders(ctx)
 	if err != nil {
-		logModelsDebug("ERROR: Failed to load CLI providers: %v", err)
+		slog.Error("failed to load CLI providers", "error", err)
 		return nil, fmt.Errorf("failed to load CLI providers: %w", err)
 	}
 
-	logModelsDebug("Got %d CLI providers from GetCLIProviders()", len(cliProviders))
+	slog.Debug("loaded CLI providers", "count", len(cliProviders))
 	for i, p := range cliProviders {
-		logModelsDebug("  CLI Provider %d: ID=%s, Models=%d", i, p.Provider, len(p.Models))
+		slog.Debug("CLI provider details", "index", i, "id", p.Provider, "models", len(p.Models))
 	}
 
 	// Check authentication in parallel for faster loading (reduces from ~4-5s to ~1s)
@@ -110,7 +111,7 @@ func (s *SimpleProviderToggle) loadAuthenticatedProvidersSync() ([]opencode.Prov
 	resultChan := make(chan authCheckResult, len(cliProviders))
 	for _, cliProv := range cliProviders {
 		go func(providerID string, models []string) {
-			logModelsDebug("Checking provider: %s", providerID)
+			slog.Debug("checking provider auth", "provider", providerID)
 			authStatus, err := s.app.AuthBridge.CheckAuthStatus(ctx, providerID)
 
 			resultChan <- authCheckResult{
@@ -128,15 +129,17 @@ func (s *SimpleProviderToggle) loadAuthenticatedProvidersSync() ([]opencode.Prov
 		result := <-resultChan
 
 		if result.err != nil {
-			logModelsDebug("  Auth check ERROR for %s: %v", result.providerID, result.err)
+			slog.Warn("auth check failed", "provider", result.providerID, "error", result.err)
 			continue
 		}
 
-		logModelsDebug("  Auth status for %s: IsAuthenticated=%v, ModelsCount=%d",
-			result.providerID, result.authStatus.IsAuthenticated, result.authStatus.ModelsCount)
+		slog.Debug("auth status checked",
+			"provider", result.providerID,
+			"authenticated", result.authStatus.IsAuthenticated,
+			"models_count", result.authStatus.ModelsCount)
 
 		if !result.authStatus.IsAuthenticated {
-			logModelsDebug("  SKIPPED %s: not authenticated", result.providerID)
+			slog.Debug("skipping unauthenticated provider", "provider", result.providerID)
 			continue
 		}
 
@@ -155,13 +158,13 @@ func (s *SimpleProviderToggle) loadAuthenticatedProvidersSync() ([]opencode.Prov
 			Models: models,
 		}
 
-		logModelsDebug("  ADDED %s to providers list with %d models", result.providerID, len(models))
+		slog.Debug("added provider to list", "provider", result.providerID, "models_count", len(models))
 		providers = append(providers, provider)
 	}
 
-	logModelsDebug("=== SimpleProviderToggle.loadAuthenticatedProviders() END: %d providers loaded ===", len(providers))
+	slog.Debug("providers loading complete", "total_providers", len(providers))
 	for i, p := range providers {
-		logModelsDebug("  Final Provider %d: ID=%s, Name=%s, ModelsCount=%d", i, p.ID, p.Name, len(p.Models))
+		slog.Debug("final provider", "index", i, "id", p.ID, "name", p.Name, "models_count", len(p.Models))
 	}
 
 	// Sort providers by priority: Claude, Codex, Gemini, Grok, Qwen
@@ -240,31 +243,6 @@ func getProviderDisplayName(providerID string) string {
 	return providerID
 }
 
-// getProviderBrandColorRGB returns the provider's brand color as RGB
-func getProviderBrandColorRGB(providerID string) splash.RGB {
-	switch providerID {
-	case "anthropic", "claude":
-		// Claude brand: warm orange/peach #E07856
-		return splash.RGB{R: 224, G: 120, B: 86}
-	case "google", "gemini":
-		// Gemini brand: blue-to-purple gradient (using mid-purple) #8B7FD8
-		return splash.RGB{R: 139, G: 127, B: 216}
-	case "openai", "codex":
-		// OpenAI/Codex brand: teal/cyan #10A37F
-		return splash.RGB{R: 16, G: 163, B: 127}
-	case "xai", "grok":
-		// Grok/xAI brand: red #FF4444
-		return splash.RGB{R: 255, G: 68, B: 68}
-	case "qwen":
-		// Qwen brand: golden orange (from badge) #FFA726
-		return splash.RGB{R: 255, G: 167, B: 38}
-	default:
-		// Default: cyan #00FFFF
-		return splash.RGB{R: 0, G: 255, B: 255}
-	}
-}
-
-
 func (s *SimpleProviderToggle) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case providersLoadedMsg:
@@ -275,6 +253,13 @@ func (s *SimpleProviderToggle) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		s.providers = msg.providers
 		s.loadError = nil
+
+		// Log dynamic width calculation for visibility
+		requiredWidth := s.CalculateRequiredWidth()
+		slog.Debug("providers loaded, calculated required width",
+			"providers", len(s.providers),
+			"width", requiredWidth)
+
 		return s, nil
 
 	case loadingTickMsg:
@@ -286,33 +271,17 @@ func (s *SimpleProviderToggle) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Fade animation when switching providers
 		if s.isSwitching {
 			elapsed := time.Since(s.switchStartTime)
-			totalDuration := 1200 * time.Millisecond // Total animation: 300ms fade-in + 600ms hold + 300ms fade-out
-			fadeInDuration := 300 * time.Millisecond
-			fadeOutStart := 900 * time.Millisecond
+			opacity, finished := splash.CalculateAnimationOpacity(elapsed, 1.0)
 
-			if elapsed < fadeInDuration {
-				// Fade in (0.5 -> 1.0 over 300ms) - starts from initial 0.5 opacity
-				fadeProgress := float64(elapsed) / float64(fadeInDuration)
-				s.fadeOpacity = 0.5 + (0.5 * fadeProgress) // Interpolate from 0.5 to 1.0
-				logModelsDebug("Fade IN: opacity=%.2f (progress=%.2f)", s.fadeOpacity, fadeProgress)
-			} else if elapsed < fadeOutStart {
-				// Hold at full opacity for 600ms (long enough to see the cortex)
-				s.fadeOpacity = 1.0
-				logModelsDebug("Hold: opacity=%.2f", s.fadeOpacity)
-			} else if elapsed < totalDuration {
-				// Fade out (1.0 -> 0.0 over 300ms)
-				fadeOutElapsed := elapsed - fadeOutStart
-				s.fadeOpacity = 1.0 - (float64(fadeOutElapsed) / float64(totalDuration-fadeOutStart))
-				logModelsDebug("Fade OUT: opacity=%.2f", s.fadeOpacity)
-			} else {
+			if finished {
 				// Animation complete
 				s.isSwitching = false
 				s.fadeOpacity = 0.0
-				logModelsDebug("Animation COMPLETE")
+				slog.Debug("modal provider switch animation finished", "duration", elapsed)
 				return s, nil
 			}
 
-			// Continue animation
+			s.fadeOpacity = opacity
 			return s, s.tickLoadingAnimation()
 		}
 
@@ -324,36 +293,37 @@ func (s *SimpleProviderToggle) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return s, nil
 
 	case tea.KeyPressMsg:
-		logModelsDebug("=== SimpleProviderToggle KeyPress: %s ===", msg.String())
-		logModelsDebug("Current selectedIndex: %d, Total providers: %d", s.selectedIndex, len(s.providers))
+		slog.Debug("modal key press", "key", msg.String(), "selected_index", s.selectedIndex, "providers_count", len(s.providers))
 		switch {
 		case key.Matches(msg, key.NewBinding(key.WithKeys("tab"))):
-			logModelsDebug("✓ Tab key MATCHED!")
 			// Tab: cycle to next provider with cortex fade animation
 			if len(s.providers) > 0 {
 				oldIndex := s.selectedIndex
 				s.selectedIndex = (s.selectedIndex + 1) % len(s.providers)
 				selectedProvider := s.providers[s.selectedIndex]
-				logModelsDebug("Tab cycling: %d -> %d (provider: %s)", oldIndex, s.selectedIndex, selectedProvider.ID)
+				slog.Debug("modal tab cycle", "from", oldIndex, "to", s.selectedIndex, "provider", selectedProvider.ID)
 
 				// Set cortex to provider's brand color
-				brandColor := getProviderBrandColorRGB(selectedProvider.ID)
+				brandColor := splash.GetProviderBrandColor(selectedProvider.ID)
 				s.cortexRenderer.SetBrandColor(brandColor)
-				logModelsDebug("✓ Set cortex brand color: R=%d G=%d B=%d", brandColor.R, brandColor.G, brandColor.B)
+				slog.Debug("cortex brand color set",
+					"provider", selectedProvider.ID,
+					"color", fmt.Sprintf("#%02X%02X%02X", brandColor.R, brandColor.G, brandColor.B))
 
 				// Start cortex fade animation (1.2s total: fade-in, hold, fade-out)
 				s.isSwitching = true
 				s.switchStartTime = time.Now()
-				s.fadeOpacity = 0.5 // Start semi-visible so it's immediately noticeable
-				logModelsDebug("✓ SWITCHING ANIMATION ACTIVATED - starting fade-in")
+				s.fadeOpacity = 1.0 // Start at FULL visibility for instant feedback
+				slog.Debug("modal switch animation started", "opacity", s.fadeOpacity)
 				return s, s.tickLoadingAnimation()
 			} else {
-				logModelsDebug("Cannot cycle: no providers loaded")
+				slog.Debug("tab ignored - no providers loaded")
 			}
+			// Consume the Tab key even if providers aren't loaded
+			// This prevents the main TUI from cycling providers in the background
 			return s, nil
 
 		case key.Matches(msg, key.NewBinding(key.WithKeys("shift+tab"))):
-			logModelsDebug("✓ Shift+Tab key MATCHED!")
 			// Shift+Tab: cycle to previous provider with cortex fade animation
 			if len(s.providers) > 0 {
 				oldIndex := s.selectedIndex
@@ -362,22 +332,26 @@ func (s *SimpleProviderToggle) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					s.selectedIndex = len(s.providers) - 1
 				}
 				selectedProvider := s.providers[s.selectedIndex]
-				logModelsDebug("Shift+Tab cycling: %d -> %d (provider: %s)", oldIndex, s.selectedIndex, selectedProvider.ID)
+				slog.Debug("modal shift+tab cycle", "from", oldIndex, "to", s.selectedIndex, "provider", selectedProvider.ID)
 
 				// Set cortex to provider's brand color
-				brandColor := getProviderBrandColorRGB(selectedProvider.ID)
+				brandColor := splash.GetProviderBrandColor(selectedProvider.ID)
 				s.cortexRenderer.SetBrandColor(brandColor)
-				logModelsDebug("✓ Set cortex brand color: R=%d G=%d B=%d", brandColor.R, brandColor.G, brandColor.B)
+				slog.Debug("cortex brand color set",
+					"provider", selectedProvider.ID,
+					"color", fmt.Sprintf("#%02X%02X%02X", brandColor.R, brandColor.G, brandColor.B))
 
 				// Start cortex fade animation (1.2s total: fade-in, hold, fade-out)
 				s.isSwitching = true
 				s.switchStartTime = time.Now()
-				s.fadeOpacity = 0.5 // Start semi-visible so it's immediately noticeable
-				logModelsDebug("✓ SWITCHING ANIMATION ACTIVATED - starting fade-in")
+				s.fadeOpacity = 1.0 // Start at FULL visibility for instant feedback
+				slog.Debug("modal switch animation started", "opacity", s.fadeOpacity)
 				return s, s.tickLoadingAnimation()
 			} else {
-				logModelsDebug("Cannot cycle: no providers loaded")
+				slog.Debug("shift+tab ignored - no providers loaded")
 			}
+			// Consume the Shift+Tab key even if providers aren't loaded
+			// This prevents the main TUI from cycling providers in the background
 			return s, nil
 
 		case key.Matches(msg, key.NewBinding(key.WithKeys("enter"))):
@@ -400,7 +374,7 @@ func (s *SimpleProviderToggle) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case key.Matches(msg, key.NewBinding(key.WithKeys("esc"))):
 			// Esc: close without selecting
-			logModelsDebug("✓ Esc key MATCHED - closing modal")
+			slog.Debug("modal closing via esc key")
 			return s, util.CmdHandler(modal.CloseModalMsg{})
 
 		case key.Matches(msg, key.NewBinding(key.WithKeys("r"))):
@@ -422,7 +396,7 @@ func (s *SimpleProviderToggle) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				provider := s.providers[index]
 				selectedModel := s.getDefaultModelForProvider(provider)
 
-				logModelsDebug("Direct selection: index=%d, provider=%s", index, provider.ID)
+				slog.Debug("modal direct selection", "index", index, "provider", provider.ID)
 				return s, tea.Sequence(
 					util.CmdHandler(modal.CloseModalMsg{}),
 					util.CmdHandler(app.ModelSelectedMsg{
@@ -434,7 +408,7 @@ func (s *SimpleProviderToggle) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return s, nil
 
 		default:
-			logModelsDebug("Key not matched by any case: %s", msg.String())
+			slog.Debug("modal key not handled", "key", msg.String())
 		}
 	}
 
@@ -444,15 +418,12 @@ func (s *SimpleProviderToggle) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (s *SimpleProviderToggle) View() string {
 	t := theme.CurrentTheme()
 
-	logModelsDebug("View() called - isLoading=%v, isSwitching=%v", s.isLoading, s.isSwitching)
-
 	if s.isLoading {
 		return s.renderLoading(t)
 	}
 
 	// Show cortex when switching providers
 	if s.isSwitching {
-		logModelsDebug("✓ Rendering SWITCHING view with cortex!")
 		return s.renderSwitching(t)
 	}
 
@@ -852,4 +823,45 @@ func (s *SimpleProviderToggle) renderProviderModels(provider opencode.Provider, 
 func (s *SimpleProviderToggle) SetSize(width, height int) {
 	s.width = width
 	s.height = height
+}
+
+// CalculateRequiredWidth calculates the minimum modal width needed to fit all provider chips
+func (s *SimpleProviderToggle) CalculateRequiredWidth() int {
+	if len(s.providers) == 0 {
+		return 60 // Default minimum width
+	}
+
+	totalWidth := 0
+	for i, provider := range s.providers {
+		// Calculate chip content: [number] DisplayName (modelCount)
+		// Example: "[1] Claude (6)" = 14 chars
+		displayName := getProviderDisplayName(provider.ID)
+		chipText := fmt.Sprintf("[%d] %s (%d)", i+1, displayName, len(provider.Models))
+
+		// Add border (2 chars) + padding (4 chars) = 6 extra chars
+		chipWidth := len(chipText) + 6
+		totalWidth += chipWidth
+
+		// Add spacing between chips (2 spaces)
+		if i < len(s.providers)-1 {
+			totalWidth += 2
+		}
+	}
+
+	// Add container padding (4 chars on sides) + title padding (4 chars)
+	totalWidth += 8
+
+	// Ensure minimum width of 60 and maximum of 120
+	if totalWidth < 60 {
+		totalWidth = 60
+	}
+	if totalWidth > 120 {
+		totalWidth = 120
+	}
+
+	slog.Debug("calculated modal width",
+		"providers", len(s.providers),
+		"required_width", totalWidth)
+
+	return totalWidth
 }

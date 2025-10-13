@@ -275,7 +275,7 @@ func LoadFromConfig(config *opencode.Config, customCommands []opencode.Command) 
 		{
 			Name:        ModelListCommand,
 			Description: "list models",
-			Keybindings: parseBindings("<leader>m"),
+			Keybindings: parseBindings("<leader>m", "<leader>tab"),
 			Trigger:     []string{"models"},
 		},
 		{

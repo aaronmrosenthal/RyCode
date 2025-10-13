@@ -44,6 +44,14 @@ type ExitDebounceTimeoutMsg struct{}
 // CostTickMsg is sent every 5 seconds to trigger cost update
 type CostTickMsg time.Time
 
+// ProviderSwitchAnimationMsg triggers the inline cortex animation for provider switching
+type ProviderSwitchAnimationMsg struct {
+	ProviderID string
+}
+
+// providerSwitchTickMsg is sent for provider switch cortex animation updates
+type providerSwitchTickMsg time.Time
+
 // InterruptKeyState tracks the state of interrupt key presses for debouncing
 type InterruptKeyState int
 
@@ -86,6 +94,11 @@ type Model struct {
 	splashScreen         *splash.Model
 	showSplash           bool
 	debugger             debugger.Model
+	// Provider switch inline cortex animation
+	providerSwitchCortex *splash.CortexRenderer
+	showProviderSwitch   bool
+	switchStartTime      time.Time
+	switchOpacity        float64
 }
 
 func (a Model) Init() tea.Cmd {
@@ -822,6 +835,24 @@ func (a Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.app.CurrentCost = msg.Cost
 		a.app.LastCostUpdate = time.Now()
 		return a, nil
+	case providerSwitchTickMsg:
+		// Handle provider switch cortex animation ticks
+		if a.showProviderSwitch {
+			elapsed := time.Since(a.switchStartTime)
+			opacity, finished := splash.CalculateAnimationOpacity(elapsed, 1.0)
+
+			if finished {
+				// Animation complete
+				a.showProviderSwitch = false
+				a.switchOpacity = 0.0
+				slog.Debug("provider switch animation finished", "duration", elapsed)
+				return a, nil
+			}
+
+			a.switchOpacity = opacity
+			return a, a.tickProviderSwitch()
+		}
+		return a, nil
 	case tea.PasteMsg, tea.ClipboardMsg:
 		// Paste events: prioritize modal if active, otherwise editor
 		if a.modal != nil {
@@ -1042,6 +1073,12 @@ func (a Model) View() (string, *tea.Cursor) {
 	if a.modal != nil {
 		mainLayout = a.modal.Render(mainLayout)
 	}
+
+	// Render provider switch cortex animation overlay (after modal, before toasts)
+	if a.showProviderSwitch && a.providerSwitchCortex != nil {
+		mainLayout = a.renderProviderSwitchOverlay(mainLayout)
+	}
+
 	mainLayout = a.toastManager.RenderOverlay(mainLayout)
 
 	if theme.CurrentThemeUsesAnsiColors() {
@@ -1280,10 +1317,23 @@ func (a Model) executeCommand(command commands.Command) (tea.Model, tea.Cmd) {
 		helpDialog := dialog.NewHelpDialog(a.app)
 		a.modal = helpDialog
 	case commands.AgentCycleCommand:
-		// Cycle through authenticated providers
+		// Tab: Cycle to next provider with inline cortex animation
 		updated, cmd := a.app.CycleAuthenticatedProvider()
 		a.app = updated
 		cmds = append(cmds, cmd)
+
+		// Trigger inline cortex animation with brand color
+		if a.providerSwitchCortex != nil && a.app.Provider != nil {
+			brandColor := splash.GetProviderBrandColor(a.app.Provider.ID)
+			a.providerSwitchCortex.SetBrandColor(brandColor)
+			a.showProviderSwitch = true
+			a.switchStartTime = time.Now()
+			a.switchOpacity = 1.0 // Start at full brightness for instant feedback
+			slog.Debug("provider switch animation started",
+				"provider", a.app.Provider.ID,
+				"color", fmt.Sprintf("#%02X%02X%02X", brandColor.R, brandColor.G, brandColor.B))
+			cmds = append(cmds, a.tickProviderSwitch())
+		}
 	case commands.AgentCycleReverseCommand:
 		// Cycle through authenticated providers in reverse
 		updated, cmd := a.app.CycleAuthenticatedProviderReverse()
@@ -1705,6 +1755,9 @@ func NewModel(app *app.App) tea.Model {
 	// Initialize splash screen with default dimensions (will be updated on first WindowSizeMsg)
 	splashModel := splash.New(80, 24)
 
+	// Initialize inline cortex renderer for provider switching (compact size)
+	providerSwitchCortex := splash.NewCortexRenderer(40, 12)
+
 	model := &Model{
 		status:               status.NewStatusCmp(app),
 		app:                  app,
@@ -1721,8 +1774,11 @@ func NewModel(app *app.App) tea.Model {
 		interruptKeyState:    InterruptKeyIdle,
 		exitKeyState:         ExitKeyIdle,
 		splashScreen:         &splashModel,
-		showSplash:           true,                      // Enable splash screen on startup
+		showSplash:           true,                          // Enable splash screen on startup
 		debugger:             debugger.New(80, 24, app.Client), // Will be updated on first WindowSizeMsg
+		providerSwitchCortex: providerSwitchCortex,
+		showProviderSwitch:   false,
+		switchOpacity:        0.0,
 	}
 
 	return model
@@ -1767,4 +1823,88 @@ func formatConversationToMarkdown(messages []app.Message) string {
 	}
 
 	return builder.String()
+}
+
+// tickProviderSwitch returns a tick command for the provider switch cortex animation
+func (a Model) tickProviderSwitch() tea.Cmd {
+	return tea.Tick(splash.CortexAnimationTickInterval, func(t time.Time) tea.Msg {
+		return providerSwitchTickMsg(t)
+	})
+}
+
+// renderProviderSwitchOverlay renders the inline cortex animation over the main layout
+func (a Model) renderProviderSwitchOverlay(mainLayout string) string {
+	// Safety checks
+	if a.providerSwitchCortex == nil {
+		slog.Warn("cortex renderer is nil, skipping overlay")
+		return mainLayout
+	}
+
+	// Skip rendering if opacity is too low (performance optimization)
+	if a.switchOpacity < splash.CortexMinVisibleOpacity {
+		return mainLayout
+	}
+
+	// Panic recovery for robustness
+	defer func() {
+		if r := recover(); r != nil {
+			slog.Error("cortex overlay panic recovered",
+				"error", r,
+				"opacity", a.switchOpacity)
+		}
+	}()
+
+	// Render cortex frame (updates internal screen buffer)
+	a.providerSwitchCortex.RenderFrame()
+
+	// Build cortex output with opacity applied
+	var cortexBuilder strings.Builder
+	cortexWidth := a.providerSwitchCortex.Width()
+	cortexHeight := a.providerSwitchCortex.Height()
+
+	// Validate dimensions
+	if cortexWidth <= 0 || cortexHeight <= 0 {
+		slog.Warn("invalid cortex dimensions",
+			"width", cortexWidth,
+			"height", cortexHeight)
+		return mainLayout
+	}
+
+	for y := 0; y < cortexHeight; y++ {
+		for x := 0; x < cortexWidth; x++ {
+			idx := y*cortexWidth + x
+			char := a.providerSwitchCortex.Screen(idx)
+
+			if char != ' ' {
+				// Get color with opacity applied
+				rgb := a.providerSwitchCortex.GetColorAtWithOpacity(x, y, a.switchOpacity)
+				cortexBuilder.WriteString(splash.Colorize(string(char), rgb))
+			} else {
+				cortexBuilder.WriteRune(' ')
+			}
+		}
+		if y < cortexHeight-1 {
+			cortexBuilder.WriteRune('\n')
+		}
+	}
+
+	cortexOutput := cortexBuilder.String()
+
+	// Position cortex in center of screen (with bounds checking)
+	cortexX := max(0, (a.width-cortexWidth)/2)
+	cortexY := max(0, (a.height-cortexHeight)/2)
+
+	// Ensure cortex doesn't go off screen
+	if cortexX+cortexWidth > a.width || cortexY+cortexHeight > a.height {
+		slog.Debug("cortex would exceed screen bounds, centering differently",
+			"screenWidth", a.width,
+			"screenHeight", a.height,
+			"cortexWidth", cortexWidth,
+			"cortexHeight", cortexHeight)
+		cortexX = max(0, min(cortexX, a.width-cortexWidth))
+		cortexY = max(0, min(cortexY, a.height-cortexHeight))
+	}
+
+	// Overlay cortex on main layout
+	return layout.PlaceOverlay(cortexX, cortexY, cortexOutput, mainLayout)
 }
