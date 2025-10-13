@@ -30,7 +30,7 @@ interface ProvidersResponse {
   default: Record<string, number>
 }
 
-const SERVER_URL = process.env.RYCODE_SERVER || 'http://127.0.0.1:4096'
+const SERVER_URL = process.env['RYCODE_SERVER'] || 'http://127.0.0.1:4096'
 
 async function testServerConnection(): Promise<boolean> {
   console.log('🔌 Testing server connection...\n')
