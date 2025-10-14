@@ -683,42 +683,45 @@ func (s *SimpleProviderToggle) getDefaultModelForProvider(provider opencode.Prov
 	// Priority order for each provider's models (latest SOTA models as of 2025)
 	priorities := map[string][]string{
 		"claude": {
-			"claude-opus-4-5",                // Latest Opus 4.5 (plan/complex reasoning)
-			"claude-sonnet-4-5-20250929",     // Latest Sonnet 4.5 dated version
 			"claude-sonnet-4-5",              // Latest Sonnet 4.5 (main coding model)
-			"claude-sonnet-4-5-1m",           // Sonnet 4.5 with 1M context (failover)
-			"claude-sonnet-3-5-20241022",     // Previous Sonnet 3.5
-			"claude-sonnet-3-5",              // Legacy Sonnet 3.5
+			"claude-opus-4-1",                // Opus 4.1 (complex reasoning)
+			"claude-sonnet-4",                // Sonnet 4
+			"claude-3-7-sonnet",              // Sonnet 3.7
+			"claude-3-5-sonnet-20241022",     // Sonnet 3.5 (dated version)
+			"claude-3-5-haiku-20241022",      // Haiku 3.5 (fast/lightweight)
 		},
 		"codex": {
-			"gpt-5-codex",                    // GPT-5 specialized codex model
-			"codex-gpt-5",                    // Alternative GPT-5 codex naming
 			"gpt-5",                          // GPT-5 base model
-			"gpt-4o",                         // GPT-4o (current best non-5)
+			"o3",                             // O3 reasoning model
+			"gpt-5-mini",                     // GPT-5 mini
+			"o3-mini",                        // O3 mini
+			"gpt-5-nano",                     // GPT-5 nano
+			"gpt-4-5",                        // GPT-4.5
+			"gpt-4o",                         // GPT-4o
 			"gpt-4o-mini",                    // GPT-4o mini
-			"gpt-4-turbo",                    // GPT-4 turbo
-			"gpt-4",                          // GPT-4 base
 		},
 		"gemini": {
-			"gemini-pro-2.5",                 // Gemini Pro 2.5 (latest)
-			"gemini-2.5-flash",               // Gemini 2.5 Flash (failover)
-			"gemini-flash-2.5",               // Alternative Flash 2.5 naming
-			"gemini-2.0-flash-exp",           // Gemini 2.0 Flash (current)
+			"gemini-2.5-pro",                 // Gemini Pro 2.5 (latest)
+			"gemini-2.5-flash",               // Gemini 2.5 Flash
+			"gemini-2.5-flash-lite",          // Gemini 2.5 Flash Lite
+			"gemini-2.5-flash-image",         // Gemini 2.5 Flash Image
+			"gemini-2.5-computer-use",        // Gemini 2.5 Computer Use
+			"gemini-2.5-deep-think",          // Gemini 2.5 Deep Think
 			"gemini-exp-1206",                // Experimental release
-			"gemini-pro-1.5",                 // Pro 1.5
-			"gemini-pro",                     // Legacy Pro
+			"gemini-2.0-flash-exp",           // Gemini 2.0 Flash (legacy)
 		},
 		"grok": {
 			"grok-beta",                      // Grok beta (latest)
 			"grok-2-1212",                    // Grok 2 dated release
 		},
 		"qwen": {
-			"qwen-coder-3",                   // Qwen Coder 3 (specialized coding model)
-			"qwen-coder-3.0",                 // Alternative Qwen Coder 3 naming
-			"qwen3-coder",                    // Alternative naming format
-			"qwen-max",                       // Qwen Max (general purpose)
-			"qwen-plus",                      // Qwen Plus
-			"qwen-turbo",                     // Qwen Turbo
+			"qwen3-max",                      // Qwen 3 Max (best general purpose)
+			"qwen3-thinking-2507",            // Qwen 3 Thinking (reasoning model)
+			"qwen3-next",                     // Qwen 3 Next
+			"qwen3-omni",                     // Qwen 3 Omni (multimodal)
+			"qwen3-instruct-2507",            // Qwen 3 Instruct
+			"qwen3-235b",                     // Qwen 3 235B
+			"qwen3-32b",                      // Qwen 3 32B
 		},
 	}
 
@@ -766,11 +769,11 @@ func (s *SimpleProviderToggle) renderProviderModels(provider opencode.Provider, 
 
 	// Sort models using the same priority system as getDefaultModelForProvider (latest SOTA models as of 2025)
 	priorities := map[string][]string{
-		"claude":  {"claude-opus-4-5", "claude-sonnet-4-5-20250929", "claude-sonnet-4-5", "claude-sonnet-4-5-1m", "claude-sonnet-3-5-20241022", "claude-sonnet-3-5"},
-		"codex":   {"gpt-5-codex", "codex-gpt-5", "gpt-5", "gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-4"},
-		"gemini":  {"gemini-pro-2.5", "gemini-2.5-flash", "gemini-flash-2.5", "gemini-2.0-flash-exp", "gemini-exp-1206", "gemini-pro-1.5", "gemini-pro"},
+		"claude":  {"claude-sonnet-4-5", "claude-opus-4-1", "claude-sonnet-4", "claude-3-7-sonnet", "claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022"},
+		"codex":   {"gpt-5", "o3", "gpt-5-mini", "o3-mini", "gpt-5-nano", "gpt-4-5", "gpt-4o", "gpt-4o-mini"},
+		"gemini":  {"gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-flash-image", "gemini-2.5-computer-use", "gemini-2.5-deep-think", "gemini-exp-1206", "gemini-2.0-flash-exp"},
 		"grok":    {"grok-beta", "grok-2-1212"},
-		"qwen":    {"qwen-coder-3", "qwen-coder-3.0", "qwen3-coder", "qwen-max", "qwen-plus", "qwen-turbo"},
+		"qwen":    {"qwen3-max", "qwen3-thinking-2507", "qwen3-next", "qwen3-omni", "qwen3-instruct-2507", "qwen3-235b", "qwen3-32b"},
 	}
 
 	priorityList := priorities[provider.ID]
@@ -823,6 +826,11 @@ func (s *SimpleProviderToggle) renderProviderModels(provider opencode.Provider, 
 func (s *SimpleProviderToggle) SetSize(width, height int) {
 	s.width = width
 	s.height = height
+}
+
+// IsLoading returns whether the toggle is currently loading providers
+func (s *SimpleProviderToggle) IsLoading() bool {
+	return s.isLoading
 }
 
 // CalculateRequiredWidth calculates the minimum modal width needed to fit all provider chips

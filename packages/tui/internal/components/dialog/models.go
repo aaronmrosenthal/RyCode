@@ -52,6 +52,15 @@ func (m *modelDialog) View() string {
 }
 
 func (m *modelDialog) Render(background string) string {
+	// Show cortex overlay FIRST (not in modal) while loading providers
+	// Once loaded, fade in the modal content in place of the cortex
+	if m.simpleToggle.IsLoading() {
+		// Render cortex directly on background (no modal box)
+		// This provides instant visual feedback while data loads
+		return m.simpleToggle.View()
+	}
+
+	// Once loaded, render the full modal with provider selection content
 	return m.modal.Render(m.View(), background)
 }
 
