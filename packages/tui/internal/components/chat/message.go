@@ -237,11 +237,17 @@ func renderText(
 		}
 		content = util.ToMarkdown(text, width, backgroundColor)
 		if isThinking {
+			// Get provider-specific typing indicator text
+			typingText := "Thinking..."
+			if providerTheme, ok := t.(*theme.ProviderTheme); ok {
+				typingText = providerTheme.TypingIndicator.Text + "..."
+			}
+
 			var label string
 			if shimmer {
-				label = util.Shimmer("Thinking...", backgroundColor, t.TextMuted(), t.Accent())
+				label = util.Shimmer(typingText, backgroundColor, t.TextMuted(), t.Accent())
 			} else {
-				label = styles.NewStyle().Background(backgroundColor).Foreground(t.TextMuted()).Render("Thinking...")
+				label = styles.NewStyle().Background(backgroundColor).Foreground(t.TextMuted()).Render(typingText)
 			}
 			label = styles.NewStyle().Background(backgroundColor).Width(width - 6).Render(label)
 			content = label + "\n\n" + content
