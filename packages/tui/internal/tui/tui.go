@@ -786,9 +786,22 @@ func (a Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.app.State.UpdateModelUsage(msg.Provider.ID, msg.Model.ID)
 		cmds = append(cmds, a.app.SaveState())
 
-		// Switch theme to match provider's brand
+		// Switch theme to match provider's brand with cortex animation
 		theme.SwitchToProvider(msg.Provider.ID)
 		slog.Debug("theme switched to provider", "provider", msg.Provider.ID)
+
+		// Trigger inline cortex animation with provider's brand color
+		if a.providerSwitchCortex != nil {
+			brandColor := splash.GetProviderBrandColor(msg.Provider.ID)
+			a.providerSwitchCortex.SetBrandColor(brandColor)
+			a.showProviderSwitch = true
+			a.switchStartTime = time.Now()
+			a.switchOpacity = 1.0 // Start at full brightness for instant feedback
+			slog.Debug("cortex animation started for theme switch",
+				"provider", msg.Provider.ID,
+				"color", fmt.Sprintf("#%02X%02X%02X", brandColor.R, brandColor.G, brandColor.B))
+			cmds = append(cmds, a.tickProviderSwitch())
+		}
 	case app.AgentSelectedMsg:
 		updated, cmd := a.app.SwitchToAgent(msg.AgentName)
 		a.app = updated
