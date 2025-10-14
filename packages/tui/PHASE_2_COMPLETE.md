@@ -3,6 +3,7 @@
 **Commits**:
 - `df826484` - "feat: Phase 2 - Provider-specific UI elements"
 - `47d17134` - "feat: Phase 2.1 - Provider-specific typing indicators"
+- `005bb43a` - "feat: Phase 2.2 - Provider-specific welcome messages"
 
 **Date**: October 14, 2025
 **Status**: Merged to `dev`, pushed to origin
@@ -68,7 +69,35 @@ if providerTheme, ok := t.(*theme.ProviderTheme); ok {
 // Use typingText in shimmer or static render
 ```
 
-### 3. Theme Infrastructure Already in Place
+### 3. Provider-Specific Welcome Messages
+
+**`internal/components/help/empty_state.go` (updated)**
+- Modified `GetWelcomeEmptyState()` to extract welcome message from ProviderTheme
+- Type assertion check for `*theme.ProviderTheme` with graceful fallback
+- Dynamic welcome messages based on active provider
+
+**Provider Welcome Messages:**
+- **Claude**: "Welcome to Claude! I'm here to help you build amazing things."
+- **Gemini**: "Welcome to Gemini! Let's explore possibilities together."
+- **Codex**: "Welcome to Codex. Let's build something extraordinary."
+- **Qwen**: "Welcome to Qwen! Ready to innovate together."
+
+**Implementation:**
+```go
+t := theme.CurrentTheme()
+
+// Default welcome message
+welcomeMsg := "Your AI-powered development assistant is ready.\nLet's get started with a quick setup."
+
+// Check if current theme is a provider theme with custom welcome message
+if providerTheme, ok := t.(*theme.ProviderTheme); ok {
+    if providerTheme.WelcomeMessage != "" {
+        welcomeMsg = providerTheme.WelcomeMessage
+    }
+}
+```
+
+### 4. Theme Infrastructure Already in Place
 
 **From Phase 1:**
 - `ProviderTheme` struct with all visual elements defined
@@ -101,6 +130,17 @@ if providerTheme, ok := t.(*theme.ProviderTheme); ok {
 6. User sees "Processing..." for Codex, "Thinking..." for Claude
 ```
 
+### Welcome Message Flow
+```
+1. User sees empty state (welcome screen or empty chat)
+2. GetWelcomeEmptyState() called
+3. Get current theme
+4. Type assertion checks if theme is *ProviderTheme
+5. Extract WelcomeMessage from theme
+6. Render welcome with provider-specific greeting
+7. User sees "Welcome to Claude!" or "Welcome to Codex."
+```
+
 ---
 
 ## Visual Results
@@ -108,21 +148,25 @@ if providerTheme, ok := t.(*theme.ProviderTheme); ok {
 ### Claude Theme
 - **Spinner**: Braille dots ⣾⣽⣻⢿⡿⣟⣯⣷ (smooth, continuous)
 - **Typing**: "Thinking..." (friendly, conversational)
+- **Welcome**: "Welcome to Claude! I'm here to help you build amazing things."
 - **Feel**: Warm, approachable, developer-focused
 
 ### Gemini Theme
 - **Spinner**: Circle rotation ◐◓◑◒ (modern, geometric)
 - **Typing**: "Thinking..." (vibrant, with gradient potential)
+- **Welcome**: "Welcome to Gemini! Let's explore possibilities together."
 - **Feel**: Modern, AI-forward, colorful
 
 ### Codex Theme
 - **Spinner**: Line rotation ⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏ (technical, precise)
 - **Typing**: "Processing..." (professional, technical)
+- **Welcome**: "Welcome to Codex. Let's build something extraordinary."
 - **Feel**: Clean, technical, code-first
 
 ### Qwen Theme
 - **Spinner**: Braille dots ⣾⣽⣻⢿⡿⣟⣯⣷ (international, modern)
 - **Typing**: "Thinking..." (contemporary, global)
+- **Welcome**: "Welcome to Qwen! Ready to innovate together."
 - **Feel**: Modern, innovative, international
 
 ---
@@ -152,13 +196,15 @@ if providerTheme, ok := t.(*theme.ProviderTheme); ok {
 **Before Phase 2:**
 - Static spinner regardless of provider
 - Generic "Thinking..." message for all providers
+- Generic welcome messages
 - No visual personality differences beyond colors
 
 **After Phase 2:**
 - Dynamic spinner matching each provider's style
 - Context-aware typing indicators matching provider personality
+- Provider-specific welcome messages reflecting brand voice
 - Complete visual immersion in each provider's aesthetic
-- Every loading state reflects the provider's brand
+- Every loading state, empty state, and greeting reflects the provider's brand
 
 **User Quote from Spec:**
 > "When I Tab to Codex, I don't just want teal colors - I want to feel like I'm using OpenAI Codex. The spinner, the typing indicator, the entire experience should match what I know from the native CLI."
@@ -167,9 +213,9 @@ if providerTheme, ok := t.(*theme.ProviderTheme); ok {
 
 ## What's Next
 
-### Phase 2.2: Welcome Screens & ASCII Art (Future PR)
+### Phase 2.2: ASCII Art & Enhanced Visuals (Future PR)
+- [x] Show provider-specific welcome messages ✅
 - [ ] Display provider-specific ASCII art logos on startup
-- [ ] Show provider-specific welcome messages
 - [ ] Add provider-specific easter eggs
 - [ ] Custom help text per provider
 
@@ -201,12 +247,13 @@ packages/tui/
 ├── PHASE_2_COMPLETE.md              (new, this file)
 ├── internal/components/
 │   ├── spinner/spinner.go           (updated, +18 lines)
-│   └── chat/message.go              (updated, +5 lines)
+│   ├── chat/message.go              (updated, +5 lines)
+│   └── help/empty_state.go          (updated, +14 lines)
 └── internal/theme/
     └── provider_themes.go           (already complete from Phase 1)
 ```
 
-**Total**: 23 insertions, 2 deletions
+**Total**: 37 insertions, 3 deletions
 
 ---
 
