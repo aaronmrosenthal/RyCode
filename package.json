@@ -8,6 +8,8 @@
   "scripts": {
     "dev": "bun run packages/rycode/src/index.ts",
     "typecheck": "bun turbo typecheck",
+    "test:tui": "cd packages/tui && make test",
+    "test:tui:e2e": "cd packages/tui && make test-cli-providers",
     "prepare": "husky"
   },
   "workspaces": {

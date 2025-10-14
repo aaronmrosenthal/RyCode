@@ -1,2 +1,15 @@
 #!/bin/sh
+set -e
+
+echo "Running pre-push checks..."
+
+# Run typecheck
+echo "[1/2] Running typecheck..."
 bun run typecheck
+
+# Run TUI E2E tests (CLI provider authentication)
+echo "[2/2] Running TUI E2E tests..."
+cd packages/tui && make test-cli-providers
+cd -
+
+echo "✅ All pre-push checks passed!"
