@@ -785,6 +785,10 @@ func (a Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		a.app.State.UpdateModelUsage(msg.Provider.ID, msg.Model.ID)
 		cmds = append(cmds, a.app.SaveState())
+
+		// Switch theme to match provider's brand
+		theme.SwitchToProvider(msg.Provider.ID)
+		slog.Debug("theme switched to provider", "provider", msg.Provider.ID)
 	case app.AgentSelectedMsg:
 		updated, cmd := a.app.SwitchToAgent(msg.AgentName)
 		a.app = updated
