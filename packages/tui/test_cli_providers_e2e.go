@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/aaronmrosenthal/rycode/internal/app"
@@ -32,8 +35,8 @@ func main() {
 	log("Purpose: Validate ALL SOTA CLI providers are authenticated and accessible")
 	log("")
 
-	// Get project root
-	projectRoot := "/Users/aaron/Code/RyCode/RyCode"
+	// Get project root dynamically
+	projectRoot := getProjectRoot()
 	log("Project root: %s", projectRoot)
 
 	// Create app with auth bridge
@@ -76,12 +79,15 @@ func main() {
 				authStatus, err := testApp.AuthBridge.CheckAuthStatus(ctx, providerID)
 				if err != nil {
 					log("    ✗ %s: Authentication check failed: %v", providerID, err)
+					log("       → Check if %s API key is set", getProviderEnvVar(providerID))
 					failedProviders = append(failedProviders, providerID)
 					continue
 				}
 
 				if !authStatus.IsAuthenticated {
 					log("    ✗ %s: NOT AUTHENTICATED", providerID)
+					log("       → Set %s environment variable", getProviderEnvVar(providerID))
+					log("       → Or run: rycode /auth to authenticate providers")
 					failedProviders = append(failedProviders, providerID)
 					continue
 				}
@@ -138,4 +144,60 @@ func main() {
 		log("\n✅ TEST PASSED: All %d SOTA providers are authenticated and ready!", authenticatedCount)
 		os.Exit(0)
 	}
+}
+
+// getProjectRoot dynamically discovers the project root directory
+func getProjectRoot() string {
+	// Try environment variable first
+	if root := os.Getenv("PROJECT_ROOT"); root != "" {
+		return root
+	}
+
+	// Try git root
+	cmd := exec.Command("git", "rev-parse", "--show-toplevel")
+	output, err := cmd.Output()
+	if err == nil {
+		return strings.TrimSpace(string(output))
+	}
+
+	// Fallback: try to find go.work or package.json going up from current directory
+	dir, err := os.Getwd()
+	if err == nil {
+		for {
+			// Check for go.work
+			if _, err := os.Stat(filepath.Join(dir, "go.work")); err == nil {
+				return dir
+			}
+			// Check for package.json with workspaces
+			if _, err := os.Stat(filepath.Join(dir, "package.json")); err == nil {
+				return dir
+			}
+
+			parent := filepath.Dir(dir)
+			if parent == dir {
+				break // Reached root
+			}
+			dir = parent
+		}
+	}
+
+	// Last resort: hardcoded fallback
+	return "/Users/aaron/Code/RyCode/RyCode"
+}
+
+// getProviderEnvVar returns the expected environment variable name for a provider
+func getProviderEnvVar(providerID string) string {
+	envVars := map[string]string{
+		"claude":  "ANTHROPIC_API_KEY",
+		"qwen":    "DASHSCOPE_API_KEY or QWEN_API_KEY",
+		"codex":   "OPENAI_API_KEY",
+		"gemini":  "GOOGLE_API_KEY or GEMINI_API_KEY",
+	}
+
+	if envVar, ok := envVars[providerID]; ok {
+		return envVar
+	}
+
+	// Generic fallback
+	return fmt.Sprintf("%s_API_KEY", strings.ToUpper(providerID))
 }

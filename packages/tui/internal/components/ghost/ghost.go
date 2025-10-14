@@ -98,7 +98,7 @@ func (p *PatternPredictor) Learn(accepted bool, suggestion *Suggestion) {
 }
 
 // Render ghost text with styling
-func Render(suggestion *Suggestion, theme *theme.Theme) string {
+func Render(suggestion *Suggestion, t theme.Theme) string {
 	if suggestion == nil {
 		return ""
 	}
@@ -107,11 +107,11 @@ func Render(suggestion *Suggestion, theme *theme.Theme) string {
 	var style lipgloss.Style
 	if suggestion.Confidence > 0.8 {
 		style = lipgloss.NewStyle().
-			Foreground((*theme).TextMuted()).
+			Foreground(t.TextMuted()).
 			Faint(true)
 	} else {
 		style = lipgloss.NewStyle().
-			Foreground((*theme).TextMuted()).
+			Foreground(t.TextMuted()).
 			Faint(true).
 			Faint(true) // Double faint for lower confidence
 	}
@@ -129,7 +129,7 @@ func Render(suggestion *Suggestion, theme *theme.Theme) string {
 }
 
 // RenderInline renders ghost text inline with current input
-func RenderInline(currentInput string, suggestion *Suggestion, theme *theme.Theme) string {
+func RenderInline(currentInput string, suggestion *Suggestion, t theme.Theme) string {
 	if suggestion == nil || suggestion.Text == "" {
 		return currentInput
 	}
@@ -142,7 +142,7 @@ func RenderInline(currentInput string, suggestion *Suggestion, theme *theme.Them
 	completion := suggestion.Text[len(currentInput):]
 
 	ghostStyle := lipgloss.NewStyle().
-		Foreground((*theme).TextMuted()).
+		Foreground(t.TextMuted()).
 		Faint(true)
 
 	return currentInput + ghostStyle.Render(completion)
