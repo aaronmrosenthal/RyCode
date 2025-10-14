@@ -179,11 +179,24 @@ func GetNoDataEmptyState() EmptyState {
 }
 
 // GetWelcomeEmptyState returns empty state for first-time users
+// Uses provider-specific welcome message if a ProviderTheme is active
 func GetWelcomeEmptyState() EmptyState {
+	t := theme.CurrentTheme()
+
+	// Default welcome message
+	welcomeMsg := "Your AI-powered development assistant is ready.\nLet's get started with a quick setup."
+
+	// Check if current theme is a provider theme with custom welcome message
+	if providerTheme, ok := t.(*theme.ProviderTheme); ok {
+		if providerTheme.WelcomeMessage != "" {
+			welcomeMsg = providerTheme.WelcomeMessage
+		}
+	}
+
 	return EmptyState{
 		Icon:        "👋",
 		Title:       "Welcome to RyCode!",
-		Description: "Your AI-powered development assistant is ready.\nLet's get started with a quick setup.",
+		Description: welcomeMsg,
 		Actions: []EmptyStateAction{
 			{
 				Label:    "Start Welcome Guide",
