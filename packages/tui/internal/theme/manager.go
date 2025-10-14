@@ -20,13 +20,15 @@ type Manager struct {
 	themes               map[string]Theme
 	currentName          string
 	currentUsesAnsiCache bool // Cache whether current theme uses ANSI colors
+	providerThemes       *ThemeManager // Dynamic provider-specific themes
 	mu                   sync.RWMutex
 }
 
 // Global instance of the theme manager
 var globalManager = &Manager{
-	themes:      make(map[string]Theme),
-	currentName: "",
+	themes:         make(map[string]Theme),
+	currentName:    "",
+	providerThemes: NewThemeManager(), // Initialize provider theme manager
 }
 
 // RegisterTheme adds a new theme to the registry.
@@ -63,11 +65,20 @@ func SetTheme(name string) error {
 }
 
 // CurrentTheme returns the currently active theme.
-// If no theme is set, it returns nil.
+// If a provider theme is active, it returns the provider-specific theme.
+// Otherwise, it returns the registered theme.
 func CurrentTheme() Theme {
 	globalManager.mu.RLock()
 	defer globalManager.mu.RUnlock()
 
+	// Check if provider themes are active
+	if globalManager.providerThemes != nil {
+		if providerTheme := globalManager.providerThemes.Current(); providerTheme != nil {
+			return providerTheme
+		}
+	}
+
+	// Fallback to registered themes
 	if globalManager.currentName == "" {
 		return nil
 	}
@@ -226,4 +237,38 @@ func themeUsesAnsiColors(theme Theme) bool {
 		adaptiveColorUsesAnsi(theme.SyntaxType()) ||
 		adaptiveColorUsesAnsi(theme.SyntaxOperator()) ||
 		adaptiveColorUsesAnsi(theme.SyntaxPunctuation())
+}
+
+// SwitchToProvider switches the theme to match the specified provider's brand.
+// This is called when Tab cycling changes the active model provider.
+// Returns true if the theme was changed, false if already active or provider not found.
+func SwitchToProvider(providerID string) bool {
+	globalManager.mu.Lock()
+	defer globalManager.mu.Unlock()
+
+	if globalManager.providerThemes == nil {
+		return false
+	}
+
+	changed := globalManager.providerThemes.SwitchToProvider(providerID)
+
+	// Update ANSI cache if theme changed
+	if changed {
+		newTheme := globalManager.providerThemes.Current()
+		if newTheme != nil {
+			globalManager.currentUsesAnsiCache = themeUsesAnsiColors(newTheme)
+		}
+	}
+
+	return changed
+}
+
+// DisableProviderThemes disables dynamic provider theming and returns to static themes
+func DisableProviderThemes() {
+	globalManager.mu.Lock()
+	defer globalManager.mu.Unlock()
+
+	if globalManager.providerThemes != nil {
+		globalManager.providerThemes.Reset()
+	}
 }

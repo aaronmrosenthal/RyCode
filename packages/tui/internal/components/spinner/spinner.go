@@ -72,14 +72,34 @@ type Spinner struct {
 // New creates a new spinner with the default style (Dots)
 func New() *Spinner {
 	t := theme.CurrentTheme()
+	frames := GetProviderSpinnerFrames(t)
 	return &Spinner{
-		frames:   Dots,
+		frames:   frames,
 		frame:    0,
 		running:  false,
 		interval: 80 * time.Millisecond,
 		style: styles.NewStyle().
 			Foreground(t.Primary()),
 	}
+}
+
+// GetProviderSpinnerFrames returns spinner frames based on the current provider theme
+func GetProviderSpinnerFrames(t theme.Theme) []string {
+	// Try to get provider-specific spinner from ProviderTheme
+	if providerTheme, ok := t.(*theme.ProviderTheme); ok {
+		// Parse the LoadingSpinner string into individual rune frames
+		spinnerStr := providerTheme.LoadingSpinner
+		if spinnerStr != "" {
+			frames := []string{}
+			for _, r := range spinnerStr {
+				frames = append(frames, string(r))
+			}
+			return frames
+		}
+	}
+
+	// Fallback to default Dots spinner
+	return Dots
 }
 
 // WithFrames sets custom frames for the spinner
