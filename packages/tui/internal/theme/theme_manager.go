@@ -2,6 +2,7 @@ package theme
 
 import (
 	"sync"
+	"time"
 )
 
 // ThemeManager handles dynamic theme switching for provider-specific UI
@@ -67,6 +68,9 @@ func (tm *ThemeManager) Previous() *ProviderTheme {
 // SwitchToProvider switches to the theme for the specified provider
 // Returns true if theme was changed, false if already active
 func (tm *ThemeManager) SwitchToProvider(providerID string) bool {
+	// Track switch timing for telemetry
+	startTime := time.Now()
+
 	tm.mu.Lock()
 	defer tm.mu.Unlock()
 
@@ -87,6 +91,16 @@ func (tm *ThemeManager) SwitchToProvider(providerID string) bool {
 
 	// Switch to new theme
 	tm.current = newTheme
+
+	// Calculate switch duration
+	switchDuration := time.Since(startTime)
+
+	// Record telemetry (if enabled)
+	if IsTelemetryEnabled() {
+		// Note: We use SwitchTypeProgrammatic as default
+		// The caller can determine the actual type and record separately
+		RecordThemeSwitch(providerID, SwitchTypeProgrammatic, switchDuration)
+	}
 
 	// Notify listeners (outside the lock to avoid deadlocks)
 	tm.mu.Unlock()
