@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/lipgloss/v2"
+	"github.com/charmbracelet/lipgloss/v2/compat"
 	"github.com/aaronmrosenthal/rycode/internal/theme"
 )
 
@@ -95,17 +96,19 @@ func (t *Timeline) Render(theme *theme.Theme) string {
 		// Check if this is current position
 		currentPos := int(float64(t.CurrentPosition) / step)
 		if i == currentPos {
-			bar += theme.TimelineCurrent + "●" + theme.Reset
+			currentStyle := lipgloss.NewStyle().Foreground((*theme).Primary())
+			bar += currentStyle.Render("●")
 		} else {
 			// Use different symbols for different event types
 			symbol, color := t.getEventSymbol(event, theme)
-			bar += color + symbol + theme.Reset
+			symbolStyle := lipgloss.NewStyle().Foreground(color)
+			bar += symbolStyle.Render(symbol)
 		}
 	}
 
 	// Build top border
 	borderStyle := lipgloss.NewStyle().
-		Foreground(theme.Border)
+		Foreground((*theme).Border())
 
 	topBorder := borderStyle.Render("┌" + lipgloss.NewStyle().Render(bar) + "┐")
 
@@ -117,15 +120,21 @@ func (t *Timeline) Render(theme *theme.Theme) string {
 
 	// Legend
 	legendStyle := lipgloss.NewStyle().
-		Foreground(theme.TextDim).
+		Foreground((*theme).TextMuted()).
 		MarginTop(1)
 
+	currentLegend := lipgloss.NewStyle().Foreground((*theme).Primary()).Render("●")
+	successLegend := lipgloss.NewStyle().Foreground((*theme).Success()).Render("✓")
+	errorLegend := lipgloss.NewStyle().Foreground((*theme).Error()).Render("✖")
+	branchLegend := lipgloss.NewStyle().Foreground((*theme).Secondary()).Render("⎇")
+	snapshotLegend := lipgloss.NewStyle().Foreground((*theme).Primary()).Render("◆")
+
 	legend := legendStyle.Render(
-		theme.TimelineCurrent + "●" + theme.Reset + " Current  " +
-			theme.Success + "✓" + theme.Reset + " Success  " +
-			theme.Error + "✖" + theme.Reset + " Error  " +
-			theme.AccentSecondary + "⎇" + theme.Reset + " Branch  " +
-			theme.AccentPrimary + "◆" + theme.Reset + " Snapshot",
+		currentLegend + " Current  " +
+			successLegend + " Success  " +
+			errorLegend + " Error  " +
+			branchLegend + " Branch  " +
+			snapshotLegend + " Snapshot",
 	)
 
 	return lipgloss.JoinVertical(
@@ -171,11 +180,11 @@ func (t *Timeline) RenderCompact(theme *theme.Theme) string {
 			lipgloss.Left,
 			style.Render(symbol),
 			lipgloss.NewStyle().
-				Foreground(theme.TextDim).
+				Foreground((*theme).TextMuted()).
 				PaddingLeft(1).
 				Render(timeStr),
 			lipgloss.NewStyle().
-				Foreground(theme.TextPrimary).
+				Foreground((*theme).Text()).
 				PaddingLeft(1).
 				Render(label),
 		)
@@ -202,10 +211,10 @@ func (t *Timeline) RenderProgress(theme *theme.Theme) string {
 	empty := width - filled
 
 	barStyle := lipgloss.NewStyle().
-		Foreground(theme.AccentPrimary)
+		Foreground((*theme).Primary())
 
 	emptyStyle := lipgloss.NewStyle().
-		Foreground(theme.Border)
+		Foreground((*theme).Border())
 
 	bar := "[" +
 		barStyle.Render(lipgloss.NewStyle().Render(lipgloss.PlaceHorizontal(filled, lipgloss.Left, "█", lipgloss.WithWhitespaceChars("█")))) +
@@ -218,24 +227,24 @@ func (t *Timeline) RenderProgress(theme *theme.Theme) string {
 }
 
 // Helper functions
-func (t *Timeline) getEventSymbol(event Event, theme *theme.Theme) (string, lipgloss.TerminalColor) {
+func (t *Timeline) getEventSymbol(event Event, theme *theme.Theme) (string, compat.AdaptiveColor) {
 	switch event.Type {
 	case EventError:
-		return "✖", theme.Error
+		return "✖", (*theme).Error()
 	case EventSuccess:
-		return "✓", theme.Success
+		return "✓", (*theme).Success()
 	case EventBranch:
-		return "⎇", theme.AccentSecondary
+		return "⎇", (*theme).Secondary()
 	case EventSnapshot:
-		return "◆", theme.AccentPrimary
+		return "◆", (*theme).Primary()
 	case EventTest:
-		return "🧪", theme.Info
+		return "🧪", (*theme).Info()
 	case EventCommit:
-		return "📝", theme.Success
+		return "📝", (*theme).Success()
 	case EventEdit:
-		return "✎", theme.Warning
+		return "✎", (*theme).Warning()
 	default:
-		return "═", theme.Border
+		return "═", (*theme).Border()
 	}
 }
 
@@ -262,7 +271,7 @@ func (t *Timeline) renderLabels(theme *theme.Theme) string {
 	}
 
 	labelStyle := lipgloss.NewStyle().
-		Foreground(theme.TextDim)
+		Foreground((*theme).TextMuted())
 
 	labels := []string{}
 	for _, event := range majorEvents {

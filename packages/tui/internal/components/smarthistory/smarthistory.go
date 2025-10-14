@@ -179,7 +179,7 @@ func (sh *SmartHistory) Render(context Context, theme *theme.Theme) string {
 
 	// Title
 	titleStyle := lipgloss.NewStyle().
-		Foreground(theme.AccentPrimary).
+		Foreground((*theme).Primary()).
 		Bold(true).
 		MarginBottom(1)
 
@@ -195,23 +195,23 @@ func (sh *SmartHistory) Render(context Context, theme *theme.Theme) string {
 
 		// Number
 		numberStyle := lipgloss.NewStyle().
-			Foreground(theme.AccentSecondary).
+			Foreground((*theme).Secondary()).
 			PaddingRight(1)
 
 		// Command
 		commandStyle := lipgloss.NewStyle().
-			Foreground(theme.TextPrimary)
+			Foreground((*theme).Text())
 
 		// Time ago
 		timeStyle := lipgloss.NewStyle().
-			Foreground(theme.TextDim).
+			Foreground((*theme).TextMuted()).
 			PaddingLeft(1)
 
 		// Success indicator
 		successStyle := lipgloss.NewStyle().
-			Foreground(theme.Success)
+			Foreground((*theme).Success())
 		failStyle := lipgloss.NewStyle().
-			Foreground(theme.Error)
+			Foreground((*theme).Error())
 
 		indicator := ""
 		if item.Success {
@@ -235,7 +235,7 @@ func (sh *SmartHistory) Render(context Context, theme *theme.Theme) string {
 
 	// Instruction
 	instructionStyle := lipgloss.NewStyle().
-		Foreground(theme.TextDim).
+		Foreground((*theme).TextMuted()).
 		MarginTop(1)
 
 	instruction := instructionStyle.Render("Press 1-5 to reuse, / to search")

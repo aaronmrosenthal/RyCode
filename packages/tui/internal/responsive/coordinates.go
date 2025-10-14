@@ -3,6 +3,9 @@ package responsive
 import (
 	"strings"
 	"unicode/utf8"
+
+	tea "github.com/charmbracelet/bubbletea/v2"
+	"github.com/aaronmrosenthal/rycode/internal/theme"
 )
 
 // Rect represents a rectangular area
@@ -486,12 +489,3 @@ func (pf *PositionedFocusable) SetRect(rect Rect) {
 	pf.rect = rect
 	pf.mapper.Register(pf.ID(), rect, pf.zIndex)
 }
-
-// TODO: Import missing dependencies
-// These would normally be imported:
-// tea "github.com/charmbracelet/bubbletea/v2"
-// "github.com/aaronmrosenthal/rycode/internal/theme"
-
-// Placeholder to make code compile
-import tea "github.com/charmbracelet/bubbletea/v2"
-import "github.com/aaronmrosenthal/rycode/internal/theme"

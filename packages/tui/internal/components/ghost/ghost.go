@@ -107,12 +107,13 @@ func Render(suggestion *Suggestion, theme *theme.Theme) string {
 	var style lipgloss.Style
 	if suggestion.Confidence > 0.8 {
 		style = lipgloss.NewStyle().
-			Foreground(theme.GhostTextHigh).
+			Foreground((*theme).TextMuted()).
 			Faint(true)
 	} else {
 		style = lipgloss.NewStyle().
-			Foreground(theme.GhostTextLow).
-			Faint(true)
+			Foreground((*theme).TextMuted()).
+			Faint(true).
+			Faint(true) // Double faint for lower confidence
 	}
 
 	// Add trigger hint
@@ -141,7 +142,7 @@ func RenderInline(currentInput string, suggestion *Suggestion, theme *theme.Them
 	completion := suggestion.Text[len(currentInput):]
 
 	ghostStyle := lipgloss.NewStyle().
-		Foreground(theme.GhostTextHigh).
+		Foreground((*theme).TextMuted()).
 		Faint(true)
 
 	return currentInput + ghostStyle.Render(completion)

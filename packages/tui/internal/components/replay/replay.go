@@ -174,7 +174,7 @@ func (m *ReplayModel) tick() tea.Cmd {
 
 func (m *ReplayModel) renderHeader() string {
 	titleStyle := lipgloss.NewStyle().
-		Foreground(m.theme.AccentPrimary).
+		Foreground((*m.theme).Primary()).
 		Bold(true)
 
 	title := titleStyle.Render("🎬 Instant Replay")
@@ -190,10 +190,10 @@ func (m *ReplayModel) renderHeader() string {
 	empty := progressWidth - filled
 
 	progressStyle := lipgloss.NewStyle().
-		Foreground(m.theme.AccentPrimary)
+		Foreground((*m.theme).Primary())
 
 	emptyStyle := lipgloss.NewStyle().
-		Foreground(m.theme.Border)
+		Foreground((*m.theme).Border())
 
 	progressBar := "[" +
 		progressStyle.Render(lipgloss.NewStyle().Render(lipgloss.PlaceHorizontal(filled, lipgloss.Left, "█", lipgloss.WithWhitespaceChars("█")))) +
@@ -202,7 +202,7 @@ func (m *ReplayModel) renderHeader() string {
 
 	// Position info
 	positionStyle := lipgloss.NewStyle().
-		Foreground(m.theme.TextDim)
+		Foreground((*m.theme).TextMuted())
 
 	position := positionStyle.Render(
 		" " + string(rune('0'+m.state.CurrentIndex+1)) + "/" + string(rune('0'+len(m.state.Messages))),
@@ -210,7 +210,7 @@ func (m *ReplayModel) renderHeader() string {
 
 	// Speed indicator
 	speedStyle := lipgloss.NewStyle().
-		Foreground(m.theme.Info)
+		Foreground((*m.theme).Info())
 
 	speedText := ""
 	if m.state.Speed == 0.5 {
@@ -250,23 +250,23 @@ func (m *ReplayModel) renderCurrentMessage() string {
 	var role string
 	if msg.Role == "user" {
 		role = roleStyle.
-			Foreground(m.theme.AccentSecondary).
+			Foreground((*m.theme).Secondary()).
 			Render("You:")
 	} else {
 		role = roleStyle.
-			Foreground(m.theme.AccentPrimary).
+			Foreground((*m.theme).Primary()).
 			Render("AI:")
 	}
 
 	// Timestamp
 	timeStyle := lipgloss.NewStyle().
-		Foreground(m.theme.TextDim)
+		Foreground((*m.theme).TextMuted())
 
 	timestamp := timeStyle.Render(msg.Timestamp.Format("15:04:05"))
 
 	// Content
 	contentStyle := lipgloss.NewStyle().
-		Foreground(m.theme.TextPrimary).
+		Foreground((*m.theme).Text()).
 		Width(m.width - 4).
 		MarginTop(1).
 		MarginBottom(1)
@@ -277,7 +277,7 @@ func (m *ReplayModel) renderCurrentMessage() string {
 	toolsSection := ""
 	if len(msg.Tools) > 0 && m.state.ShowThinking {
 		toolStyle := lipgloss.NewStyle().
-			Foreground(m.theme.Info).
+			Foreground((*m.theme).Info()).
 			Italic(true)
 
 		tools := "🛠️  Tools used: " + lipgloss.JoinHorizontal(lipgloss.Left, msg.Tools...)
@@ -310,8 +310,8 @@ func (m *ReplayModel) renderExplanation() string {
 	explanation := m.generateExplanation(msg)
 
 	explainStyle := lipgloss.NewStyle().
-		Foreground(m.theme.Warning).
-		Background(m.theme.BackgroundSecondary).
+		Foreground((*m.theme).Warning()).
+		Background((*m.theme).BackgroundPanel()).
 		Padding(1).
 		MarginTop(1).
 		Width(m.width - 4)
@@ -321,7 +321,7 @@ func (m *ReplayModel) renderExplanation() string {
 
 func (m *ReplayModel) renderControls() string {
 	controlStyle := lipgloss.NewStyle().
-		Foreground(m.theme.TextDim).
+		Foreground((*m.theme).TextMuted()).
 		MarginTop(1)
 
 	controls := []string{

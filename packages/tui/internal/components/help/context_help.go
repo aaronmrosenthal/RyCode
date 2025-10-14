@@ -1,7 +1,6 @@
 package help
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/aaronmrosenthal/rycode/internal/styles"

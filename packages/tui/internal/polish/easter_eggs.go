@@ -1,7 +1,6 @@
 package polish
 
 import (
-	"fmt"
 	"math/rand"
 	"strings"
 	"time"

@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/lipgloss/v2"
+	"github.com/charmbracelet/lipgloss/v2/compat"
 	"github.com/aaronmrosenthal/rycode/internal/accessibility"
 	"github.com/aaronmrosenthal/rycode/internal/styles"
 	"github.com/aaronmrosenthal/rycode/internal/theme"
@@ -206,11 +208,21 @@ func Rainbow(text string, frame int) string {
 		return text
 	}
 
-	colors := []string{"#FF0000", "#FF7F00", "#FFFF00", "#00FF00", "#0000FF", "#4B0082", "#9400D3"}
+	t := theme.CurrentTheme()
+	colors := []compat.AdaptiveColor{
+		{Light: lipgloss.Color("#FF0000"), Dark: lipgloss.Color("#FF0000")},
+		{Light: lipgloss.Color("#FF7F00"), Dark: lipgloss.Color("#FF7F00")},
+		{Light: lipgloss.Color("#FFFF00"), Dark: lipgloss.Color("#FFFF00")},
+		{Light: lipgloss.Color("#00FF00"), Dark: lipgloss.Color("#00FF00")},
+		{Light: lipgloss.Color("#0000FF"), Dark: lipgloss.Color("#0000FF")},
+		{Light: lipgloss.Color("#4B0082"), Dark: lipgloss.Color("#4B0082")},
+		{Light: lipgloss.Color("#9400D3"), Dark: lipgloss.Color("#9400D3")},
+	}
 	colorIndex := frame % len(colors)
+	_ = t // Keep theme available for potential future use
 
 	return styles.NewStyle().
-		Foreground(styles.NewStyle().GetAdaptiveColor(colors[colorIndex], colors[colorIndex])).
+		Foreground(colors[colorIndex]).
 		Render(text)
 }
 
@@ -356,7 +368,19 @@ func ElasticBounce(frame, totalFrames int) float64 {
 	p := 0.3
 	s := p / 4
 
-	return 1 + (-1)*float64(1<<uint(10*(progress-1)))*
+	// Calculate the exponent and ensure it's non-negative
+	exponent := 10 * (progress - 1)
+	if exponent < 0 {
+		exponent = -exponent
+	}
+
+	// Bitshift must be done on integer, then convert to float64
+	shiftAmount := uint(int(exponent))
+	if shiftAmount > 31 {
+		shiftAmount = 31 // Prevent overflow
+	}
+
+	return 1.0 + (-1.0)*float64(int(1)<<shiftAmount)*
 		float64(float64(2)*float64(3.14159)*(progress-1-s)/p)
 }
 

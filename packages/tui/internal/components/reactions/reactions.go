@@ -77,7 +77,7 @@ func (rm *ReactionManager) GetStats() map[Reaction]int {
 // Render renders a reaction with styling
 func Render(reaction Reaction, theme *theme.Theme) string {
 	style := lipgloss.NewStyle().
-		Foreground(theme.AccentPrimary).
+		Foreground((*theme).Primary()).
 		Bold(true)
 
 	return style.Render(string(reaction))
@@ -110,12 +110,12 @@ func RenderPicker(theme *theme.Theme) string {
 	for i, reaction := range reactions {
 		desc := descriptions[reaction]
 		style := lipgloss.NewStyle().
-			Foreground(theme.TextSecondary)
+			Foreground((*theme).Text())
 
 		item := lipgloss.JoinHorizontal(
 			lipgloss.Left,
 			lipgloss.NewStyle().
-				Foreground(theme.AccentPrimary).
+				Foreground((*theme).Primary()).
 				Bold(true).
 				Render(string(reaction)),
 			style.Render(" "+desc),
@@ -123,7 +123,7 @@ func RenderPicker(theme *theme.Theme) string {
 
 		// Add number for keyboard selection
 		numberStyle := lipgloss.NewStyle().
-			Foreground(theme.TextDim).
+			Foreground((*theme).TextMuted()).
 			PaddingRight(1)
 
 		items = append(items,
@@ -137,7 +137,7 @@ func RenderPicker(theme *theme.Theme) string {
 
 	// Title
 	titleStyle := lipgloss.NewStyle().
-		Foreground(theme.AccentPrimary).
+		Foreground((*theme).Primary()).
 		Bold(true).
 		MarginBottom(1)
 
@@ -145,7 +145,7 @@ func RenderPicker(theme *theme.Theme) string {
 
 	// Instruction
 	instructionStyle := lipgloss.NewStyle().
-		Foreground(theme.TextDim).
+		Foreground((*theme).TextMuted()).
 		MarginTop(1)
 
 	instruction := instructionStyle.Render("Press 1-7 to react, ESC to cancel")

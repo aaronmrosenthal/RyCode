@@ -60,8 +60,7 @@ func RenderEmptyState(state EmptyState, width, height int) string {
 	descStyle := styles.NewStyle().
 		Foreground(t.TextMuted()).
 		Faint(true).
-		Width(60).
-		Align(styles.NewStyle().GetAlignCenter())
+		Width(60)
 
 	desc := descStyle.Render(state.Description)
 	lines = append(lines, centerText(desc, width))
