@@ -1,6 +1,7 @@
 package dialog
 
 import (
+	"github.com/charmbracelet/lipgloss/v2"
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/aaronmrosenthal/rycode-sdk-go"
 	"github.com/aaronmrosenthal/rycode/internal/app"
@@ -52,15 +53,28 @@ func (m *modelDialog) View() string {
 }
 
 func (m *modelDialog) Render(background string) string {
-	// Show cortex overlay FIRST (not in modal) while loading providers
-	// Once loaded, fade in the modal content in place of the cortex
-	if m.simpleToggle.IsLoading() {
-		// Render cortex directly on background (no modal box)
-		// This provides instant visual feedback while data loads
-		return m.simpleToggle.View()
+	// Show cortex overlay (not in modal) in two cases:
+	// 1. While loading providers initially
+	// 2. When switching between providers (Tab key)
+	// This provides instant visual feedback without breaking modal layout
+	if m.simpleToggle.IsLoading() || m.simpleToggle.IsSwitching() {
+		// Render cortex as fullscreen overlay directly on background (no modal borders)
+		cortexView := m.simpleToggle.View()
+
+		// Calculate centering position
+		bgHeight := lipgloss.Height(background)
+		bgWidth := lipgloss.Width(background)
+		cortexHeight := lipgloss.Height(cortexView)
+		cortexWidth := lipgloss.Width(cortexView)
+
+		row := (bgHeight - cortexHeight) / 2
+		col := (bgWidth - cortexWidth) / 2
+
+		// Place cortex centered on background without modal borders
+		return layout.PlaceOverlay(col, row, cortexView, background)
 	}
 
-	// Once loaded, render the full modal with provider selection content
+	// Otherwise, render the full modal with provider selection content
 	return m.modal.Render(m.View(), background)
 }
 

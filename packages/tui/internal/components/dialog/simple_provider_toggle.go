@@ -445,23 +445,15 @@ func (s *SimpleProviderToggle) View() string {
 	b.WriteString(titleStyle.Render("Select Provider"))
 	b.WriteString("\n\n")
 
-	// Provider chips (horizontal layout with numbers)
-	var chipsWithSpacing []string
+	// Provider chips (vertical stacked layout for reliability)
 	for i, provider := range s.providers {
 		isSelected := i == s.selectedIndex
 		chip := s.renderProviderChip(provider, isSelected, i+1, t)
-		chipsWithSpacing = append(chipsWithSpacing, chip)
-		// Add spacing between chips (but not after the last one)
-		if i < len(s.providers)-1 {
-			chipsWithSpacing = append(chipsWithSpacing, "  ")
-		}
+		chipContainerStyle := lipgloss.NewStyle().Padding(0, 2)
+		b.WriteString(chipContainerStyle.Render(chip))
+		b.WriteString("\n")
 	}
-
-	// Join chips horizontally
-	chipsRow := lipgloss.JoinHorizontal(lipgloss.Left, chipsWithSpacing...)
-	chipContainerStyle := lipgloss.NewStyle().Padding(0, 2)
-	b.WriteString(chipContainerStyle.Render(chipsRow))
-	b.WriteString("\n\n")
+	b.WriteString("\n")
 
 	// Show models for selected provider
 	if s.selectedIndex < len(s.providers) {
@@ -831,6 +823,11 @@ func (s *SimpleProviderToggle) SetSize(width, height int) {
 // IsLoading returns whether the toggle is currently loading providers
 func (s *SimpleProviderToggle) IsLoading() bool {
 	return s.isLoading
+}
+
+// IsSwitching returns whether the toggle is currently showing the switching animation
+func (s *SimpleProviderToggle) IsSwitching() bool {
+	return s.isSwitching
 }
 
 // CalculateRequiredWidth calculates the minimum modal width needed to fit all provider chips
