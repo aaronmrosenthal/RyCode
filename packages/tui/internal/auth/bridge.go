@@ -94,8 +94,15 @@ func logDebug(format string, args ...interface{}) {
 
 // NewBridge creates a new authentication bridge
 func NewBridge(projectRoot string) *Bridge {
-	cliPath := filepath.Join(projectRoot, "packages", "rycode", "src", "auth", "cli.ts")
-	logDebug("DEBUG [NewBridge]: projectRoot=%s, cliPath=%s", projectRoot, cliPath)
+	// Convert projectRoot to absolute path
+	absProjectRoot, err := filepath.Abs(projectRoot)
+	if err != nil {
+		// Fallback to original if abs fails
+		absProjectRoot = projectRoot
+	}
+
+	cliPath := filepath.Join(absProjectRoot, "packages", "rycode", "src", "auth", "cli.ts")
+	logDebug("DEBUG [NewBridge]: projectRoot=%s, absProjectRoot=%s, cliPath=%s", projectRoot, absProjectRoot, cliPath)
 	return &Bridge{
 		cliPath: cliPath,
 	}
@@ -106,8 +113,13 @@ func (b *Bridge) runCLI(ctx context.Context, args ...string) ([]byte, error) {
 	fullArgs := append([]string{"run", b.cliPath}, args...)
 	cmd := exec.CommandContext(ctx, "bun", fullArgs...)
 
-	// DEBUG: Log the command being run
-	logDebug("DEBUG [bridge]: Running: bun %v", fullArgs)
+	// CRITICAL FIX: Set working directory to the project root
+	// Extract project root from cliPath (remove "/packages/rycode/src/auth/cli.ts")
+	projectRoot := filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(b.cliPath))))
+	cmd.Dir = projectRoot
+
+	// DEBUG: Log the command being run with working directory
+	logDebug("DEBUG [bridge]: Running: bun %v (from %s)", fullArgs, projectRoot)
 
 	output, err := cmd.Output()
 	if err != nil {
